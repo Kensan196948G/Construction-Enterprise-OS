@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .api import auth, users, roles, permissions, clients, audit
-from .models.base import engine, Base
+from .models.base import engine
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Starting Auth Service on {settings.HOST}:{settings.PORT}")
 
-    # 開発環境: テーブル自動作成 (本番ではAlembicマイグレーションを使用)
-    if settings.ENVIRONMENT == "development":
-        async with engine.begin() as conn:
-            # 本番ではAlembicを使うのでコメントアウト推奨
-            pass
+    # 開発環境: テーブルはAlembicマイグレーションで管理
+    # 必要な場合は 'alembic upgrade head' を実行すること
 
     yield
 

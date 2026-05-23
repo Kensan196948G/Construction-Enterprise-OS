@@ -26,7 +26,6 @@ class Organization(Base):
     __table_args__ = (
         Index("ix_organizations_parent_id", "parent_id"),
         Index("ix_organizations_type", "type"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -61,7 +60,6 @@ class User(Base):
         Index("ix_users_email", "email"),
         Index("ix_users_username", "username"),
         Index("ix_users_organization_id", "organization_id"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -94,7 +92,7 @@ class User(Base):
     )
 
     organization: Mapped["Organization"] = relationship("Organization", back_populates="users")
-    roles: Mapped[list["UserRole"]] = relationship("UserRole", back_populates="user")
+    roles: Mapped[list["UserRole"]] = relationship("UserRole", back_populates="user", foreign_keys="UserRole.user_id")
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user")
 
 
@@ -102,7 +100,6 @@ class Role(Base):
     __tablename__ = "roles"
     __table_args__ = (
         Index("ix_roles_organization_id", "organization_id"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -124,7 +121,6 @@ class Permission(Base):
     __tablename__ = "permissions"
     __table_args__ = (
         UniqueConstraint("resource", "action"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -137,7 +133,6 @@ class Permission(Base):
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
-    __table_args__ = {"schema": "auth"}
 
     role_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.roles.id"), primary_key=True
@@ -152,7 +147,6 @@ class RolePermission(Base):
 
 class UserRole(Base):
     __tablename__ = "user_roles"
-    __table_args__ = {"schema": "auth"}
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.users.id"), primary_key=True
@@ -168,7 +162,7 @@ class UserRole(Base):
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    user: Mapped["User"] = relationship("User", back_populates="roles")
+    user: Mapped["User"] = relationship("User", back_populates="roles", foreign_keys=[user_id])
     role: Mapped["Role"] = relationship("Role", back_populates="users")
 
 
@@ -177,7 +171,6 @@ class RefreshToken(Base):
     __table_args__ = (
         Index("ix_refresh_tokens_token_hash", "token_hash"),
         Index("ix_refresh_tokens_user_id", "user_id"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -200,7 +193,6 @@ class ApiClient(Base):
     __tablename__ = "api_clients"
     __table_args__ = (
         Index("ix_api_clients_client_id", "client_id"),
-        {"schema": "auth"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -228,7 +220,6 @@ class AuditLog(Base):
         Index("ix_audit_logs_user_id", "user_id"),
         Index("ix_audit_logs_event_type", "event_type"),
         Index("ix_audit_logs_created_at", "created_at"),
-        {"schema": "auth"},
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

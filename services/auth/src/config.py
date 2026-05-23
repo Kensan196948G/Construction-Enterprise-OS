@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # JWT
     JWT_PRIVATE_KEY: str = ""  # 本番では必ず設定
     JWT_PUBLIC_KEY: str = ""
-    JWT_ALGORITHM: str = "RS256"
+    JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     M2M_TOKEN_EXPIRE_HOURS: int = 24

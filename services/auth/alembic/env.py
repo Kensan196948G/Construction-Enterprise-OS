@@ -26,6 +26,13 @@ settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
+def include_name(name, type_, parent_names):
+    """name が auth スキーマの場合のみ含める（オートジェネレート用）"""
+    if type_ == "schema":
+        return name in ("auth", None)
+    return True
+
+
 def run_migrations_offline() -> None:
     """オフラインマイグレーション（SQLスクリプト生成）"""
     url = config.get_main_option("sqlalchemy.url")
@@ -34,6 +41,9 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_schemas=True,
+        include_name=include_name,
+        version_table_schema="auth",
     )
 
     with context.begin_transaction():
@@ -41,7 +51,14 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_schemas=True,
+        include_name=include_name,
+        version_table_schema="auth",
+    )
+
     with context.begin_transaction():
         context.run_migrations()
 
