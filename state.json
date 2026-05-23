@@ -50,25 +50,33 @@
   },
   "progress": {
     "completed": [
-      "プロジェクト初期化 (git init)",
+      "プロジェクト初期化 (git init, GitHub repo)",
       "モノレポ構成設定 (pnpm, Turborepo)",
       "Docker開発環境定義",
-      "全体アーキテクチャ設計書",
+      "全体アーキテクチャ設計書 (5レイヤ/18ヶ月計画/ADR)",
       "統合認証基盤 詳細設計書",
       "統合データ基盤 詳細設計書",
       "API Gateway & イベント基盤 設計書",
       "共通UI・通知・ログ基盤 設計書",
-      "Auth Service MVPスケルトン実装 (main.py, models, schemas, services, middleware, api routers)",
-      "共有パッケージ (@ceo-os/core) 型定義"
+      "Auth Service 完全実装 (login/refresh/logout/MFA/users/roles/permissions/clients)",
+      "Auth Service テスト30件 (API結合12 + ロジック18) 全PASS",
+      "Auth Service Lint 0 errors",
+      "DB Alembicマイグレーション完全版 (10テーブル + 4enum, 可逆DOWN)",
+      "DB シードスクリプト (組織・7ロール・43権限・adminユーザー)",
+      "Next.js 14 App Router スケルトン",
+      "shadcn/ui Design System 18コンポーネント + レイアウト + データ表示",
+      "共有パッケージ (@ceo-os/core) TypeScript型定義",
+      "GitHub Actions CI/CD (lint/test/build/security)",
+      "README.md 大幅更新 (表・図・アイコン多用)"
     ],
     "in_progress": [],
     "next": [
-      "Auth Service ログイン・トークン発行の単体テスト実装と検証",
-      "Auth Service DBマイグレーション実行確認",
-      "API Gateway (Traefik/Kong) 設定",
-      "Next.js Webアプリ スケルトン作成",
-      "共通UIコンポーネント (shadcn/ui) セットアップ",
-      "CI/CD パイプライン動作確認"
+      "API Gateway 実装 (Kong/Traefik)",
+      "イベント基盤 (Kafkaトピック定義 + 発行/購読)",
+      "統合通知基盤 (Email/SMS/Push)",
+      "統合ログ基盤 (ELK + OpenTelemetry)",
+      "文書管理基盤 (MinIO連携)",
+      "GIS基盤 (PostGIS API)"
     ]
   },
   "github": {

@@ -28,7 +28,7 @@ auth-dev: ## Auth Service開発サーバー起動
 	cd services/auth && uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 auth-test: ## Auth Serviceテスト実行
-	cd services/auth && pytest tests/ -v
+	cd services/auth && python -m pytest tests/ -v -p no:flask
 
 auth-lint: ## Auth Service lint実行
 	cd services/auth && ruff check src/
