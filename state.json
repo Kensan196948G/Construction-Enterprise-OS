@@ -1,0 +1,79 @@
+{
+  "project": {
+    "name": "Construction-Enterprise-OS",
+    "code": "CEO-OS",
+    "registered_at": "2026-05-24",
+    "release_deadline": null,
+    "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
+    "status": "active",
+    "phase": "monitor",
+    "phase_detail": "アーキテクチャ設計・プロジェクト初期化"
+  },
+  "current_session": {
+    "started_at": "2026-05-24T05:45:00+09:00",
+    "max_working_minutes": 300,
+    "deadline": "2026-05-24T10:45:00+09:00",
+    "loop": "Monitor",
+    "status": "in_progress"
+  },
+  "technical": {
+    "backend": "Python 3.12 + FastAPI",
+    "frontend": "React 18 + Next.js 14",
+    "database": "PostgreSQL 16 + PostGIS + TimescaleDB",
+    "cache": "Redis 7",
+    "message_queue": "Kafka / RabbitMQ",
+    "search": "Elasticsearch 8",
+    "object_storage": "MinIO",
+    "monorepo": "pnpm workspaces + Turborepo",
+    "container": "Docker + Kubernetes"
+  },
+  "architecture": {
+    "layers": {
+      "layer_0": "Infrastructure",
+      "layer_1": "Common Platform (Auth, Data, Gateway, Events)",
+      "layer_2": "Domain Platform (AI, IoT, GIS, BIM, Document, Workflow)",
+      "layer_3": "Business Applications (ERP, Field DX, Partner)",
+      "layer_4": "Security & Governance"
+    },
+    "priority": [
+      "統合認証基盤 (Auth Platform)",
+      "統合データ基盤 (Data Platform)",
+      "API Gateway",
+      "イベント基盤 (Event Bus)",
+      "共通UIコンポーネントライブラリ",
+      "統合通知基盤",
+      "統合ログ基盤",
+      "AI共通基盤",
+      "GIS共通基盤",
+      "文書管理基盤"
+    ]
+  },
+  "progress": {
+    "completed": [
+      "プロジェクト初期化 (git init)",
+      "モノレポ構成設定 (pnpm, Turborepo)",
+      "Docker開発環境定義",
+      "全体アーキテクチャ設計書",
+      "統合認証基盤 詳細設計書",
+      "統合データ基盤 詳細設計書",
+      "API Gateway & イベント基盤 設計書",
+      "共通UI・通知・ログ基盤 設計書",
+      "Auth Service MVPスケルトン実装 (main.py, models, schemas, services, middleware, api routers)",
+      "共有パッケージ (@ceo-os/core) 型定義"
+    ],
+    "in_progress": [],
+    "next": [
+      "Auth Service ログイン・トークン発行の単体テスト実装と検証",
+      "Auth Service DBマイグレーション実行確認",
+      "API Gateway (Traefik/Kong) 設定",
+      "Next.js Webアプリ スケルトン作成",
+      "共通UIコンポーネント (shadcn/ui) セットアップ",
+      "CI/CD パイプライン動作確認"
+    ]
+  },
+  "github": {
+    "enabled": true,
+    "repository_url": null,
+    "note": "リポジトリ作成後にURLを設定"
+  }
+}

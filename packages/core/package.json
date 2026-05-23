@@ -1,0 +1,16 @@
+{
+  "name": "@ceo-os/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CEO-OS 共通型定義・定数",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

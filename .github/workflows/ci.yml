@@ -1,0 +1,123 @@
+name: CEO-OS CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # Python バックエンド (FastAPI)
+  # ============================================
+  python-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - services/auth
+          - services/document
+          - services/workflow
+          - services/gis
+          - services/iot
+          - services/notification
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint (Ruff)
+        run: ruff check .
+
+      - name: Type check (MyPy)
+        run: mypy src/
+
+      - name: Test (Pytest)
+        run: pytest tests/ --cov=src --cov-report=xml
+
+  # ============================================
+  # TypeScript フロントエンド / 共有パッケージ
+  # ============================================
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  # ============================================
+  # セキュリティスキャン
+  # ============================================
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: pip-audit
+        run: |
+          pip install pip-audit
+          find services -name "requirements.txt" -exec pip-audit -r {} \;
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+
+  # ============================================
+  # ビルド検証
+  # ============================================
+  docker-build-test:
+    runs-on: ubuntu-latest
+    needs: [python-checks, frontend-checks]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build auth service
+        run: docker build -t ceo-os/auth:test services/auth/
+
+      - name: Build web app
+        run: docker build -t ceo-os/web:test apps/web/
