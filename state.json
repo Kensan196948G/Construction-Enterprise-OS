@@ -73,7 +73,8 @@
   },
   "github": {
     "enabled": true,
-    "repository_url": null,
-    "note": "リポジトリ作成後にURLを設定"
+    "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
+    "branch": "main",
+    "note": "created 2026-05-24"
   }
 }
