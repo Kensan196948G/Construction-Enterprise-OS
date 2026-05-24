@@ -9,218 +9,190 @@
 建設・土木業における全業務・全データ・全プロセスを統合するデジタル基盤を提供する。
 個別バラバラの業務アプリケーション群を「OSレイヤ」によって統合し、単一の真実として機能させる。
 
-### 1.3 対象ユーザー
-- 建設・土木事業者（ゼネコン、サブコン、専門工事会社）
-- 協力会社・下請け事業者
-- 発注者・監理者（官公庁含む）
-- 現場作業員・現場監督
-- 経営層・管理部門
-
-### 1.4 技術スタック
+### 1.3 技術スタック
 | レイヤ | 技術 |
 |---|---|
 | フロントエンド | React 18 + Next.js 14 (App Router) |
 | バックエンド | Python 3.12 + FastAPI |
 | データベース | PostgreSQL 16 + PostGIS + TimescaleDB |
-| キャッシュ | Redis |
-| メッセージキュー | RabbitMQ / Apache Kafka |
+| キャッシュ | Redis 7 |
+| メッセージキュー | Apache Kafka / RabbitMQ |
 | オブジェクトストレージ | MinIO (S3互換) |
-| 検索エンジン | Elasticsearch |
-| AI/ML | PyTorch + LangChain + LlamaIndex |
-| コンテナ | Docker + Kubernetes |
-| IaC | Terraform |
-| CI/CD | GitHub Actions |
+| 検索エンジン | Elasticsearch 8 |
+| AI/ML | LangChain + LlamaIndex + pgvector |
 | モノレポ管理 | pnpm workspaces + Turborepo |
 
 ---
 
 ## 2. OSレイヤ アーキテクチャ
 
-### 2.1 レイヤ構造
+### 2.1 5レイヤ構造
 
 ```text
-Construction Enterprise OS
+Construction Enterprise OS（建設業統合OS）
 │
-├── Layer 0: インフラストラクチャ基盤
-│   ├── Container Orchestration (K8s)
-│   ├── Service Mesh (Istio)
-│   ├── Storage (PostgreSQL, Redis, MinIO, Elasticsearch)
-│   └── Network & Security
+├── ① Foundation Layer（基礎OS層）
+│   ├── 🔐 認証基盤       (Auth Service)
+│   ├── 🌐 API Gateway    (Gateway Service)
+│   ├── 📨 イベント基盤   (Event Core)
+│   ├── 📊 共通ログ       (Logging Package)
+│   ├── 🔔 共通通知       (Notification Service)
+│   ├── 📋 マスタデータ   (Seed Data / Organizations)
+│   ├── 🛡️ 権限管理       (RBAC / Permissions)
+│   ├── 📝 監査証跡       (Audit Logs)
+│   └── 🎨 統合UI基盤     (Design System / shadcn/ui)
 │
-├── Layer 1: 共通基盤（OSカーネル相当）
-│   ├── 統合認証基盤 (AuthN/AuthZ)
-│   ├── 統合データ基盤 (Data Lake & Federation)
-│   ├── API Gateway (Kong / Traefik)
-│   ├── イベントバス (Kafka / RabbitMQ)
-│   ├── 統合ログ基盤 (ELK Stack)
-│   ├── 統合通知基盤 (Push / Email / SMS / Webhook)
-│   └── 共通UIコンポーネントライブラリ (Design System)
+├── ② Data & Intelligence Layer（データ・AI層）
+│   ├── 🤖 AI基盤         (LLM / RAG / Agent)
+│   ├── 🗄️ データレイク   (Data Lake)
+│   ├── 🏗️ BIM/CIMデータ  (IFC / 3D Model)
+│   ├── 🗺️ GIS            (PostGIS / GeoAlchemy2)
+│   ├── 📡 IoTデータ      (Sensor / Telemetry)
+│   ├── ⏱️ 時系列DB       (TimescaleDB)
+│   ├── 🧬 ベクトルDB     (pgvector)
+│   ├── 👁️ OCR/画像AI     (Document AI)
+│   └── 📈 分析基盤       (BI / Analytics)
 │
-├── Layer 2: ドメイン基盤
-│   ├── AI統合基盤 (LLM / RAG / Vector DB / Agent)
-│   ├── IoT統合基盤 (MQTT / Sensor / Edge / Alert)
-│   ├── GIS・地図統合基盤 (PostGIS / MapLibre / Cesium)
-│   ├── BIM/CIM統合基盤 (IFC / 3D / Point Cloud / Digital Twin)
-│   ├── 文書・図面統合基盤 (PDF / CAD / OCR / Versioning)
-│   └── ワークフロー基盤 (BPMN / Camunda / 電子決裁)
+├── ③ Platform Layer（共通プラットフォーム層）
+│   ├── 📄 文書管理       (Document Service)
+│   ├── 🔄 ワークフロー   (Workflow Engine)
+│   ├── 📱 モバイル/PWA   (Mobile App)
+│   ├── 🤝 協力会社連携   (Partner Portal)
+│   ├── 🔒 セキュリティ   (Security Platform)
+│   ├── ⚡ 自動化          (RPA / Automation)
+│   ├── 🏢 BIM/CIM Viewer (3D Viewer)
+│   ├── 🌍 GIS Viewer     (Map Viewer)
+│   └── 📡 IoT管理        (Device Management)
 │
-├── Layer 3: 業務アプリケーション
-│   ├── ERP・経営管理 (原価 / 工事台帳 / 予算 / 会計)
-│   ├── 現場DX (施工管理 / 出来形 / 品質 / 安全)
-│   ├── 協力会社連携 (ポータル / 契約 / 評価)
-│   ├── モバイル・オフライン (PWA / 同期 / キャッシュ)
-│   ├── 監査・コンプライアンス (証跡 / 監査ログ / 報告)
-│   ├── ナレッジマネジメント (Wiki / 教訓DB / 技術継承)
-│   └── 分析基盤 (BI / ダッシュボード / 予測)
+├── ④ Business Application Layer（業務アプリ層）
+│   ├── 🏗️ 現場DX         (Field DX)
+│   ├── 🚢 港湾施工管理   (Marine Construction)
+│   ├── ⛑️ 安全管理       (Safety Management)
+│   ├── 🌊 災害復旧       (Disaster Recovery)
+│   ├── 🔧 維持管理       (Maintenance)
+│   ├── 🔍 点検AI         (Inspection AI)
+│   ├── 💰 ERP/経営       (ERP)
+│   ├── 📊 原価管理       (Cost Management)
+│   ├── 📐 施工管理       (Construction Mgmt)
+│   ├── 📋 AI設計照査     (AI Design Review)
+│   └── 🔮 予知保全       (Predictive Maintenance)
 │
-└── Layer 4: セキュリティ・統制
-    ├── SOC / SIEM (監視 / 脅威検知 / インシデント対応)
-    ├── ゼロトラスト (ZTNA / Micro-segmentation)
-    ├── EDR (Endpoint Detection & Response)
-    └── コンプライアンス監査
+└── ⑤ Autonomous Layer（自律化層）
+    ├── 🧠 AI Agent       (Autonomous Agent)
+    ├── 🚜 自律施工       (Autonomous Construction)
+    ├── 🎯 自動最適化     (Auto Optimization)
+    ├── 👥 デジタルツイン (Digital Twin)
+    ├── 🌊 海洋ロボティクス(Marine Robotics)
+    └── 🎮 自律制御       (Autonomous Control)
 ```
 
-### 2.2 レイヤ間通信原則
+### 2.2 レイヤ間責務と依存関係
 
-```
-Layer 4 (Security) ──→ All Layers (監視・統制)
-Layer 3 (Apps) ──────→ Layer 1 (Gateway経由), Layer 2 (Domain基盤利用)
-Layer 2 (Domain) ────→ Layer 1 (Common基盤を利用)
-Layer 1 (Common) ────→ Layer 0 (Infra上で稼働)
-Layer 0 (Infra) ──────→ (物理/仮想インフラ)
-```
+| レイヤ | 責務 | 依存 |
+|---|---|---|
+| **① Foundation** | 全サービスの共通インフラ。認証・通信・ログ・通知・UIの統一基盤 | Layer 0 (K8s/DB/Redis/Kafka) |
+| **② Data & Intelligence** | データの収集・保存・分析・AI推論。OSの「頭脳」 | ① Foundation (認証/Gateway経由でアクセス) |
+| **③ Platform** | 共通業務機能。文書・WF・モバイル・セキュリティ等の水平基盤 | ①② (データ永続化 + 認証) |
+| **④ Business Application** | 建設業特化の垂直業務アプリケーション | ①②③ (全下位レイヤを利用) |
+| **⑤ Autonomous** | AIによる自律運転・最適化・デジタルツイン連携 | ①②③④ (全レイヤのデータを活用) |
 
 ### 2.3 データフロー原則
 
-1. **全リクエストはAPI Gatewayを経由**（認証・認可・レート制限・監査ログ）
-2. **非同期連携はイベントバス経由**（サービス間疎結合）
-3. **全サービスログは統合ログ基盤に集約**（ELK Stack）
-4. **マスターデータは統合データ基盤で一元管理**
-5. **トランザクションデータは各マイクロサービスが所有**
-
----
-
-## 3. ディレクトリ構造（モノレポ）
-
-```text
-ceo-os/
-├── apps/                          # デプロイ可能なアプリケーション
-│   ├── web/                       # Next.js フロントエンド（BFF含む）
-│   ├── admin/                     # 管理画面
-│   └── mobile/                    # PWA / モバイル
-│
-├── services/                      # バックエンド マイクロサービス
-│   ├── auth/                      # 認証基盤サービス
-│   ├── gateway/                   # API Gateway設定
-│   ├── workflow/                  # ワークフローエンジン
-│   ├── document/                  # 文書管理サービス
-│   ├── gis/                       # GISサービス
-│   ├── iot/                       # IoTサービス
-│   ├── ai/                        # AIサービス
-│   ├── erp/                       # ERPサービス
-│   ├── notification/              # 通知サービス
-│   └── search/                    # 検索サービス
-│
-├── packages/                      # 共有パッケージ (ライブラリ)
-│   ├── ui/                        # 共通UIコンポーネント (Design System)
-│   ├── core/                      # 共通型定義・定数
-│   ├── db/                        # Prisma/DB 共通設定・マイグレーション
-│   ├── auth-core/                 # 認証共通ロジック
-│   ├── event-core/                # イベントバス共通定義
-│   ├── api-client/                # APIクライアント生成
-│   └── logging/                   # 統合ログ共通ライブラリ
-│
-├── infra/                         # Infrastructure as Code
-│   ├── terraform/                 # Terraform定義
-│   ├── kubernetes/                # K8sマニフェスト
-│   └── docker/                    # Docker関連
-│
-├── docs/                          # ドキュメント
-│   ├── architecture/              # アーキテクチャ設計書
-│   ├── api/                       # API仕様書
-│   ├── guides/                    # 開発ガイド
-│   └── decisions/                 # ADR (Architecture Decision Records)
-│
-├── scripts/                       # 開発用スクリプト
-├── .github/                       # GitHub Actions CI/CD
-├── package.json                   # Root workspace
-├── pnpm-workspace.yaml
-├── turbo.json
-├── docker-compose.yml             # 開発環境
-└── README.md
+```
+User/Device Request
+    │
+    ▼
+① API Gateway ──→ Auth Service (JWT検証)
+    │
+    ├──→ ③ Platform Services (文書/WF/通知)
+    │        │
+    │        └──→ ② Data Services (GIS/IoT/AI)
+    │
+    ├──→ ④ Business Apps (現場DX/ERP/安全)
+    │        │
+    │        └──→ ③ Platform + ② Data
+    │
+    └──→ ⑤ Autonomous (AI Agent/Twin)
+             │
+             └──→ ② Data Lake + AI + IoT
 ```
 
+**通信原則**:
+1. **同期通信**: REST API (全リクエストはAPI Gateway経由)
+2. **非同期通信**: Kafka Event Bus (サービス間連携)
+3. **認証**: 全リクエストでJWT検証（① Foundationが保証）
+4. **ログ**: 全サービスが共通Logging Packageを使用（②に集約）
+
 ---
 
-## 4. 開発フェーズ計画（1年半）
+## 3. 実装状況マッピング
 
-### Phase 0: 基盤構築 (Month 1-2)
-- [ ] モノレポ初期化（pnpm workspaces + Turborepo）
-- [ ] 開発環境整備（Docker Compose: PostgreSQL, Redis, RabbitMQ, MinIO, ES）
-- [ ] CI/CD パイプライン（GitHub Actions: lint, test, build）
-- [ ] 統合認証基盤 MVP（AuthN + RBAC + JWT）
-- [ ] 統合データ基盤 スキーマ設計
+| レイヤ | コンポーネント | サービス/パッケージ | 状態 | テスト |
+|---|---|---|---|---|
+| **① Foundation** | 認証基盤 | `services/auth/` | ✅ 実装完了 | 30 PASS |
+| | API Gateway | `services/gateway/` | ✅ 実装完了 | 9 PASS |
+| | イベント基盤 | `packages/event-core/` | ✅ 実装完了 | 検証済 |
+| | 共通ログ | `packages/logging/` | ✅ 実装完了 | 24 PASS |
+| | 共通通知 | `services/notification/` | ✅ 実装完了 | 13 PASS |
+| | マスタデータ | `services/auth/src/seed.py` | ✅ 実装完了 | - |
+| | 権限管理 | `services/auth/` (RBAC) | ✅ 実装完了 | 30 PASS |
+| | 監査証跡 | `services/auth/` (AuditLog) | ✅ 実装完了 | - |
+| | 統合UI基盤 | `packages/ui/` + `apps/web/` | ✅ 実装完了 | - |
+| **② Data & Intelligence** | GIS | `services/gis/` | ✅ 実装完了 | 25 PASS |
+| | 文書管理 | `services/document/` | ✅ 実装完了 | 12 PASS |
+| | AI基盤 | 未着手 | ⚪ | - |
+| | データレイク | 未着手 | ⚪ | - |
+| | BIM/CIMデータ | 未着手 | ⚪ | - |
+| | IoTデータ | 未着手 | ⚪ | - |
+| | 時系列DB | Docker設定済 | 🟡 | - |
+| | ベクトルDB | 未着手 | ⚪ | - |
+| | OCR/画像AI | 未着手 | ⚪ | - |
+| | 分析基盤 | 未着手 | ⚪ | - |
+| **③ Platform** | ワークフロー | 未着手 | ⚪ | - |
+| | モバイル/PWA | 未着手 | ⚪ | - |
+| | 協力会社連携 | 未着手 | ⚪ | - |
+| | その他 | 未着手 | ⚪ | - |
+| **④ Business App** | 全アプリ | 未着手 | ⚪ | - |
+| **⑤ Autonomous** | 全機能 | 未着手 | ⚪ | - |
 
-### Phase 1: OSカーネル完成 (Month 3-5)
-- [ ] API Gateway 構築
-- [ ] イベントバス基盤
-- [ ] 統合ログ・監視基盤（ELK）
-- [ ] 統合通知基盤
-- [ ] 共通UIコンポーネントライブラリ（Design System v1）
+---
 
-### Phase 2: ドメイン基盤 (Month 6-9)
-- [ ] 文書・図面統合基盤
-- [ ] ワークフロー基盤（BPMN）
-- [ ] GIS・地図統合基盤
-- [ ] AI統合基盤（LLM + RAG + Vector DB）
-- [ ] IoT統合基盤
+## 4. 開発フェーズ計画
 
-### Phase 3: 業務アプリケーション (Month 10-14)
-- [ ] ERP・経営管理
-- [ ] 現場DX
-- [ ] BIM/CIM統合基盤
-- [ ] モバイル・オフライン基盤
-- [ ] 協力会社連携
-- [ ] ナレッジマネジメント
-- [ ] 分析基盤
-
-### Phase 4: セキュリティ・統制 (Month 12-16)
-- [ ] SOC/SIEM
-- [ ] ゼロトラスト実装
-- [ ] 監査コンプライアンス
-- [ ] ペネトレーションテスト
-
-### Phase 5: 安定化・リリース (Month 15-18)
-- [ ] 統合テスト・性能テスト
-- [ ] ドキュメント整備
-- [ ] 本番リリース準備
-- [ ] v1.0 リリース
+| フェーズ | 期間 | 内容 | 対象レイヤ |
+|---|---|---|---|
+| **Phase 0** | M1-2 | ① Foundation 全基盤実装 | ① |
+| **Phase 1** | M3-5 | ② Data & AI基礎 + ③ Platform基盤 | ②③ |
+| **Phase 2** | M6-9 | ③ Platform完成 + ④ 業務アプリ着手 | ③④ |
+| **Phase 3** | M10-14 | ④ 業務アプリ + ⑤ 自律化層着手 | ④⑤ |
+| **Phase 4** | M12-16 | ⑤ 自律化層 + セキュリティ監査 | ⑤ |
+| **Phase 5** | M15-18 | 安定化・統合テスト・本番リリース | 全レイヤ |
 
 ---
 
 ## 5. ADR (Architecture Decision Records)
 
-### ADR-001: モノレポ採用
-- **決定**: pnpm workspaces + Turborepoによるモノレポ構成
-- **理由**: 複数パッケージの一貫性維持、共有コードの再利用、CI/CD一元管理
-- **日付**: 2026-05-24
+### ADR-001: 5レイヤアーキテクチャ採用
+- **決定**: Foundation → Data&AI → Platform → Business → Autonomous の5層構造
+- **理由**: 建設業の特性（現場・データ・自律化）を踏まえた明確な責務分離
+- **日付**: 2026-05-24 (改定)
 
 ### ADR-002: FastAPI採用
 - **決定**: PythonバックエンドにFastAPIを採用
 - **理由**: 非同期ネイティブ、型ヒント、自動OpenAPI生成、高速
-- **日付**: 2026-05-24
 
 ### ADR-003: PostgreSQL + PostGIS + TimescaleDB
-- **決定**: 統合データベースにPostgreSQLを採用し、GIS用にPostGIS、時系列用にTimescaleDBを追加
-- **理由**: エコシステムの成熟度、拡張性、OSS
-- **日付**: 2026-05-24
+- **決定**: 統合データベースにPostgreSQLを採用
+- **理由**: エコシステムの成熟度、拡張性、GIS/時系列対応
 
-### ADR-004: 認証基盤にKeycloakではなく自前実装
-- **決定**: 初期MVPは自前JWT認証、成熟後にKeycloak移行を検討
-- **理由**: 建設業特化のカスタム要件（協力会社ID、デバイス認証等）の柔軟な実装のため
-- **日付**: 2026-05-24
-
-### ADR-005: イベントバスにKafka
+### ADR-004: Event Sourcing with Kafka
 - **決定**: 非同期イベント基盤にApache Kafkaを採用
-- **理由**: 高スループット、永続性、リプレイ機能。IoTデータストリームにも適合
-- **日付**: 2026-05-24
+- **理由**: 永続性、リプレイ、高スループット。IoTストリームに適合
+
+### ADR-005: Monorepo with pnpm + Turborepo
+- **決定**: モノレポ構成で全サービスを単一リポジトリ管理
+- **理由**: 一貫性、共有コード再利用、CI/CD一元管理
+
+### ADR-006: GeoAlchemy2 for Spatial Data
+- **決定**: GISにGeoAlchemy2 + PostGISを採用
+- **理由**: SQLAlchemyとの統合、GeoJSONサポート、空間検索対応

@@ -29,23 +29,18 @@
   },
   "architecture": {
     "layers": {
-      "layer_0": "Infrastructure",
-      "layer_1": "Common Platform (Auth, Data, Gateway, Events)",
-      "layer_2": "Domain Platform (AI, IoT, GIS, BIM, Document, Workflow)",
-      "layer_3": "Business Applications (ERP, Field DX, Partner)",
-      "layer_4": "Security & Governance"
+      "layer_1": "Foundation（基礎OS層）- 認証/API GW/イベント/ログ/通知/マスタデータ/権限/監査/UI",
+      "layer_2": "Data & Intelligence（データ・AI層）- AI/データレイク/BIM/GIS/IoT/時系列DB/ベクトルDB/OCR/分析",
+      "layer_3": "Platform（共通プラットフォーム層）- 文書/WF/モバイル/協力会社連携/セキュリティ/自動化",
+      "layer_4": "Business Application（業務アプリ層）- 現場DX/港湾/安全/災害復旧/維持管理/点検AI/ERP/原価/施工/予知保全",
+      "layer_5": "Autonomous（自律化層）- AI Agent/自律施工/自動最適化/デジタルツイン/海洋ロボティクス/自律制御"
     },
     "priority": [
-      "統合認証基盤 (Auth Platform)",
-      "統合データ基盤 (Data Platform)",
-      "API Gateway",
-      "イベント基盤 (Event Bus)",
-      "共通UIコンポーネントライブラリ",
-      "統合通知基盤",
-      "統合ログ基盤",
-      "AI共通基盤",
-      "GIS共通基盤",
-      "文書管理基盤"
+      "① Foundation: 認証基盤 ✅ | API Gateway ✅ | イベント基盤 ✅ | ログ ✅ | 通知 ✅ | 権限 ✅ | 監査 ✅ | UI ✅",
+      "② Data & Intelligence: GIS ✅ | 文書 ✅ | AI基盤 ⚪ | IoT ⚪ | 時系列DB 🟡",
+      "③ Platform: ワークフロー ⚪ | モバイル ⚪ | 協力会社連携 ⚪",
+      "④ Business: 全アプリ ⚪",
+      "⑤ Autonomous: 全機能 ⚪"
     ]
   },
   "progress": {
@@ -69,12 +64,13 @@
       "GitHub Actions CI/CD (lint/test/build/security)",
       "README.md 大幅更新 (表・図・アイコン多用)"
     ],
-    "in_progress": ["文書管理基盤 (MinIO連携)", "統合ログ基盤 (ELK+OpenTelemetry)", "GIS基盤 (PostGIS API)"],
+    "in_progress": ["ワークフロー基盤", "IoT統合基盤", "AI共通基盤"],
     "next": [
-      "AI共通基盤 (LLM+RAG+VectorDB)",
-      "IoT統合基盤 (MQTT+Sensor+Edge)",
-      "ワークフロー基盤 (BPMN+Camunda)",
-      "BIM/CIM統合基盤"
+      "BIM/CIM統合基盤",
+      "モバイル/PWA基盤",
+      "協力会社連携基盤",
+      "④ Business Apps (現場DX/港湾/安全/ERP)",
+      "⑤ Autonomous (AI Agent/デジタルツイン)"
     ]
   },
   "github": {
