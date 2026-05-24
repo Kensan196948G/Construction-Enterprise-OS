@@ -1,10 +1,10 @@
-"""CEO-OS Unified Logging Package.
+"""Construction-Enterprise-OS Unified Logging Package.
 
 Provides structured JSON logging via structlog for all services,
 with built-in middleware for FastAPI and OpenTelemetry tracing support.
 
 Usage:
-    from ceo_os_logging import setup_logging, get_logger, LoggerMixin
+    from construction_enterprise_os_logging import setup_logging, get_logger, LoggerMixin
 
     logger = setup_logging("my-service")
     logger.info("event.name", key="value")
@@ -14,14 +14,14 @@ Usage:
             self.logger.info("something.done")
 """
 
-from ceo_os_logging.logger import setup_logging, get_logger, LoggerMixin
-from ceo_os_logging.formatters import (
+from construction_enterprise_os_logging.logger import setup_logging, get_logger, LoggerMixin
+from construction_enterprise_os_logging.formatters import (
     add_service_context,
     mask_sensitive_data,
     add_user_context,
 )
-from ceo_os_logging.middleware import LoggingMiddleware
-from ceo_os_logging.tracing import (
+from construction_enterprise_os_logging.middleware import LoggingMiddleware
+from construction_enterprise_os_logging.tracing import (
     generate_trace_id,
     generate_span_id,
     get_current_trace_id,

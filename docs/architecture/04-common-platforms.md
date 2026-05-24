@@ -3,7 +3,7 @@
 ## 1. 共通UIコンポーネントライブラリ (Design System)
 
 ### 1.1 責務
-CEO-OS全画面の統一されたUI/UXを提供する「OSのGUI層」。
+Construction-Enterprise-OS全画面の統一されたUI/UXを提供する「OSのGUI層」。
 全サービスが同じコンポーネントを使用し、見た目・操作性・アクセシビリティを統一する。
 
 ### 1.2 技術選定
@@ -238,7 +238,7 @@ logger.error("db.connection_failed", error=str(e), db_host="pg-master")
 ## 4. 統合検索基盤
 
 ### 4.1 責務
-CEO-OS内の全コンテンツに対する統合検索を提供する。
+Construction-Enterprise-OS内の全コンテンツに対する統合検索を提供する。
 
 ### 4.2 アーキテクチャ
 

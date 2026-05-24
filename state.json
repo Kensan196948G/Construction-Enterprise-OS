@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Construction-Enterprise-OS",
-    "code": "CEO-OS",
+    "code": "Construction-Enterprise-OS",
     "registered_at": "2026-05-24",
     "release_deadline": null,
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ceo-os-v1';
+const CACHE_NAME = 'construction-enterprise-os-v1';
 const STATIC_ASSETS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -50,6 +50,6 @@ self.addEventListener('sync', (event) => {
 
 async function syncOfflineData() {
   // Read queued items from IndexedDB and send them
-  const db = await self.indexedDB?.open?.('ceo-os-offline');
+  const db = await self.indexedDB?.open?.('construction-enterprise-os-offline');
   // Process queue...
 }

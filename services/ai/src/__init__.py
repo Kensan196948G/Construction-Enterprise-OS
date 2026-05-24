@@ -1,1 +1,1 @@
-"""CEO-OS AI Common Platform"""
+"""Construction-Enterprise-OS AI Common Platform"""

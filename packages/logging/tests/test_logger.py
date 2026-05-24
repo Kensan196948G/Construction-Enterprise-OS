@@ -1,4 +1,4 @@
-"""Tests for CEO-OS logging package."""
+"""Tests for Construction-Enterprise-OS logging package."""
 
 import io
 import json
@@ -11,7 +11,7 @@ import pytest
 import structlog
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from ceo_os_logging import (
+from construction_enterprise_os_logging import (
     setup_logging,
     get_logger,
     LoggerMixin,
@@ -176,7 +176,7 @@ class TestTracing:
     def test_trace_id_default_empty(self):
         """Default trace ID is empty string."""
         # Need to manually reset contextvar since tests share the same process
-        from ceo_os_logging.tracing import trace_id_var
+        from construction_enterprise_os_logging.tracing import trace_id_var
         token = trace_id_var.set("")
         assert get_current_trace_id() == ""
         trace_id_var.reset(token)
@@ -215,7 +215,7 @@ class TestMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_dispatches(self, mock_request, mock_response):
         """Middleware logs request and response."""
-        from ceo_os_logging.middleware import LoggingMiddleware
+        from construction_enterprise_os_logging.middleware import LoggingMiddleware
 
         middleware = LoggingMiddleware(app=None)
 
@@ -230,7 +230,7 @@ class TestMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_assigns_request_id(self, mock_request, mock_response):
         """Middleware assigns a request ID."""
-        from ceo_os_logging.middleware import LoggingMiddleware
+        from construction_enterprise_os_logging.middleware import LoggingMiddleware
 
         middleware = LoggingMiddleware(app=None)
         call_next = AsyncMock(return_value=mock_response)
@@ -244,7 +244,7 @@ class TestMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_uses_existing_request_id(self, mock_request, mock_response):
         """Middleware uses existing X-Request-ID header."""
-        from ceo_os_logging.middleware import LoggingMiddleware
+        from construction_enterprise_os_logging.middleware import LoggingMiddleware
 
         existing_id = str(uuid.uuid4())
         mock_request.headers = {"X-Request-ID": existing_id}
@@ -259,7 +259,7 @@ class TestMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_logs_on_error(self, mock_request):
         """Middleware logs error on exception."""
-        from ceo_os_logging.middleware import LoggingMiddleware
+        from construction_enterprise_os_logging.middleware import LoggingMiddleware
 
         middleware = LoggingMiddleware(app=None)
         call_next = AsyncMock(side_effect=RuntimeError("test error"))

@@ -1,4 +1,4 @@
-"""OpenTelemetry tracing integration for CEO-OS.
+"""OpenTelemetry tracing integration for Construction-Enterprise-OS.
 
 This is a simplified version that can be enhanced later with actual
 OpenTelemetry exporters (Jaeger, Zipkin, OTLP).

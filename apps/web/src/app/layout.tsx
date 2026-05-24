@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CEO-OS | 建設業統合OS',
+  title: 'Construction-Enterprise-OS | 建設業統合OS',
   description:
     'Construction Enterprise Operating System - 建設・土木業界向け統合業務プラットフォーム',
 }

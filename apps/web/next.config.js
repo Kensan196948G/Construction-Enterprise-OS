@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@ceo-os/ui', '@ceo-os/core'],
+  transpilePackages: ['@construction-enterprise-os/ui', '@construction-enterprise-os/core'],
   output: 'standalone',
 };
 module.exports = nextConfig;

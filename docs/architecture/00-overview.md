@@ -1,9 +1,9 @@
-# Construction Enterprise OS (CEO-OS) 全体アーキテクチャ設計書
+# Construction-Enterprise-OS 全体アーキテクチャ設計書
 
 ## 1. プロジェクト定義
 
 ### 1.1 名称
-**Construction Enterprise OS（CEO-OS）** — 建設・土木業向け統合オペレーティングシステム
+**Construction-Enterprise-OS** — 建設・土木業向け統合オペレーティングシステム
 
 ### 1.2 目的
 建設・土木業における全業務・全データ・全プロセスを統合するデジタル基盤を提供する。

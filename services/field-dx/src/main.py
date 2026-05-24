@@ -1,4 +1,4 @@
-"""CEO-OS Field DX Service — 現場DX基幹サービス
+"""Construction-Enterprise-OS Field DX Service — 現場DX基幹サービス
 
 作業日報、出来形・進捗管理、品質管理を提供する。
 """
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Field DX Service",
+        title="Construction-Enterprise-OS Field DX Service",
         description="建設業統合OS 現場DXサービス — 作業日報・進捗管理・品質管理",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

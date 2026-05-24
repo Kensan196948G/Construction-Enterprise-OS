@@ -1,5 +1,5 @@
 """
-CEO-OS BIM/CIM Data Platform (BIM Service)
+Construction-Enterprise-OS BIM/CIM Data Platform (BIM Service)
 
 建設業向け統合OSのBIM/CIMデータプラットフォーム。
 IFCモデル管理、3Dモデルメタデータ、点群データ、デジタルツイン統合、
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -46,7 +46,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS BIM/CIM Service",
+        title="Construction-Enterprise-OS BIM/CIM Service",
         description="建設業統合OS BIM/CIMデータプラットフォーム",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

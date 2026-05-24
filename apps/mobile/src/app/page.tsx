@@ -38,7 +38,7 @@ export default function MobileHome() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-primary text-white shadow-md">
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold">CEO-OS</h1>
+          <h1 className="text-lg font-bold">Construction-Enterprise-OS</h1>
           <div className="flex items-center gap-2">
             <span className="text-xs opacity-80">現場モバイル</span>
             {isOnline ? (

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     M2M_TOKEN_EXPIRE_HOURS: int = 24
 
     # MFA
-    MFA_ISSUER: str = "CEO-OS"
+    MFA_ISSUER: str = "Construction-Enterprise-OS"
     MFA_TOKEN_VALIDITY_SECONDS: int = 30
 
     # セキュリティ

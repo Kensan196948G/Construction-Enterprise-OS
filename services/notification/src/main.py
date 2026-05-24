@@ -1,5 +1,5 @@
 """
-CEO-OS 統合通知基盤 (Notification Service)
+Construction-Enterprise-OS 統合通知基盤 (Notification Service)
 
 建設・土木業向け統合OSの通知サービス。
 全サービスからの通知を集約し、各種チャネル（アプリ内・メール等）で配信する。
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Notification Service",
+        title="Construction-Enterprise-OS Notification Service",
         description="建設業統合OS 通知サービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

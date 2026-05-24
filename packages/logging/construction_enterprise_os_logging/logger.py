@@ -1,8 +1,8 @@
-"""CEO-OS unified logging configuration.
+"""Construction-Enterprise-OS unified logging configuration.
 
 Provides structured JSON logging via structlog for all services.
 Usage:
-    from ceo_os_logging import get_logger
+    from construction_enterprise_os_logging import get_logger
     logger = get_logger(__name__)
     logger.info("user.login", user_id="xxx", ip="1.2.3.4")
 """
@@ -12,7 +12,7 @@ import structlog
 
 
 def setup_logging(
-    service_name: str = "ceo-os",
+    service_name: str = "construction-enterprise-os",
     log_level: str = "INFO",
 ) -> structlog.BoundLogger:
     """Configure structured logging for a service.
@@ -59,7 +59,7 @@ def setup_logging(
     return structlog.get_logger(service_name=service_name)
 
 
-def get_logger(name: str = "ceo-os") -> structlog.BoundLogger:
+def get_logger(name: str = "construction-enterprise-os") -> structlog.BoundLogger:
     """Get a structured logger instance."""
     return structlog.get_logger(name)
 

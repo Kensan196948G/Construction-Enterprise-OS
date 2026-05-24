@@ -161,7 +161,7 @@ ROLE_PERMISSION_MAP = {
 }
 
 # ── 管理ユーザ ──────────────────────────────────────────────────────
-ADMIN_EMAIL = "admin@ceo-os.local"
+ADMIN_EMAIL = "admin@construction-enterprise-os.local"
 ADMIN_PASSWORD = "AdminPass123!"
 ADMIN_DISPLAY_NAME = "システム管理者"
 
@@ -178,7 +178,7 @@ async def run_seed() -> None:
         if org is None:
             org = Organization(
                 id=ADMIN_ORG_ID,
-                name="CEO-OS 本社",
+                name="Construction-Enterprise-OS 本社",
                 name_kana="シーイーオーオーエスホンシャ",
                 type="company",
                 status="active",
@@ -188,9 +188,9 @@ async def run_seed() -> None:
             )
             db.add(org)
             await db.flush()
-            print("[seed] organization created: CEO-OS 本社")
+            print("[seed] organization created: Construction-Enterprise-OS 本社")
         else:
-            print("[seed] organization already exists: CEO-OS 本社")
+            print("[seed] organization already exists: Construction-Enterprise-OS 本社")
 
         # --- 2. ロール ---
         role_map: dict[str, Role] = {}

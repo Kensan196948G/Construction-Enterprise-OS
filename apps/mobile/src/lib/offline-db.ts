@@ -1,6 +1,6 @@
 import { openDB, DBSchema } from 'idb';
 
-interface CEOOSOfflineDB extends DBSchema {
+interface ConstructionEnterpriseOSOfflineDB extends DBSchema {
   'offline-reports': {
     key: string;
     value: { id: string; type: string; data: any; createdAt: string; synced: boolean };
@@ -17,7 +17,7 @@ interface CEOOSOfflineDB extends DBSchema {
 }
 
 export async function getOfflineDB() {
-  return openDB<CEOOSOfflineDB>('ceo-os-offline', 1, {
+  return openDB<ConstructionEnterpriseOSOfflineDB>('construction-enterprise-os-offline', 1, {
     upgrade(db) {
       const reportsStore = db.createObjectStore('offline-reports', { keyPath: 'id' });
       reportsStore.createIndex('by-synced', 'synced');

@@ -1,4 +1,4 @@
-# CEO-OS 開発用 Makefile
+# Construction-Enterprise-OS 開発用 Makefile
 
 .PHONY: help dev up down build test lint clean
 

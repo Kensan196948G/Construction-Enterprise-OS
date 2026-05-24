@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = "noreply@ceo-os.local"
+    SMTP_FROM_EMAIL: str = "noreply@construction-enterprise-os.local"
     SMTP_USE_TLS: bool = True
 
     JWT_PUBLIC_KEY: str = ""

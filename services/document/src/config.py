@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "ceo-os-documents"
+    MINIO_BUCKET: str = "construction-enterprise-os-documents"
     MINIO_SECURE: bool = False
     MAX_UPLOAD_SIZE_MB: int = 500
 

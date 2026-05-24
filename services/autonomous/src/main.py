@@ -1,5 +1,5 @@
 """
-CEO-OS 自律化エンジン (Autonomous Service)
+Construction-Enterprise-OS 自律化エンジン (Autonomous Service)
 
 建設・土木業向け統合OSのAIエージェント・デジタルツイン・自律施工サービス。
 自律型AIエージェント管理、デジタルツイン、シミュレーションを提供する。
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Autonomous Service",
+        title="Construction-Enterprise-OS Autonomous Service",
         description="建設業統合OS 自律型AIエージェント・デジタルツイン・自律施工サービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

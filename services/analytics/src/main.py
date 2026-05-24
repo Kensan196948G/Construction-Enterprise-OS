@@ -1,4 +1,4 @@
-"""CEO-OS Analytics Service — データレイク管理・BI分析サービス
+"""Construction-Enterprise-OS Analytics Service — データレイク管理・BI分析サービス
 
 データソース管理、ETLパイプライン、BIレポート機能を提供する。
 """
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Analytics Service",
+        title="Construction-Enterprise-OS Analytics Service",
         description="建設業統合OS アナリティクスサービス — データレイク管理・ETL・BI",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

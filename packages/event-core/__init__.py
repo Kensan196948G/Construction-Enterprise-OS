@@ -1,1 +1,1 @@
-# CEO-OS Event Core Package
+# Construction-Enterprise-OS Event Core Package

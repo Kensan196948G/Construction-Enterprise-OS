@@ -13,7 +13,7 @@ class EventSubscriber:
     def __init__(
         self,
         bootstrap_servers: str = "localhost:9092",
-        group_id: str = "ceo-os-default",
+        group_id: str = "construction-enterprise-os-default",
     ):
         self.bootstrap_servers = bootstrap_servers
         self.group_id = group_id

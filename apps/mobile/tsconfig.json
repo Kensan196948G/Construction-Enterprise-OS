@@ -16,8 +16,9 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@ceo-os/core": ["../../packages/core/src"],
-      "@ceo-os/ui/*": ["../../packages/ui/src/*"]
+      "@construction-enterprise-os/core": ["../../packages/core/src"],
+      "@construction-enterprise-os/core/*": ["../../packages/core/src/*"],
+      "@construction-enterprise-os/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

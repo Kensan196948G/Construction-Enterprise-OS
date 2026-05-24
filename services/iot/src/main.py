@@ -1,5 +1,5 @@
 """
-CEO-OS 統合IoT基盤 (IoT Service)
+Construction-Enterprise-OS 統合IoT基盤 (IoT Service)
 
 建設・土木業向け統合OSのIoTデバイス管理・センサーデータ収集サービス。
 MQTT経由のテレメトリ投入、デバイス管理、アラートルール評価を提供する。
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS IoT Service",
+        title="Construction-Enterprise-OS IoT Service",
         description="建設業統合OS IoTデバイス管理・テレメトリサービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

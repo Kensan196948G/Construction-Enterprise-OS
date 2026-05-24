@@ -36,7 +36,7 @@ def create_access_token(
         "device_id": device_id,
         "iat": int(now.timestamp()),
         "exp": int(expires.timestamp()),
-        "iss": "ceo-os-auth",
+        "iss": "construction-enterprise-os-auth",
         "jti": str(uuid.uuid4()),
     }
     return jwt.encode(payload, settings.jwt_private_key, algorithm=settings.JWT_ALGORITHM)
@@ -60,7 +60,7 @@ def create_m2m_token(
         "scopes": scopes,
         "iat": int(now.timestamp()),
         "exp": int(expires.timestamp()),
-        "iss": "ceo-os-auth",
+        "iss": "construction-enterprise-os-auth",
         "jti": str(uuid.uuid4()),
     }
     return jwt.encode(payload, settings.jwt_private_key, algorithm=settings.JWT_ALGORITHM)

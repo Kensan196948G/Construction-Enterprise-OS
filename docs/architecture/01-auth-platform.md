@@ -2,7 +2,7 @@
 
 ## 1. 責務
 
-CEO-OSの全サービス・全ユーザー・全デバイスに対する統合認証・認可を提供する「OSのログイン機能」。
+Construction-Enterprise-OSの全サービス・全ユーザー・全デバイスに対する統合認証・認可を提供する「OSのログイン機能」。
 
 ## 2. 機能要件
 
@@ -188,7 +188,7 @@ Access Token (JWT):
     "device_id": "device-uuid",
     "iat": 1716393600,
     "exp": 1716397200,   // 1時間
-    "iss": "ceo-os-auth",
+    "iss": "construction-enterprise-os-auth",
     "jti": "unique-token-id"
 }
 
@@ -205,7 +205,7 @@ M2M Token (Client Credentials):
     "scopes": ["ingest:iot-data", "read:sensors"],
     "iat": ...,
     "exp": ...,   // 24時間
-    "iss": "ceo-os-auth",
+    "iss": "construction-enterprise-os-auth",
     "jti": "..."
 }
 ```

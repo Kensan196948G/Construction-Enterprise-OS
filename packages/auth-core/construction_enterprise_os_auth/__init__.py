@@ -1,10 +1,10 @@
-"""CEO-OS Shared Authentication Middleware
+"""Construction-Enterprise-OS Shared Authentication Middleware
 
 全サービス共通のJWT認証ミドルウェア。
 各サービスはこのパッケージから `get_current_user` をインポートして利用する。
 
 使用例:
-    from ceo_os_auth import get_current_user, require_role, TokenData
+    from construction_enterprise_os_auth import get_current_user, require_role, TokenData
 
     @router.get("/protected")
     async def protected_route(token: TokenData = Depends(get_current_user)):

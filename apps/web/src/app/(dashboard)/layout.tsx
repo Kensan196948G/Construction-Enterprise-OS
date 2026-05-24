@@ -17,11 +17,12 @@ import {
   LogOut,
   ChevronDown,
   Bell,
+  User,
 } from 'lucide-react'
 
 const navigation = [
   { href: '/dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
-  { href: '/projects', label: '工事管理', icon: ClipboardList },
+  { href: '/projects', label: 'プロジェクト', icon: ClipboardList },
   { href: '/documents', label: '文書管理', icon: FileText },
   { href: '/gis', label: 'GIS', icon: Map },
   { href: '/iot', label: 'IoT', icon: Cpu },
@@ -56,7 +57,7 @@ export default function DashboardLayout({
         {/* Sidebar header */}
         <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
           <HardHat className="h-7 w-7 text-primary-600" />
-          <span className="text-lg font-bold text-gray-900">CEO-OS</span>
+          <span className="text-lg font-bold text-gray-900">Construction-Enterprise-OS</span>
           <button
             className="ml-auto lg:hidden text-gray-500 hover:text-gray-700"
             onClick={() => setSidebarOpen(false)}
@@ -93,14 +94,13 @@ export default function DashboardLayout({
         {/* Sidebar footer */}
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-sm font-bold">
-              TK
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-concrete-100 text-concrete-500">
+              <User className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                田中 健一
+              <p className="text-sm font-medium text-gray-500 truncate">
+                ログインしてください
               </p>
-              <p className="text-xs text-gray-500">現場監督</p>
             </div>
           </div>
         </div>
@@ -119,26 +119,13 @@ export default function DashboardLayout({
 
           <div className="flex-1" />
 
-          <button className="relative text-gray-500 hover:text-gray-700">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white">
-              3
-            </span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-bold">
-              TK
-            </div>
-            <span className="hidden sm:inline text-sm font-medium text-gray-700">
-              田中 健一
-            </span>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </div>
-
-          <button className="text-gray-400 hover:text-gray-600">
-            <LogOut className="h-5 w-5" />
-          </button>
+          <Link
+            href="/login"
+            className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>ログイン</span>
+          </Link>
         </header>
 
         {/* Page content */}

@@ -1,4 +1,4 @@
-"""CEO-OS ERP Service — 建設業向け統合ERP基幹サービス
+"""Construction-Enterprise-OS ERP Service — 建設業向け統合ERP基幹サービス
 
 工事台帳、予算管理、原価管理、請求管理を提供する。
 """
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS ERP Service",
+        title="Construction-Enterprise-OS ERP Service",
         description="建設業統合OS ERPサービス — 工事台帳・原価管理・請求管理",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

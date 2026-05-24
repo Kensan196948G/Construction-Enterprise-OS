@@ -26,7 +26,7 @@ async def tilejson_metadata() -> dict:
     """TileJSONメタデータ（プレースホルダー）"""
     return {
         "tilejson": "3.0.0",
-        "name": "CEO-OS GIS Tiles",
+        "name": "Construction-Enterprise-OS GIS Tiles",
         "description": "建設業統合OS マップタイルサービス",
         "scheme": "xyz",
         "tiles": [],

@@ -1,6 +1,6 @@
 {
-  "name": "CEO-OS 現場モバイル",
-  "short_name": "CEO-OS",
+  "name": "Construction-Enterprise-OS 現場モバイル",
+  "short_name": "Construction-Enterprise-OS",
   "description": "建設業統合OS 現場モバイルアプリ",
   "start_url": "/",
   "display": "standalone",

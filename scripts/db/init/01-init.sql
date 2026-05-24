@@ -1,4 +1,4 @@
--- CEO-OS データベース初期化
+-- Construction-Enterprise-OS データベース初期化
 -- Docker Compose起動時に自動実行されます
 -- ※ テーブル本体は Alembic マイグレーションで作成。ここではスキーマとシードデータのみ
 
@@ -25,7 +25,7 @@ SELECT *
 FROM (VALUES
     -- 本社
     ('00000000-0000-0000-0000-000000000001'::uuid, NULL,
-     'CEO-OS 本社', 'シーイーオーオーエスホンシャ', 'company', 'active',
+     'Construction-Enterprise-OS 本社', 'シーイーオーオーエスホンシャ', 'company', 'active',
      '{"address":"東京都千代田区丸の内1-1-1","established":"2024-04-01","tax_id":"T010000000001"}'::jsonb,
      now(), now()),
     -- 建設事業部

@@ -4,8 +4,8 @@ import React, { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "../../lib/utils";
-import type { MenuCategory, RoleId } from "@ceo-os/core/menu-structure";
-import { MENU_STRUCTURE, ROLES, ROLE_DEFAULT_OPEN } from "@ceo-os/core/menu-structure";
+import type { MenuCategory, RoleId } from "@construction-enterprise-os/core/menu-structure";
+import { MENU_STRUCTURE, ROLES, ROLE_DEFAULT_OPEN } from "@construction-enterprise-os/core/menu-structure";
 
 // ============================================
 // 型定義
@@ -371,7 +371,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-lg">🏗️</span>
             <span className="font-bold text-sm text-gray-900 truncate">
-              CEO-OS
+              Construction-Enterprise-OS
             </span>
           </div>
         )}
@@ -424,7 +424,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <>
               <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-              <span>488 tests PASS</span>
+              <span>451 tests PASS</span>
               <span className="ml-auto">v0.1.0</span>
             </>
           )}

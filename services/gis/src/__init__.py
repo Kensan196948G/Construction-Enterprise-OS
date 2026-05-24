@@ -1,2 +1,2 @@
-"""CEO-OS GIS (Geographic Information System) Service"""
+"""Construction-Enterprise-OS GIS (Geographic Information System) Service"""
 

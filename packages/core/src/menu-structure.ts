@@ -1,5 +1,5 @@
 /**
- * CEO-OS サイドメニュー構造定義
+ * Construction-Enterprise-OS サイドメニュー構造定義
  * 
  * 3階層構造: 大項目(カテゴリ) → 中項目(セクション) → 小項目(ページ)
  * 役割別に表示制御: site_supervisor(現場監督) / executive(経営層) / it_admin(IT管理者)

@@ -1,5 +1,5 @@
 """
-CEO-OS Security Service
+Construction-Enterprise-OS Security Service
 
 建設・土木業向けセキュリティ監視・インシデント管理サービス。
 SOC/SIEM, vulnerability scanning, security incident management.
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Security Service",
+        title="Construction-Enterprise-OS Security Service",
         description="建設業統合OS セキュリティ監視・インシデント管理",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

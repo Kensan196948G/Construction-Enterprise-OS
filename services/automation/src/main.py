@@ -1,5 +1,5 @@
 """
-CEO-OS 自動化・RPAエンジン (Automation Service)
+Construction-Enterprise-OS 自動化・RPAエンジン (Automation Service)
 
 ワークフロー自動化、スケジュールタスク、イベントトリガーを提供する。
 """
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -43,7 +43,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Automation Service",
+        title="Construction-Enterprise-OS Automation Service",
         description="建設業統合OS ワークフロー自動化・スケジュールタスク・イベントトリガーサービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

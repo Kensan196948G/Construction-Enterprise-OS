@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  transpilePackages: ['@ceo-os/ui', '@ceo-os/core'],
+  transpilePackages: ['@construction-enterprise-os/ui', '@construction-enterprise-os/core'],
 };
 const withPWA = nextConfig; // PWA will be added via next-pwa later
 module.exports = nextConfig;

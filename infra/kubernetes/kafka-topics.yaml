@@ -1,13 +1,13 @@
-# Kafka Topics for CEO-OS
+# Kafka Topics for Construction-Enterprise-OS
 # Applied via: kubectl apply -f kafka-topics.yaml
 # Or via Docker: kafka-topics.sh --create --topic <name> --partitions 3 --replication-factor 1
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.users
-  namespace: ceo-os
+  name: construction-enterprise-os.users
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1
@@ -18,10 +18,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.documents
-  namespace: ceo-os
+  name: construction-enterprise-os.documents
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1
@@ -32,10 +32,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.workflows
-  namespace: ceo-os
+  name: construction-enterprise-os.workflows
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1
@@ -46,10 +46,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.projects
-  namespace: ceo-os
+  name: construction-enterprise-os.projects
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1
@@ -61,10 +61,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.iot
-  namespace: ceo-os
+  name: construction-enterprise-os.iot
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 6
   replicas: 1
@@ -75,10 +75,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.safety
-  namespace: ceo-os
+  name: construction-enterprise-os.safety
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1
@@ -89,10 +89,10 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: ceo-os.notifications
-  namespace: ceo-os
+  name: construction-enterprise-os.notifications
+  namespace: construction-enterprise-os
   labels:
-    strimzi.io/cluster: ceo-os-kafka
+    strimzi.io/cluster: construction-enterprise-os-kafka
 spec:
   partitions: 3
   replicas: 1

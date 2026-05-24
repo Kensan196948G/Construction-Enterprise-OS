@@ -1,1 +1,1 @@
-"""CEO-OS BIM/CIM Data Platform Service"""
+"""Construction-Enterprise-OS BIM/CIM Data Platform Service"""

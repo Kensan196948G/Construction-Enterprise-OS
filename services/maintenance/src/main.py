@@ -1,5 +1,5 @@
 """
-CEO-OS Maintenance Service
+Construction-Enterprise-OS Maintenance Service
 
 建設業向け維持管理・災害復旧サービス。
 災害報告、復旧計画、維持管理記録、点検スケジュール。
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Maintenance Service",
+        title="Construction-Enterprise-OS Maintenance Service",
         description="建設業統合OS 維持管理・災害復旧",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

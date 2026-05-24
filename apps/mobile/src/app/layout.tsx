@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CEO-OS 現場モバイル',
+  title: 'Construction-Enterprise-OS 現場モバイル',
   description: '建設業統合OS 現場モバイルアプリ',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'CEO-OS' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Construction-Enterprise-OS' },
 };
 
 export const viewport: Viewport = {

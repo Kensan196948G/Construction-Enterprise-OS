@@ -1,5 +1,5 @@
 """
-CEO-OS 統合認証基盤 (Auth Service)
+Construction-Enterprise-OS 統合認証基盤 (Auth Service)
 
 建設・土木業向け統合OSの認証・認可サービス。
 全サービスの認証起点として機能する。
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Auth Service",
+        title="Construction-Enterprise-OS Auth Service",
         description="建設業統合OS 認証・認可サービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

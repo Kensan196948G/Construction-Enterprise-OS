@@ -1,4 +1,4 @@
-"""Additional structlog processors for CEO-OS."""
+"""Additional structlog processors for Construction-Enterprise-OS."""
 
 import os
 import socket

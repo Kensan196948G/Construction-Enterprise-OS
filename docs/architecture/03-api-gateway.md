@@ -158,7 +158,7 @@ import uuid
 class CloudEvent:
     """CloudEvents 仕様準拠"""
     specversion: str = "1.0"
-    type: str                    # 例: "ceo-os.user.created"
+    type: str                    # 例: "construction-enterprise-os.user.created"
     source: str                  # 例: "/services/auth"
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     time: datetime = field(default_factory=datetime.utcnow)
@@ -169,28 +169,28 @@ class CloudEvent:
 # 主要イベントタイプ
 class EventTypes:
     # 認証系
-    USER_CREATED = "ceo-os.user.created"
-    USER_LOGIN = "ceo-os.user.login"
-    USER_ROLE_CHANGED = "ceo-os.user.role_changed"
+    USER_CREATED = "construction-enterprise-os.user.created"
+    USER_LOGIN = "construction-enterprise-os.user.login"
+    USER_ROLE_CHANGED = "construction-enterprise-os.user.role_changed"
     
     # 文書系
-    DOCUMENT_UPLOADED = "ceo-os.document.uploaded"
-    DOCUMENT_APPROVED = "ceo-os.document.approved"
-    DOCUMENT_VERSIONED = "ceo-os.document.versioned"
+    DOCUMENT_UPLOADED = "construction-enterprise-os.document.uploaded"
+    DOCUMENT_APPROVED = "construction-enterprise-os.document.approved"
+    DOCUMENT_VERSIONED = "construction-enterprise-os.document.versioned"
     
     # ワークフロー系
-    WORKFLOW_STARTED = "ceo-os.workflow.started"
-    WORKFLOW_APPROVED = "ceo-os.workflow.approved"
-    WORKFLOW_REJECTED = "ceo-os.workflow.rejected"
+    WORKFLOW_STARTED = "construction-enterprise-os.workflow.started"
+    WORKFLOW_APPROVED = "construction-enterprise-os.workflow.approved"
+    WORKFLOW_REJECTED = "construction-enterprise-os.workflow.rejected"
     
     # IoT系
-    IOT_TELEMETRY = "ceo-os.iot.telemetry"
-    IOT_ALERT = "ceo-os.iot.alert"
-    IOT_DEVICE_ONLINE = "ceo-os.iot.device.online"
+    IOT_TELEMETRY = "construction-enterprise-os.iot.telemetry"
+    IOT_ALERT = "construction-enterprise-os.iot.alert"
+    IOT_DEVICE_ONLINE = "construction-enterprise-os.iot.device.online"
     
     # プロジェクト系
-    PROJECT_CREATED = "ceo-os.project.created"
-    PROJECT_STATUS_CHANGED = "ceo-os.project.status_changed"
+    PROJECT_CREATED = "construction-enterprise-os.project.created"
+    PROJECT_STATUS_CHANGED = "construction-enterprise-os.project.status_changed"
 ```
 
 ### 2.4 イベント駆動フロー例: 文書アップロード

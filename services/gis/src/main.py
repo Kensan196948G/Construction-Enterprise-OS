@@ -1,5 +1,5 @@
 """
-CEO-OS 統合GIS基盤 (GIS Service)
+Construction-Enterprise-OS 統合GIS基盤 (GIS Service)
 
 建設・土木業向け統合OSの地理空間情報サービス。
 PostGISを使用して工事現場・インフラ設備・危険区域の空間データを管理する。
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -45,7 +45,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS GIS Service",
+        title="Construction-Enterprise-OS GIS Service",
         description="建設業統合OS 地理空間情報サービス",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

@@ -8,7 +8,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 import structlog
 
-logger = structlog.get_logger("ceo-os.http")
+logger = structlog.get_logger("construction-enterprise-os.http")
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):

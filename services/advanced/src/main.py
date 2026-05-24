@@ -1,5 +1,5 @@
 """
-CEO-OS Advanced Service
+Construction-Enterprise-OS Advanced Service
 
 港湾施工管理・点検AI・AI設計照査・予知保全を統合したビジネス層サービス。
 """
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
@@ -43,7 +43,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Advanced Service",
+        title="Construction-Enterprise-OS Advanced Service",
         description="港湾施工管理・点検AI・AI設計照査・予知保全",
         version="0.1.0",
         docs_url="/docs" if settings.ENVIRONMENT == "development" else None,

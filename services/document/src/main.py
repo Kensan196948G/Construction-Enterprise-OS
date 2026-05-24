@@ -1,5 +1,5 @@
 """
-CEO-OS 文書管理基盤 (Document Service)
+Construction-Enterprise-OS 文書管理基盤 (Document Service)
 
 建設・土木業向け統合OSの文書管理サービス。
 ファイルストレージ（MinIO）、メタデータ管理（PostgreSQL）、バージョン管理を提供する。
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize shared auth middleware
     try:
-        from ceo_os_auth import configure_auth
+        from construction_enterprise_os_auth import configure_auth
         configure_auth(
             jwt_public_key=getattr(_settings, 'jwt_public_key', getattr(_settings, 'JWT_PUBLIC_KEY', "dev-key")),
             jwt_algorithm=getattr(_settings, 'JWT_ALGORITHM', "HS256"),
@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
     _settings = get_settings()
 
     app = FastAPI(
-        title="CEO-OS Document Service",
+        title="Construction-Enterprise-OS Document Service",
         description="建設業統合OS 文書管理サービス",
         version="0.1.0",
         docs_url="/docs" if _settings.ENVIRONMENT == "development" else None,

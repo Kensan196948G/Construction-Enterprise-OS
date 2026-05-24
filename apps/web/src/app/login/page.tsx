@@ -10,7 +10,7 @@ export default function LoginPage() {
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur mb-4">
             <HardHat className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-black text-white">CEO-OS</h1>
+          <h1 className="text-3xl font-black text-white">Construction-Enterprise-OS</h1>
           <p className="mt-2 text-primary-200 text-sm">
             建設業統合オペレーティングシステム
           </p>
