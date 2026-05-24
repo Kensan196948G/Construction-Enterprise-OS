@@ -1,4 +1,4 @@
-"""Autonomous データモデル (AutonomousAgent, DigitalTwin, Task, Simulation)"""
+"""Autonomous データモデル (AutonomousAgent, DigitalTwin, Task, Simulation, AutonomousOperation, MarineRobot, AutonomousControl)"""
 
 import uuid
 from datetime import datetime
@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     Numeric,
@@ -125,3 +126,73 @@ class ConstructionSimulation(Base):
     )
 
     digital_twin: Mapped["DigitalTwin"] = relationship("DigitalTwin", back_populates="simulations")
+
+
+class AutonomousOperation(Base):
+    __tablename__ = "autonomous_operations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    digital_twin_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("autonomous.digital_twins.id")
+    )
+    name: Mapped[str] = mapped_column(String(500), nullable=False)
+    operation_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    equipment_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    status: Mapped[str] = mapped_column(String(20), default="planned")
+    plan_data: Mapped[dict] = mapped_column("plan_data", JSONB, default=dict)
+    execution_log: Mapped[list] = mapped_column("execution_log", JSONB, default=list)
+    progress_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    safety_status: Mapped[str] = mapped_column(String(20), default="normal")
+    area: Mapped[dict | None] = mapped_column("area", JSONB)
+    start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    operator_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    digital_twin: Mapped["DigitalTwin | None"] = relationship("DigitalTwin")
+
+
+class MarineRobot(Base):
+    __tablename__ = "marine_robotics"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    robot_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    robot_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="docked")
+    mission_type: Mapped[str | None] = mapped_column(String(50))
+    location: Mapped[dict | None] = mapped_column("location", JSONB)
+    depth_meters: Mapped[float | None] = mapped_column(Float)
+    battery_level: Mapped[int | None] = mapped_column(Integer)
+    mission_plan: Mapped[dict] = mapped_column("mission_plan", JSONB, default=dict)
+    telemetry: Mapped[dict] = mapped_column("telemetry", JSONB, default=dict)
+    last_contact: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deployed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    recovered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class AutonomousControl(Base):
+    __tablename__ = "autonomous_controls"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    target_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    target_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    command_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    parameters: Mapped[dict] = mapped_column("parameters", JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    issued_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result: Mapped[dict | None] = mapped_column("result", JSONB)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

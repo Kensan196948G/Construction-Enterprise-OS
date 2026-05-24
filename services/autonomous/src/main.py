@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import agents, digital_twins, tasks, simulations, health
+from .api import agents, controls, digital_twins, marine_robots, operations, simulations, tasks, health
 from .models.base import engine
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,9 @@ def create_app() -> FastAPI:
     app.include_router(digital_twins.router, prefix="/api/v1/autonomous/digital-twins", tags=["digital-twins"])
     app.include_router(tasks.router, prefix="/api/v1/autonomous/tasks", tags=["tasks"])
     app.include_router(simulations.router, prefix="/api/v1/autonomous/simulations", tags=["simulations"])
+    app.include_router(operations.router, prefix="/api/v1/autonomous/operations", tags=["operations"])
+    app.include_router(marine_robots.router, prefix="/api/v1/autonomous/marine-robots", tags=["marine-robots"])
+    app.include_router(controls.router, prefix="/api/v1/autonomous/controls", tags=["controls"])
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

@@ -11,6 +11,12 @@ from src.models.base import get_db
 from src.middleware.auth import get_current_user, get_current_client
 
 
+class MockRow:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
 class MockResult:
     def __init__(self, return_value=None):
         self._return_value = return_value
@@ -121,6 +127,69 @@ def _make_mock_simulation(sim_id=None):
     s.created_by = None
     s.created_at = datetime.now(timezone.utc)
     return s
+
+
+def _make_mock_operation(op_id=None):
+    op = MockRow(
+        id=op_id or uuid4(),
+        organization_id=uuid4(),
+        project_id=None,
+        digital_twin_id=None,
+        name="Mock Excavation",
+        operation_type="excavation",
+        equipment_id=None,
+        status="planned",
+        plan_data={},
+        execution_log=[],
+        progress_percent=0,
+        safety_status="normal",
+        area=None,
+        start_time=None,
+        end_time=None,
+        operator_id=None,
+        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+    )
+    return op
+
+
+def _make_mock_robot(robot_id=None):
+    robot = MockRow(
+        id=robot_id or uuid4(),
+        organization_id=uuid4(),
+        project_id=None,
+        robot_name="Mock AUV-7",
+        robot_type="auv",
+        status="docked",
+        mission_type="survey",
+        location={"type": "Point", "coordinates": [139.76, 35.68]},
+        depth_meters=12.5,
+        battery_level=95,
+        mission_plan={},
+        telemetry={},
+        last_contact=None,
+        deployed_at=None,
+        recovered_at=None,
+        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+    )
+    return robot
+
+
+def _make_mock_control(ctrl_id=None):
+    ctrl = MockRow(
+        id=ctrl_id or uuid4(),
+        organization_id=uuid4(),
+        target_id=uuid4(),
+        target_type="operation",
+        command_type="start",
+        parameters={},
+        status="pending",
+        issued_by=uuid4(),
+        executed_at=None,
+        result=None,
+        error_message=None,
+        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+    )
+    return ctrl
 
 
 async def _mock_get_current_user():
@@ -484,6 +553,362 @@ def test_list_agents(client, auth_headers):
     data = response.json()
     assert data["success"] is True
     assert data["data"]["total"] == 1
+
+
+# ============================================
+# Test 18: Operation CRUD - Create
+# ============================================
+def test_create_operation(client, auth_headers):
+    mock_op = _make_mock_operation()
+
+    import src.api.operations as ops_module
+    ops_module.create_operation = AsyncMock(return_value=mock_op)
+
+    response = client.post(
+        "/api/v1/autonomous/operations",
+        json={
+            "organization_id": "00000000-0000-0000-0000-000000000001",
+            "name": "Test Excavation",
+            "operation_type": "excavation",
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["name"] == "Mock Excavation"
+
+
+# ============================================
+# Test 19: Operation CRUD - Get
+# ============================================
+def test_get_operation(client, auth_headers):
+    op_id = uuid4()
+    mock_op = _make_mock_operation(op_id=op_id)
+
+    import src.api.operations as ops_module
+    ops_module.get_operation_by_id = AsyncMock(return_value=mock_op)
+
+    response = client.get(
+        f"/api/v1/autonomous/operations/{op_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 20: Operation CRUD - Update
+# ============================================
+def test_update_operation(client, auth_headers):
+    op_id = uuid4()
+    mock_op = _make_mock_operation(op_id=op_id)
+
+    import src.api.operations as ops_module
+    ops_module.update_operation = AsyncMock(return_value=mock_op)
+
+    response = client.put(
+        f"/api/v1/autonomous/operations/{op_id}",
+        json={"name": "Updated Excavation"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 21: Operation CRUD - Delete
+# ============================================
+def test_delete_operation(client, auth_headers):
+    op_id = uuid4()
+
+    import src.api.operations as ops_module
+    ops_module.delete_operation = AsyncMock(return_value=True)
+
+    response = client.delete(
+        f"/api/v1/autonomous/operations/{op_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 22: Operation Start
+# ============================================
+def test_start_operation(client, auth_headers):
+    op_id = uuid4()
+    mock_op = _make_mock_operation(op_id=op_id)
+
+    import src.api.operations as ops_module
+    ops_module.start_operation = AsyncMock(return_value=mock_op)
+
+    response = client.post(
+        f"/api/v1/autonomous/operations/{op_id}/start",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 23: Operation Emergency Stop
+# ============================================
+def test_emergency_stop_operation(client, auth_headers):
+    op_id = uuid4()
+    mock_op = _make_mock_operation(op_id=op_id)
+
+    import src.api.operations as ops_module
+    ops_module.emergency_stop_operation = AsyncMock(return_value=mock_op)
+
+    response = client.post(
+        f"/api/v1/autonomous/operations/{op_id}/emergency-stop",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 24: Operation Progress
+# ============================================
+def test_get_operation_progress(client, auth_headers):
+    op_id = uuid4()
+
+    import src.api.operations as ops_module
+    ops_module.get_operation_progress = AsyncMock(return_value={
+        "operation_id": str(op_id),
+        "name": "Excavation Job",
+        "status": "in_progress",
+        "progress_percent": 45.5,
+        "safety_status": "normal",
+        "execution_log": [],
+    })
+
+    response = client.get(
+        f"/api/v1/autonomous/operations/{op_id}/progress",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["progress_percent"] == 45.5
+
+
+# ============================================
+# Test 25: Operation List
+# ============================================
+def test_list_operations(client, auth_headers):
+    mock_op = _make_mock_operation()
+
+    import src.api.operations as ops_module
+    ops_module.get_operations_paginated = AsyncMock(return_value=([mock_op], 1))
+
+    response = client.get(
+        "/api/v1/autonomous/operations?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+
+
+# ============================================
+# Test 26: Marine Robot CRUD - Create
+# ============================================
+def test_create_marine_robot(client, auth_headers):
+    mock_robot = _make_mock_robot()
+
+    import src.api.marine_robots as robots_module
+    robots_module.create_marine_robot = AsyncMock(return_value=mock_robot)
+
+    response = client.post(
+        "/api/v1/autonomous/marine-robots",
+        json={
+            "organization_id": "00000000-0000-0000-0000-000000000001",
+            "robot_name": "Test AUV",
+            "robot_type": "auv",
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["robot_name"] == "Mock AUV-7"
+
+
+# ============================================
+# Test 27: Marine Robot CRUD - Get
+# ============================================
+def test_get_marine_robot(client, auth_headers):
+    robot_id = uuid4()
+    mock_robot = _make_mock_robot(robot_id=robot_id)
+
+    import src.api.marine_robots as robots_module
+    robots_module.get_marine_robot_by_id = AsyncMock(return_value=mock_robot)
+
+    response = client.get(
+        f"/api/v1/autonomous/marine-robots/{robot_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 28: Marine Robot Deploy
+# ============================================
+def test_deploy_marine_robot(client, auth_headers):
+    robot_id = uuid4()
+    mock_robot = _make_mock_robot(robot_id=robot_id)
+
+    import src.api.marine_robots as robots_module
+    robots_module.deploy_marine_robot = AsyncMock(return_value=mock_robot)
+
+    response = client.post(
+        f"/api/v1/autonomous/marine-robots/{robot_id}/deploy",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 29: Marine Robot Telemetry
+# ============================================
+def test_get_marine_robot_telemetry(client, auth_headers):
+    robot_id = uuid4()
+
+    import src.api.marine_robots as robots_module
+    robots_module.get_marine_robot_telemetry = AsyncMock(return_value={
+        "robot_id": str(robot_id),
+        "robot_name": "Test AUV",
+        "status": "operating",
+        "telemetry": {"speed": 1.5, "heading": 270},
+        "battery_level": 78,
+        "location": {"type": "Point", "coordinates": [139.76, 35.68]},
+        "last_contact": None,
+    })
+
+    response = client.get(
+        f"/api/v1/autonomous/marine-robots/{robot_id}/telemetry",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["battery_level"] == 78
+
+
+# ============================================
+# Test 30: Marine Robot List
+# ============================================
+def test_list_marine_robots(client, auth_headers):
+    mock_robot = _make_mock_robot()
+
+    import src.api.marine_robots as robots_module
+    robots_module.get_marine_robots_paginated = AsyncMock(return_value=([mock_robot], 1))
+
+    response = client.get(
+        "/api/v1/autonomous/marine-robots?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+
+
+# ============================================
+# Test 31: Control - Send Command
+# ============================================
+def test_send_control_command(client, auth_headers):
+    mock_ctrl = _make_mock_control()
+
+    import src.api.controls as ctrl_module
+    ctrl_module.send_control_command = AsyncMock(return_value=mock_ctrl)
+
+    response = client.post(
+        "/api/v1/autonomous/controls",
+        json={
+            "organization_id": "00000000-0000-0000-0000-000000000001",
+            "target_id": "00000000-0000-0000-0000-000000000010",
+            "target_type": "operation",
+            "command_type": "start",
+            "parameters": {"speed": "medium"},
+            "issued_by": "00000000-0000-0000-0000-000000000001",
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 32: Control - Get Pending Commands
+# ============================================
+def test_get_pending_commands(client, auth_headers):
+    mock_ctrl = _make_mock_control()
+
+    import src.api.controls as ctrl_module
+    ctrl_module.get_pending_controls = AsyncMock(return_value=([mock_ctrl], 1))
+
+    response = client.get(
+        "/api/v1/autonomous/controls?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+
+
+# ============================================
+# Test 33: Control - Get Command History for Target
+# ============================================
+def test_get_target_command_history(client, auth_headers):
+    target_id = uuid4()
+    mock_ctrl = _make_mock_control()
+
+    import src.api.controls as ctrl_module
+    ctrl_module.get_controls_for_target = AsyncMock(return_value=([mock_ctrl], 1))
+
+    response = client.get(
+        f"/api/v1/autonomous/controls/target/operation/{target_id}?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+
+
+# ============================================
+# Test 34: Control - Get Single Command
+# ============================================
+def test_get_control_command(client, auth_headers):
+    ctrl_id = uuid4()
+    mock_ctrl = _make_mock_control(ctrl_id=ctrl_id)
+
+    import src.api.controls as ctrl_module
+    ctrl_module.get_control_by_id = AsyncMock(return_value=mock_ctrl)
+
+    response = client.get(
+        f"/api/v1/autonomous/controls/{ctrl_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
 
 
 # ============================================

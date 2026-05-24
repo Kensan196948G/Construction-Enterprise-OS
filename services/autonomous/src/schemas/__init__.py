@@ -206,3 +206,162 @@ class SimulationResponse(BaseModel):
 class SimulationListResponse(BaseModel):
     simulations: list[SimulationResponse]
     total: int
+
+
+# ============================================
+# Autonomous Operations
+# ============================================
+class OperationCreateRequest(BaseModel):
+    organization_id: UUID
+    project_id: UUID | None = None
+    digital_twin_id: UUID | None = None
+    name: str = Field(min_length=1, max_length=500)
+    operation_type: str = Field(min_length=1, max_length=50)
+    equipment_id: UUID | None = None
+    plan_data: dict = Field(default_factory=dict)
+    area: dict | None = None
+    operator_id: UUID | None = None
+
+
+class OperationUpdateRequest(BaseModel):
+    name: str | None = None
+    operation_type: str | None = None
+    equipment_id: UUID | None = None
+    plan_data: dict | None = None
+    area: dict | None = None
+    operator_id: UUID | None = None
+
+
+class OperationResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    project_id: UUID | None
+    digital_twin_id: UUID | None
+    name: str
+    operation_type: str
+    equipment_id: UUID | None
+    status: str
+    plan_data: dict
+    execution_log: list
+    progress_percent: float
+    safety_status: str
+    area: dict | None
+    start_time: datetime | None
+    end_time: datetime | None
+    operator_id: UUID | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class OperationListResponse(BaseModel):
+    operations: list[OperationResponse]
+    total: int
+
+
+class OperationProgressResponse(BaseModel):
+    operation_id: UUID
+    name: str
+    status: str
+    progress_percent: float
+    safety_status: str
+    execution_log: list
+
+
+# ============================================
+# Marine Robotics
+# ============================================
+class MarineRobotCreateRequest(BaseModel):
+    organization_id: UUID
+    project_id: UUID | None = None
+    robot_name: str = Field(min_length=1, max_length=255)
+    robot_type: str = Field(min_length=1, max_length=50)
+    mission_type: str | None = None
+    location: dict | None = None
+    depth_meters: float | None = None
+    battery_level: int | None = Field(None, ge=0, le=100)
+    mission_plan: dict = Field(default_factory=dict)
+
+
+class MarineRobotUpdateRequest(BaseModel):
+    robot_name: str | None = None
+    robot_type: str | None = None
+    mission_type: str | None = None
+    location: dict | None = None
+    depth_meters: float | None = None
+    battery_level: int | None = Field(None, ge=0, le=100)
+    mission_plan: dict | None = None
+
+
+class MarineRobotResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    project_id: UUID | None
+    robot_name: str
+    robot_type: str
+    status: str
+    mission_type: str | None
+    location: dict | None
+    depth_meters: float | None
+    battery_level: int | None
+    mission_plan: dict
+    telemetry: dict
+    last_contact: datetime | None
+    deployed_at: datetime | None
+    recovered_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MarineRobotListResponse(BaseModel):
+    robots: list[MarineRobotResponse]
+    total: int
+
+
+class MarineRobotTelemetryResponse(BaseModel):
+    robot_id: UUID
+    robot_name: str
+    status: str
+    telemetry: dict
+    battery_level: int | None
+    location: dict | None
+    last_contact: datetime | None
+
+
+class MissionPlanRequest(BaseModel):
+    mission_plan: dict = Field(default_factory=dict)
+
+
+# ============================================
+# Autonomous Controls
+# ============================================
+class ControlSendRequest(BaseModel):
+    organization_id: UUID
+    target_id: UUID
+    target_type: str = Field(min_length=1, max_length=50)
+    command_type: str = Field(min_length=1, max_length=50)
+    parameters: dict = Field(default_factory=dict)
+    issued_by: UUID
+
+
+class ControlResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    target_id: UUID
+    target_type: str
+    command_type: str
+    parameters: dict
+    status: str
+    issued_by: UUID
+    executed_at: datetime | None
+    result: dict | None
+    error_message: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ControlListResponse(BaseModel):
+    controls: list[ControlResponse]
+    total: int
