@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--disable-wasm-trap-handler' next dev -H 0.0.0.0 -p 3100",
+    "dev": "NODE_OPTIONS='--disable-wasm-trap-handler --max-old-space-size=4096' next dev -H 0.0.0.0 -p 3100",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
