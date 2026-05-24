@@ -17,7 +17,13 @@ class Settings(BaseSettings):
     GATEWAY_PORT: int = 9000
     DEBUG: bool = True
 
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3100",
+        "http://localhost:3101",
+        "http://0.0.0.0:3100",
+        "http://0.0.0.0:3101",
+    ]
 
     JWT_PUBLIC_KEY: str = "dev-only-do-not-use-in-production"
     JWT_ALGORITHM: str = "HS256"

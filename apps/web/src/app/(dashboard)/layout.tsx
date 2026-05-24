@@ -54,8 +54,8 @@ export default function DashboardLayout({
     }
   }, [token, router]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 

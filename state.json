@@ -82,12 +82,12 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T07:00:43.312Z"
+    "last_pre_compact_at": "2026-05-24T07:08:34.956Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T07:02:14.807Z",
+    "current_session_start_at": "2026-05-24T07:09:57.883Z",
     "last_trigger": "manual",
-    "last_stop_at": "2026-05-24T06:32:19.697Z"
+    "last_stop_at": "2026-05-24T07:03:22.985Z"
   },
   "dreaming": {
     "patterns": [],
@@ -134,6 +134,44 @@
         "services/erp/src/models/base.py"
       ],
       "truncated": true
+    },
+    {
+      "at": "2026-05-24T07:03:23.001Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 100 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/next.config.js",
+        "apps/web/src/app/(dashboard)/documents/page.tsx",
+        "apps/web/src/app/(dashboard)/gis/page.tsx",
+        "apps/web/src/app/(dashboard)/iot/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/page.tsx",
+        "apps/web/src/app/(dashboard)/workflows/page.tsx",
+        "apps/web/src/app/login/page.tsx",
+        "apps/web/src/lib/api-client.ts",
+        "apps/web/src/lib/api/construction.ts",
+        "apps/web/src/lib/api/documents.ts",
+        "apps/web/src/lib/api/gis.ts",
+        "apps/web/src/lib/api/iot.ts",
+        "apps/web/src/lib/api/workflows.ts",
+        "apps/web/src/lib/store/auth.ts",
+        "services/advanced/src/api/design_review.py",
+        "services/advanced/src/api/inspections_ai.py",
+        "services/advanced/src/api/marine.py",
+        "services/advanced/src/api/predictive.py",
+        "services/advanced/src/models/base.py",
+        "services/advanced/src/schemas/__init__.py",
+        "services/advanced/src/services/advanced_service.py",
+        "services/advanced/tests/test_advanced.py",
+        "services/ai/src/api/embeddings.py",
+        "services/ai/src/api/llm.py",
+        "services/ai/src/api/prompts.py",
+        "services/ai/src/api/rag.py",
+        "services/ai/src/models/__init__.py",
+        "services/ai/src/models/base.py",
+        "services/ai/src/schemas/__init__.py"
+      ],
+      "truncated": true
     }
   ],
   "learning": {
@@ -146,8 +184,13 @@
           "last_used": "2026-05-24T06:55:47.575Z",
           "last_description": "Update projects and workflows dashboard pages"
         },
-        "_total_agent_calls": 3,
-        "_last_agent_call_at": "2026-05-24T06:55:47.575Z"
+        "_total_agent_calls": 5,
+        "_last_agent_call_at": "2026-05-24T07:07:36.025Z",
+        "feature-dev_code-architect": {
+          "call_count": 2,
+          "last_used": "2026-05-24T07:07:36.025Z",
+          "last_description": "Docker Compose フルスタック整備"
+        }
       }
     }
   }
