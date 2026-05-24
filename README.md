@@ -99,32 +99,54 @@ ceo-os/
 
 ---
 
-## 📊 開発状況
+## 📊 開発状況 (5レイヤアーキテクチャ)
 
-### ✅ 完了済み
+| 🔢 レイヤ | コンポーネント | サービス | 🧪 テスト | 状態 |
+|---|---|---|---|---|
+| **① Foundation** | 🔐 認証基盤 | `services/auth/` | 30 | ✅ |
+| | 🌐 API Gateway | `services/gateway/` | 9 | ✅ |
+| | 📨 イベント基盤 | `packages/event-core/` | - | ✅ |
+| | 📊 共通ログ | `packages/logging/` | 24 | ✅ |
+| | 🔔 共通通知 | `services/notification/` | 13 | ✅ |
+| | 📋 マスタデータ | `services/auth/seed.py` | - | ✅ |
+| | 🛡️ 権限管理 | `services/auth/` (RBAC) | - | ✅ |
+| | 📝 監査証跡 | `services/auth/` (Audit) | - | ✅ |
+| | 🎨 統合UI | `packages/ui/` + `apps/web/` | - | ✅ |
+| **② Data&AI** | 🗺️ GIS | `services/gis/` | 25 | ✅ |
+| | 📄 文書管理 | `services/document/` | 12 | ✅ |
+| | 📡 IoT | `services/iot/` | 22 | ✅ |
+| | 🤖 AI | `services/ai/` | 29 | ✅ |
+| | 🏗️ BIM/CIM | `services/bim/` | 35 | ✅ |
+| | 🗄️ データレイク | 未着手 | - | ⚪ |
+| | 🧬 ベクトルDB | 未着手 | - | ⚪ |
+| | 👁️ OCR/画像AI | 未着手 | - | ⚪ |
+| | 📈 分析基盤 | 未着手 | - | ⚪ |
+| **③ Platform** | 🔄 ワークフロー | `services/workflow/` | 17 | ✅ |
+| | 🔒 セキュリティ | `services/security/` | 23 | ✅ |
+| | 🤝 協力会社連携 | `services/partner/` | 21 | ✅ |
+| | 📱 モバイル/PWA | `apps/mobile/` | - | ✅ |
+| | ⚡ 自動化 | 未着手 | - | ⚪ |
+| | 🏢 BIM Viewer | 未着手 | - | ⚪ |
+| | 🌍 GIS Viewer | 未着手 | - | ⚪ |
+| | 📡 IoT管理 | 未着手 | - | ⚪ |
+| **④ Business** | 💰 ERP/経営 | `services/erp/` | 27 | ✅ |
+| | ⛑️ 安全管理 | `services/safety/` | 14 | ✅ |
+| | 🏗️ 現場DX | `services/field-dx/` | 20 | ✅ |
+| | 🌊 災害復旧 | `services/maintenance/` | 18 | ✅ |
+| | 🔧 維持管理 | `services/maintenance/` | 18 | ✅ |
+| | 🚢 港湾施工 | 未着手 | - | ⚪ |
+| | 🔍 点検AI | 未着手 | - | ⚪ |
+| | 📐 施工管理 | 未着手 | - | ⚪ |
+| | 📋 AI設計照査 | 未着手 | - | ⚪ |
+| | 🔮 予知保全 | 未着手 | - | ⚪ |
+| **⑤ Autonomous** | 🧠 AI Agent | 未着手 | - | ⚪ |
+| | 🚜 自律施工 | 未着手 | - | ⚪ |
+| | 🎯 自動最適化 | 未着手 | - | ⚪ |
+| | 👥 デジタルツイン | 未着手 | - | ⚪ |
+| | 🌊 海洋ロボティクス | 未着手 | - | ⚪ |
+| | 🎮 自律制御 | 未着手 | - | ⚪ |
 
-| 📦 領域 | 📝 内容 | 🧪 テスト |
-|---|---|---|
-| 🔐 **認証基盤** | 認証API完全実装 (login/refresh/logout/MFA) | 30/30 PASS |
-| 🔐 **ユーザー管理** | ユーザーCRUD + ロール管理 + 権限制御 | ✅ |
-| 🔐 **APIクライアント** | M2Mトークン + OAuth2 Client Credentials | ✅ |
-| 🎨 **Design System** | 18種 shadcn/ui コンポーネント | - |
-| 🏗️ **フロントエンド** | Next.js 14 スケルトン (ランディング/ログイン/ダッシュボード) | - |
-| 🗄️ **データベース** | Alembic マイグレーション (10テーブル + 4enum) | ✅ |
-| 🗄️ **シードデータ** | 組織・ロール・権限・管理者ユーザー | ✅ |
-| 🐳 **Docker環境** | PostgreSQL/Redis/Kafka/ES/MinIO/RabbitMQ | ✅ |
-| 🔄 **CI/CD** | GitHub Actions (lint/test/build/security) | ✅ |
-
-### 🚧 実装中 / 次期予定
-
-| 📦 領域 | 📝 予定 | 🎯 優先度 |
-|---|---|---|
-| 🌐 **API Gateway** | Kong/Traefik 設定 | 🔴 High |
-| 📨 **イベント基盤** | Kafka トピック定義 + 発行/購読 | 🔴 High |
-| 🔔 **通知基盤** | Email/SMS/Push/InApp | 🟡 Medium |
-| 📊 **ログ基盤** | ELK統合 + OpenTelemetry | 🟡 Medium |
-| 🗺️ **GIS基盤** | PostGIS API | 🟡 Medium |
-| 📄 **文書管理** | MinIO連携 + OCR基盤 | 🟡 Medium |
+> **総計: 15サービス + 7パッケージ + 3アプリ = 449ファイル | 339 tests ALL PASS**
 
 ---
 
@@ -215,4 +237,4 @@ Proprietary - All Rights Reserved
 
 ---
 
-> **最終更新**: 2026-05-24 | **ビルド番号**: 3 | **ステータス**: 🟢 Build Phase
+> **最終更新**: 2026-05-24 | **ビルド番号**: 12 | **ステータス**: 🟢 STABLE (339 PASS) | **レイヤ進捗**: ① 9/9 ② 5/9 ③ 4/9 ④ 5/11 ⑤ 0/6

@@ -6,9 +6,9 @@
     "release_deadline": null,
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
-    "phase": "build",
-    "phase_detail": "Build Phase 6/6 完了。Improveフェーズ前に全サービス実装完了",
-    "status": "active"
+    "phase": "verify",
+    "phase_detail": "全15サービス 339テスト ALL PASS。5レイヤ中 ①Foundation完遂 ②4/9 ③4/9 ④5/11 ⑤0/6",
+    "status": "stable"
   },
   "current_session": {
     "started_at": "2026-05-24T05:45:00+09:00",
