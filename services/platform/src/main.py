@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .api.health import router as health_router
+from .api.integrations import router as integrations_router
 from .api.viewer import router as viewer_router
 from .api.iot_mgmt import router as iot_router
 from .models.base import engine
@@ -30,9 +31,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -63,6 +69,9 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router, tags=["health"])
+    app.include_router(
+        integrations_router, prefix="/api/v1/integrations", tags=["integrations"]
+    )
     app.include_router(viewer_router, prefix="/platform/viewer", tags=["viewer"])
     app.include_router(iot_router, prefix="/platform/iot", tags=["iot"])
 

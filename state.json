@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "WebUI全ページ実装完了（PR#2 merged）。バックエンドAPI連携が次フェーズ。",
+    "phase_detail": "バックエンドAPIスタブ実装完了（19ファイル: autonomous×6 + notification×1 + auth×2 + platform×1 + gateway更新）。次フェーズ: Data&Intelligence層（BIM/CIM, IoT, 分析）。",
     "stability": "stable"
   },
   "current_session": {
@@ -77,17 +77,14 @@
     "enabled": true,
     "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
     "branch": "main",
-    "merged_prs": [
-      "#1 CI修正",
-      "#2 WebUI全ページ実装"
-    ],
+    "merged_prs": ["#1 CI修正", "#2 WebUI全ページ実装"],
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T10:14:46.871Z"
+    "last_pre_compact_at": "2026-05-24T10:30:10.056Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T10:16:26.354Z",
+    "current_session_start_at": "2026-05-24T10:31:47.196Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T10:21:09.063Z"
   },
@@ -296,12 +293,12 @@
     "usage_history": {
       "agents": {
         "general-purpose": {
-          "call_count": 15,
-          "last_used": "2026-05-24T10:18:10.209Z",
-          "last_description": "Robotics overview + common page conversion"
+          "call_count": 18,
+          "last_used": "2026-05-24T10:30:10.015Z",
+          "last_description": "Autonomous service - 6 new endpoints"
         },
-        "_total_agent_calls": 17,
-        "_last_agent_call_at": "2026-05-24T10:18:10.209Z",
+        "_total_agent_calls": 20,
+        "_last_agent_call_at": "2026-05-24T10:30:10.015Z",
         "feature-dev_code-architect": {
           "call_count": 2,
           "last_used": "2026-05-24T07:07:36.025Z",

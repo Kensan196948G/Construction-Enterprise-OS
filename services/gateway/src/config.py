@@ -50,8 +50,9 @@ class Settings(BaseSettings):
         "^/api/v1/ai": "http://localhost:8005",
         "^/api/v1/vision": "http://localhost:8011",
         "^/api/v1/advanced": "http://localhost:8013",
-        # Analytics / Platform
+        # Analytics / Platform / Integrations
         "^/api/v1/analytics": "http://localhost:8014",
+        "^/api/v1/integrations": "http://localhost:8012",
         "^/api/v1/platform": "http://localhost:8012",
         # Business — ERP / Construction / Safety / Partner / Maintenance
         "^/api/v1/erp": "http://localhost:8020",
