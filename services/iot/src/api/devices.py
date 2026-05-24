@@ -14,6 +14,7 @@ from ..schemas import (
     DeviceListResponse,
     DeviceResponse,
     DeviceUpdateRequest,
+    MetaInfo,
     SensorResponse,
 )
 from ..services.device_service import (
@@ -101,12 +102,12 @@ async def list_devices(
             devices=[_device_to_response(d) for d in devices],
             total=total,
         ),
-        meta={
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
-        },
+        meta=MetaInfo(
+            page=page,
+            per_page=per_page,
+            total=total,
+            total_pages=total_pages,
+        ),
     )
 
 

@@ -1,13 +1,10 @@
 """トークンサービス ユニットテスト（JWT作成・検証）"""
 
-import pytest
-
 from src.services.token_service import (
     create_access_token,
     create_m2m_token,
     decode_token,
 )
-from src.schemas import TokenData
 
 
 def test_create_access_token():

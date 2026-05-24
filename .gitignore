@@ -70,3 +70,9 @@ storage/
 # OS
 Thumbs.db
 Desktop.ini
+
+# Turborepo
+.turbo/
+
+# Next.js auto-generated
+apps/*/next-env.d.ts

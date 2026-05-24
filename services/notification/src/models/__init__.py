@@ -8,7 +8,6 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
-    Integer,
     String,
     Text,
     func,
@@ -68,9 +67,7 @@ class Notification(Base):
         ForeignKey("notification.notification_templates.id"),
         nullable=True,
     )
-    recipient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    recipient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)

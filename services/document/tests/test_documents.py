@@ -68,7 +68,9 @@ def _auth_headers(user_id: str | None = None, org_id: str | None = None) -> dict
         "roles": ["admin"],
         "scopes": ["documents:read", "documents:write"],
     }
-    token = jwt.encode(payload, settings.jwt_public_key, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(
+        payload, settings.jwt_public_key, algorithm=settings.JWT_ALGORITHM
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -93,7 +95,9 @@ class TestAuthRequired:
     def test_all_endpoints_require_auth(self, client):
         for method, url in self.endpoints:
             response = client.request(method, url)
-            assert response.status_code == 401, f"{method} {url} returned {response.status_code}"
+            assert (
+                response.status_code == 401
+            ), f"{method} {url} returned {response.status_code}"
 
     def test_upload_requires_auth(self, client):
         response = client.post(
@@ -103,9 +107,7 @@ class TestAuthRequired:
         assert response.status_code == 401
 
     def test_put_requires_auth(self, client):
-        response = client.put(
-            f"/api/v1/documents/{uuid4()}", json={"name": "Updated"}
-        )
+        response = client.put(f"/api/v1/documents/{uuid4()}", json={"name": "Updated"})
         assert response.status_code == 401
 
     def test_delete_requires_auth(self, client):
@@ -149,7 +151,6 @@ class TestDocumentService:
         from unittest.mock import AsyncMock, MagicMock
         from uuid import uuid4
 
-        from src.models import Document
         from src.services.document_service import create_document
 
         doc_id = uuid4()
@@ -167,9 +168,7 @@ class TestDocumentService:
 
         mock_db.refresh = mock_refresh
 
-        with patch(
-            "src.services.document_service.upload_file", return_value=True
-        ):
+        with patch("src.services.document_service.upload_file", return_value=True):
             document = await create_document(
                 mock_db,
                 organization_id=org_id,
@@ -186,7 +185,7 @@ class TestDocumentService:
 
     @pytest.mark.asyncio
     async def test_soft_delete_document(self, app):
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, MagicMock
         from uuid import uuid4
         from datetime import datetime, timezone
 
@@ -282,9 +281,7 @@ class TestDocumentService:
 
         mock_db.refresh = mock_refresh
 
-        with patch(
-            "src.services.document_service.upload_file", return_value=True
-        ):
+        with patch("src.services.document_service.upload_file", return_value=True):
             version = await create_new_version(
                 mock_db,
                 document_id=doc_id,

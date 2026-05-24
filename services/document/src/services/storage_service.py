@@ -1,6 +1,5 @@
 """MinIO/S3 ストレージ操作サービス"""
 
-import io
 import logging
 from uuid import UUID
 
@@ -47,9 +46,7 @@ def initialize_bucket() -> bool:
         return False
 
 
-def upload_file(
-    file_content: bytes, storage_key: str, content_type: str
-) -> bool:
+def upload_file(file_content: bytes, storage_key: str, content_type: str) -> bool:
     try:
         s3 = _get_s3_client()
         s3.put_object(

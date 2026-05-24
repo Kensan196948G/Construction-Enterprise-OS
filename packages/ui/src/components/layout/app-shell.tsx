@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { cn } from "../lib/utils";
+import { cn } from "../../lib/utils";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 
@@ -10,7 +10,10 @@ interface AppShellProps {
   userRoles?: string[];
 }
 
-export const AppShell: React.FC<AppShellProps> = ({ children, userRoles = [] }) => {
+export const AppShell: React.FC<AppShellProps> = ({
+  children,
+  userRoles = [],
+}) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -24,13 +27,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, userRoles = [] }) 
 
       {/* メインコンテンツエリア */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Header
-          sidebarCollapsed={sidebarCollapsed}
-          onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <Header onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

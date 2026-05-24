@@ -47,9 +47,10 @@ async def check_alert_rules(
     """テレメトリ投入後、アラートルールの閾値チェックを行う。"""
     result = await db.execute(
         select(AlertRuleModel).where(
-            AlertRuleModel.is_active == True,
+            AlertRuleModel.is_active.is_(True),
             AlertRuleModel.metric_name == metric_name,
-            (AlertRuleModel.device_id == device_id) | (AlertRuleModel.device_id.is_(None)),
+            (AlertRuleModel.device_id == device_id)
+            | (AlertRuleModel.device_id.is_(None)),
         )
     )
     rules = list(result.scalars().all())
@@ -109,9 +110,7 @@ async def acknowledge_alert(
     return alert
 
 
-async def resolve_alert(
-    db: AsyncSession, alert_id: int
-) -> AlertHistoryModel | None:
+async def resolve_alert(db: AsyncSession, alert_id: int) -> AlertHistoryModel | None:
     result = await db.execute(
         select(AlertHistoryModel).where(AlertHistoryModel.id == alert_id)
     )

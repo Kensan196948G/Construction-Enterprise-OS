@@ -1,6 +1,6 @@
 """認証API 結合テスト（ルート検証、入力バリデーション、認証ガード）"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -105,12 +105,16 @@ def test_auth_required_for_users(client):
 
 
 def test_auth_required_for_roles(client):
-    response = client.get("/api/v1/roles?organization_id=00000000-0000-0000-0000-000000000001")
+    response = client.get(
+        "/api/v1/roles?organization_id=00000000-0000-0000-0000-000000000001"
+    )
     assert response.status_code == 401
 
 
 def test_auth_required_for_clients(client):
-    response = client.get("/api/v1/api-clients?organization_id=00000000-0000-0000-0000-000000000001")
+    response = client.get(
+        "/api/v1/api-clients?organization_id=00000000-0000-0000-0000-000000000001"
+    )
     assert response.status_code == 401
 
 

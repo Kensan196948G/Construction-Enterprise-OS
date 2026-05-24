@@ -1,16 +1,18 @@
 """GeoJSON / API リクエスト・レスポンス スキーマ"""
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 # ============================================
 # 共通
 # ============================================
-class APIResponse[T](BaseModel):
+class APIResponse(BaseModel, Generic[T]):
     success: bool = True
     data: T | None = None
     error: "ErrorDetail | None" = None

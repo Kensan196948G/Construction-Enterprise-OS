@@ -1,10 +1,18 @@
 """文書管理 API ルーター"""
 
-from math import ceil
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_settings
@@ -12,15 +20,12 @@ from ..middleware.auth import TokenData, get_current_user
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
-    DocumentCreate,
     DocumentListResponse,
     DocumentResponse,
     DocumentUpdate,
     DocumentVersionListResponse,
     DocumentVersionResponse,
-    ErrorDetail,
     MetaInfo,
-    VersionUploadRequest,
 )
 from ..services import document_service, storage_service
 
@@ -165,7 +170,10 @@ async def download_document(
     if file_stream is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "FILE_NOT_FOUND", "message": "ストレージにファイルが見つかりません。"},
+            detail={
+                "code": "FILE_NOT_FOUND",
+                "message": "ストレージにファイルが見つかりません。",
+            },
         )
 
     from urllib.parse import quote

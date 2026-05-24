@@ -1,6 +1,7 @@
 """通知テンプレート管理サービス"""
 
 import math
+from typing import Any
 from uuid import UUID
 
 from jinja2 import BaseLoader, Environment
@@ -42,18 +43,24 @@ async def get_templates(
     templates = result.scalars().all()
 
     total_pages = math.ceil(total / per_page) if per_page > 0 else 0
-    meta = PaginationMeta(page=page, per_page=per_page, total=total, total_pages=total_pages)
+    meta = PaginationMeta(
+        page=page, per_page=per_page, total=total, total_pages=total_pages
+    )
 
     return list(templates), meta
 
 
-async def get_template_by_code(db: AsyncSession, code: str) -> NotificationTemplate | None:
+async def get_template_by_code(
+    db: AsyncSession, code: str
+) -> NotificationTemplate | None:
     stmt = select(NotificationTemplate).where(NotificationTemplate.code == code)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def get_template_by_id(db: AsyncSession, template_id: UUID) -> NotificationTemplate | None:
+async def get_template_by_id(
+    db: AsyncSession, template_id: UUID
+) -> NotificationTemplate | None:
     stmt = select(NotificationTemplate).where(NotificationTemplate.id == template_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -94,7 +101,7 @@ async def delete_template(db: AsyncSession, template: NotificationTemplate) -> N
 
 
 async def ensure_default_templates(db: AsyncSession) -> None:
-    defaults = [
+    defaults: list[dict[str, Any]] = [
         {
             "code": "workflow.approval_requested",
             "name": "承認依頼通知",

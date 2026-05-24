@@ -9,6 +9,7 @@ from ..middleware.auth_middleware import get_current_user, require_permission
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
+    MetaInfo,
     RoleSummary,
     TokenData,
     UserCreateRequest,
@@ -41,10 +42,7 @@ def _user_to_response(user) -> UserResponse:
         mfa_enabled=user.mfa_enabled,
         last_login_at=user.last_login_at,
         created_at=user.created_at,
-        roles=[
-            RoleSummary(id=ur.role.id, name=ur.role.name)
-            for ur in user.roles
-        ],
+        roles=[RoleSummary(id=ur.role.id, name=ur.role.name) for ur in user.roles],
     )
 
 
@@ -69,16 +67,18 @@ async def list_users(
             users=[_user_to_response(u) for u in users],
             total=total,
         ),
-        meta={
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
-        },
+        meta=MetaInfo(
+            page=page,
+            per_page=per_page,
+            total=total,
+            total_pages=total_pages,
+        ),
     )
 
 
-@router.post("", response_model=APIResponse[UserResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=APIResponse[UserResponse], status_code=status.HTTP_201_CREATED
+)
 async def create_user(
     request: Request,
     body: UserCreateRequest,
@@ -90,7 +90,10 @@ async def create_user(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "EMAIL_TAKEN", "message": "このメールアドレスは既に使用されています。"},
+            detail={
+                "code": "EMAIL_TAKEN",
+                "message": "このメールアドレスは既に使用されています。",
+            },
         )
 
     hashed = hash_password(body.password)

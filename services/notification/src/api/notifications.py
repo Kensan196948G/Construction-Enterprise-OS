@@ -1,21 +1,17 @@
 """通知 API ルーター"""
 
-from math import ceil
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..middleware.auth import TokenData, get_current_user
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
-    ErrorDetail,
     MetaInfo,
     NotificationListResponse,
     NotificationResponse,
-    PaginationMeta,
     UnreadCountResponse,
 )
 from ..services.notification_service import (
@@ -80,7 +76,9 @@ async def read_notification(
     db: AsyncSession = Depends(get_db),
 ):
     user_id = UUID(token_data.sub)
-    notification = await mark_as_read(db, notification_id=notification_id, user_id=user_id)
+    notification = await mark_as_read(
+        db, notification_id=notification_id, user_id=user_id
+    )
 
     if not notification:
         raise HTTPException(
@@ -88,7 +86,9 @@ async def read_notification(
             detail={"code": "NOT_FOUND", "message": "通知が見つかりません。"},
         )
 
-    return _api_response(data=NotificationResponse.model_validate(notification).model_dump())
+    return _api_response(
+        data=NotificationResponse.model_validate(notification).model_dump()
+    )
 
 
 @router.patch("/read-all")

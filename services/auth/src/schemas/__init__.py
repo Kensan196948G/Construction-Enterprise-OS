@@ -3,13 +3,17 @@
 from datetime import datetime
 from uuid import UUID
 
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel, EmailStr, Field
+
+T = TypeVar("T")
 
 
 # ============================================
 # 共通
 # ============================================
-class APIResponse[T](BaseModel):
+class APIResponse(BaseModel, Generic[T]):
     success: bool = True
     data: T | None = None
     error: "ErrorDetail | None" = None

@@ -3,13 +3,17 @@
 from datetime import datetime
 from uuid import UUID
 
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 # ============================================
 # 共通
 # ============================================
-class APIResponse[T](BaseModel):
+class APIResponse(BaseModel, Generic[T]):
     success: bool = True
     data: T | None = None
     error: "ErrorDetail | None" = None
@@ -155,7 +159,9 @@ class AlertRuleCreateRequest(BaseModel):
     metric_name: str = Field(min_length=1, max_length=100)
     condition: str = Field(pattern="^(gt|lt|gte|lte|eq)$")
     threshold: float
-    severity: str = Field(default="warning", pattern="^(info|warning|critical|emergency)$")
+    severity: str = Field(
+        default="warning", pattern="^(info|warning|critical|emergency)$"
+    )
     is_active: bool = True
     cooldown_minutes: int = Field(default=5, ge=1, le=1440)
     notification_channels: list[str] = Field(default_factory=lambda: ["in_app"])

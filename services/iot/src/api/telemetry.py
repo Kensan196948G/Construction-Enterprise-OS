@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..middleware.auth import get_current_client, get_current_user
@@ -13,13 +13,19 @@ from ..schemas import (
     LatestTelemetryValue,
     TelemetryIngestRequest,
 )
-from ..services.telemetry_service import ingest_telemetry, query_telemetry, get_latest_telemetry
+from ..services.telemetry_service import (
+    ingest_telemetry,
+    query_telemetry,
+    get_latest_telemetry,
+)
 from ..services.alert_service import check_alert_rules
 
 router = APIRouter()
 
 
-@router.post("/ingest", response_model=APIResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/ingest", response_model=APIResponse, status_code=status.HTTP_202_ACCEPTED
+)
 async def ingest(
     request: Request,
     body: TelemetryIngestRequest,
@@ -37,7 +43,12 @@ async def ingest(
             sensor_id=point.sensor_id,
         )
 
-    return APIResponse(data={"ingested": count, "message": f"{count}件のテレメトリデータを投入しました。"})
+    return APIResponse(
+        data={
+            "ingested": count,
+            "message": f"{count}件のテレメトリデータを投入しました。",
+        }
+    )
 
 
 @router.get("/{device_id}", response_model=APIResponse)
@@ -59,21 +70,25 @@ async def query_device_telemetry(
         metric_name=metric_name,
         limit=limit,
     )
-    return APIResponse(data=[
-        {
-            "id": r.id,
-            "device_id": str(r.device_id),
-            "sensor_id": str(r.sensor_id) if r.sensor_id else None,
-            "metric_name": r.metric_name,
-            "value": r.value,
-            "unit": r.unit,
-            "timestamp": r.timestamp.isoformat(),
-        }
-        for r in rows
-    ])
+    return APIResponse(
+        data=[
+            {
+                "id": r.id,
+                "device_id": str(r.device_id),
+                "sensor_id": str(r.sensor_id) if r.sensor_id else None,
+                "metric_name": r.metric_name,
+                "value": r.value,
+                "unit": r.unit,
+                "timestamp": r.timestamp.isoformat(),
+            }
+            for r in rows
+        ]
+    )
 
 
-@router.get("/{device_id}/latest", response_model=APIResponse[list[LatestTelemetryValue]])
+@router.get(
+    "/{device_id}/latest", response_model=APIResponse[list[LatestTelemetryValue]]
+)
 async def latest_telemetry(
     request: Request,
     device_id: UUID,

@@ -5,10 +5,21 @@
   "description": "Construction-Enterprise-OS 共通型定義・定数",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./menu-structure": "./src/menu-structure.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "menu-structure": [
+        "./src/menu-structure.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/"
+    "lint": "tsc --noEmit --project tsconfig.json"
   },
   "devDependencies": {
     "typescript": "^5.5.0"

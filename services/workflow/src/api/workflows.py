@@ -132,9 +132,10 @@ async def create_instance(
         )
         instance_full = await workflow_service.get_instance_with_chain(db, instance.id)
         data = _instance_to_response(instance_full)
-        data["approvals"] = [
-            _approval_to_response(a) for a in instance_full.approvals
-        ]
+        if instance_full is not None:
+            data["approvals"] = [
+                _approval_to_response(a) for a in instance_full.approvals
+            ]
         return APIResponse(data=data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail={"code": "BAD_REQUEST", "message": str(e)})

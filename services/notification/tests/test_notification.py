@@ -1,8 +1,6 @@
 """通知サービス テスト"""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -99,7 +97,9 @@ class TestTemplateRendering:
         from src.services.template_service import render_template
 
         title_template = "【要承認】{{ document_name }}の承認依頼"
-        body_template = "{{ document_name }}の承認依頼が{{ requester_name }}さんから届いています。"
+        body_template = (
+            "{{ document_name }}の承認依頼が{{ requester_name }}さんから届いています。"
+        )
 
         variables = {
             "document_name": "作業計画書",
@@ -129,12 +129,10 @@ class TestTemplateRendering:
 class TestNotificationCreation:
     @pytest.mark.asyncio
     async def test_create_notification_from_template(self, app):
-        from unittest.mock import AsyncMock, patch
         from uuid import uuid4
         from datetime import datetime, timezone
-        import uuid
 
-        from src.models import Notification, NotificationTemplate
+        from src.models import NotificationTemplate
         from src.services.notification_service import create_notification
 
         template = NotificationTemplate(

@@ -13,6 +13,7 @@ from ..schemas import (
     AlertHistoryResponse,
     AlertRuleCreateRequest,
     AlertRuleResponse,
+    MetaInfo,
 )
 from ..models import AlertRule as AlertRuleModel
 from ..services.alert_service import (
@@ -90,12 +91,12 @@ async def list_alerts(
             alerts=[AlertHistoryResponse.model_validate(a) for a in alerts],
             total=total,
         ),
-        meta={
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
-        },
+        meta=MetaInfo(
+            page=page,
+            per_page=per_page,
+            total=total,
+            total_pages=total_pages,
+        ),
     )
 
 

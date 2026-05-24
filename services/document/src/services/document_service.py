@@ -4,13 +4,13 @@ import logging
 import math
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Document, DocumentVersion
 from ..schemas import PaginationMeta
 from .search_service import count_search_documents, search_documents
-from .storage_service import delete_file, generate_storage_key, upload_file
+from .storage_service import generate_storage_key, upload_file
 
 logger = logging.getLogger(__name__)
 
@@ -151,9 +151,7 @@ async def update_document(
     return document
 
 
-async def soft_delete_document(
-    db: AsyncSession, document_id: UUID
-) -> Document | None:
+async def soft_delete_document(db: AsyncSession, document_id: UUID) -> Document | None:
     document = await get_document(db, document_id)
     if not document:
         return None
@@ -229,8 +227,8 @@ async def list_versions(
         .offset(offset)
         .limit(per_page)
     )
-    result = await db.execute(stmt)
-    versions = list(result.scalars().all())
+    versions_result = await db.execute(stmt)
+    versions: list[DocumentVersion] = list(versions_result.scalars().all())
 
     total_pages = math.ceil(total / per_page) if per_page > 0 else 0
     meta = PaginationMeta(

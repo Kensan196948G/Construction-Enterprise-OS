@@ -11,6 +11,7 @@ from ..models import RefreshToken, User, UserRole, Role
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
+    ErrorDetail,
     LoginRequest,
     LoginResponse,
     MFADisableRequest,
@@ -44,6 +45,7 @@ def _create_mfa_session_token(user_id: str, email: str) -> str:
     """MFA検証用の短命セッショントークン（JWT方式）"""
     from jose import jwt
     from ..config import get_settings
+
     settings = get_settings()
     now = datetime.now(timezone.utc)
     payload = {
@@ -53,13 +55,16 @@ def _create_mfa_session_token(user_id: str, email: str) -> str:
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=5)).timestamp()),
     }
-    return jwt.encode(payload, settings.jwt_private_key, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        payload, settings.jwt_private_key, algorithm=settings.JWT_ALGORITHM
+    )
 
 
 def _decode_mfa_session_token(token: str) -> dict | None:
     """MFAセッショントークン検証"""
     from jose import JWTError, jwt
     from ..config import get_settings
+
     settings = get_settings()
     try:
         payload = jwt.decode(
@@ -106,13 +111,19 @@ async def login(
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_CREDENTIALS", "message": "メールアドレスまたはパスワードが正しくありません。"},
+            detail={
+                "code": "INVALID_CREDENTIALS",
+                "message": "メールアドレスまたはパスワードが正しくありません。",
+            },
         )
 
     if user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "ACCOUNT_DISABLED", "message": "アカウントが無効です。管理者に連絡してください。"},
+            detail={
+                "code": "ACCOUNT_DISABLED",
+                "message": "アカウントが無効です。管理者に連絡してください。",
+            },
         )
 
     can_attempt, lock_msg = await check_login_attempts(user)
@@ -135,7 +146,10 @@ async def login(
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_CREDENTIALS", "message": "メールアドレスまたはパスワードが正しくありません。"},
+            detail={
+                "code": "INVALID_CREDENTIALS",
+                "message": "メールアドレスまたはパスワードが正しくありません。",
+            },
         )
 
     if user.mfa_enabled:
@@ -208,14 +222,20 @@ async def refresh(
     if not stored_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_REFRESH_TOKEN", "message": "リフレッシュトークンが無効です。"},
+            detail={
+                "code": "INVALID_REFRESH_TOKEN",
+                "message": "リフレッシュトークンが無効です。",
+            },
         )
 
     if stored_token.expires_at < datetime.now(timezone.utc):
         stored_token.revoked_at = datetime.now(timezone.utc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "EXPIRED_REFRESH_TOKEN", "message": "リフレッシュトークンの有効期限が切れています。"},
+            detail={
+                "code": "EXPIRED_REFRESH_TOKEN",
+                "message": "リフレッシュトークンの有効期限が切れています。",
+            },
         )
 
     user = stored_token.user
@@ -290,6 +310,7 @@ async def logout_all(
 ):
     """全セッションログアウト（全リフレッシュトークン無効化）"""
     from uuid import UUID
+
     user_id = UUID(current_user.sub)
 
     result = await db.execute(
@@ -321,11 +342,10 @@ async def mfa_setup(
 ):
     """MFA設定開始"""
     from uuid import UUID
+
     user_id = UUID(current_user.sub)
 
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
@@ -359,14 +379,16 @@ async def mfa_verify(
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_SESSION", "message": "MFAセッションが無効または期限切れです。再度ログインしてください。"},
+            detail={
+                "code": "INVALID_SESSION",
+                "message": "MFAセッションが無効または期限切れです。再度ログインしてください。",
+            },
         )
 
     from uuid import UUID
+
     user_id = UUID(payload["sub"])
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user or user.status != "active":
         raise HTTPException(
@@ -382,7 +404,9 @@ async def mfa_verify(
 
     if not verify_mfa_code(user.mfa_secret, body.code):
         return APIResponse(
-            error={"code": "INVALID_MFA_CODE", "message": "認証コードが無効です。"},
+            error=ErrorDetail(
+                code="INVALID_MFA_CODE", message="認証コードが無効です。"
+            ),
             success=False,
         )
 
@@ -428,11 +452,10 @@ async def mfa_disable(
 ):
     """MFA無効化"""
     from uuid import UUID
+
     user_id = UUID(current_user.sub)
 
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
@@ -443,7 +466,10 @@ async def mfa_disable(
     if not verify_password(body.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WRONG_PASSWORD", "message": "パスワードが正しくありません。"},
+            detail={
+                "code": "WRONG_PASSWORD",
+                "message": "パスワードが正しくありません。",
+            },
         )
 
     if user.mfa_secret and not verify_mfa_code(user.mfa_secret, body.code):
