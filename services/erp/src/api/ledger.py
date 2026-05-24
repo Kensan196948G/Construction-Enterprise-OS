@@ -20,7 +20,23 @@ from ..services import ledger_service
 router = APIRouter()
 
 
-@router.post("/ledger", response_model=LedgerResponse, status_code=status.HTTP_201_CREATED)
+@router.get("/ledger/summary")
+async def get_ledger_overall_summary():
+    """全工事台帳の財務サマリー（フロントエンドダッシュボード用スタブ）"""
+    return {
+        "total_revenue": 850000000,
+        "total_cost": 680000000,
+        "gross_profit": 170000000,
+        "operating_profit": 145000000,
+        "projects_count": 12,
+        "gross_margin": 0.2,
+        "operating_margin": 0.171,
+    }
+
+
+@router.post(
+    "/ledger", response_model=LedgerResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_ledger(
     body: LedgerCreateRequest,
     db: AsyncSession = Depends(get_db),
