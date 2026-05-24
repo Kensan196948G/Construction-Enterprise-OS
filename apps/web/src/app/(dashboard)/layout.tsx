@@ -433,14 +433,15 @@ export default function DashboardLayout({
     restoreSession();
   }, [restoreSession]);
 
-  useEffect(() => {
-    if (token === null && typeof window !== "undefined") {
-      const stored = localStorage.getItem("auth_token");
-      if (!stored) {
-        router.replace("/login");
-      }
-    }
-  }, [token, router]);
+  // Auth check disabled — direct dashboard access without login
+  // useEffect(() => {
+  //   if (token === null && typeof window !== "undefined") {
+  //     const stored = localStorage.getItem("auth_token");
+  //     if (!stored) {
+  //       router.replace("/login");
+  //     }
+  //   }
+  // }, [token, router]);
 
   // Auto-expand the category + section containing the current route
   useEffect(() => {
