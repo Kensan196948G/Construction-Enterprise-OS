@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { TrendingUp, DollarSign, BarChart3, Building } from "lucide-react";
 
 const MONTHLY_DATA = [
@@ -10,58 +11,125 @@ const MONTHLY_DATA = [
   { month: "5月", revenue: 12.1, completion: 10.3, newOrders: 9.8 },
 ];
 
-const PROJECTS = [
+interface LedgerItem {
+  id: string;
+  project_name: string;
+  budget_amount: number;
+  actual_cost: number;
+  progress_rate: number;
+  completion_date: string | null;
+  status: string;
+}
+
+const MOCK_PROJECTS: LedgerItem[] = [
   {
-    name: "大阪オフィスビル新築工事",
-    budget: 42.0,
-    actual: 38.5,
-    progress: 82,
-    deadline: "2026-11-30",
-    status: "順調",
+    id: "1",
+    project_name: "大阪オフィスビル新築工事",
+    budget_amount: 4200000000,
+    actual_cost: 3850000000,
+    progress_rate: 82,
+    completion_date: "2026-11-30",
+    status: "in_progress",
   },
   {
-    name: "国道XX号線橋梁工事",
-    budget: 28.5,
-    actual: 24.1,
-    progress: 68,
-    deadline: "2027-03-31",
-    status: "順調",
+    id: "2",
+    project_name: "国道XX号線橋梁工事",
+    budget_amount: 2850000000,
+    actual_cost: 2410000000,
+    progress_rate: 68,
+    completion_date: "2027-03-31",
+    status: "in_progress",
   },
   {
-    name: "山岳トンネル掘削工事",
-    budget: 65.0,
-    actual: 41.2,
-    progress: 55,
-    deadline: "2027-09-30",
-    status: "注意",
+    id: "3",
+    project_name: "山岳トンネル掘削工事",
+    budget_amount: 6500000000,
+    actual_cost: 4120000000,
+    progress_rate: 55,
+    completion_date: "2027-09-30",
+    status: "in_progress",
   },
   {
-    name: "都市再開発第2期工事",
-    budget: 35.2,
-    actual: 12.8,
-    progress: 28,
-    deadline: "2028-03-31",
-    status: "順調",
+    id: "4",
+    project_name: "都市再開発第2期工事",
+    budget_amount: 3520000000,
+    actual_cost: 1280000000,
+    progress_rate: 28,
+    completion_date: "2028-03-31",
+    status: "in_progress",
   },
   {
-    name: "港湾設備整備工事",
-    budget: 18.7,
-    actual: 19.4,
-    progress: 91,
-    deadline: "2026-07-31",
-    status: "超過",
+    id: "5",
+    project_name: "港湾設備整備工事",
+    budget_amount: 1870000000,
+    actual_cost: 1940000000,
+    progress_rate: 91,
+    completion_date: "2026-07-31",
+    status: "over_budget",
   },
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  順調: "bg-green-100 text-green-800",
-  注意: "bg-yellow-100 text-yellow-800",
-  超過: "bg-red-100 text-red-800",
-};
+function formatOkuYen(amount: number): string {
+  return (amount / 100000000).toFixed(1);
+}
 
-const maxRevenue = Math.max(...MONTHLY_DATA.map((r) => r.revenue));
+function getProjectStatus(item: LedgerItem): { label: string; color: string } {
+  if (item.status === "over_budget" || item.actual_cost > item.budget_amount) {
+    return { label: "超過", color: "bg-red-100 text-red-800" };
+  }
+  if (item.progress_rate < 50) {
+    return { label: "注意", color: "bg-yellow-100 text-yellow-800" };
+  }
+  return { label: "順調", color: "bg-green-100 text-green-800" };
+}
 
 export default function ExecDashboardPage() {
+  const [projects, setProjects] = useState<LedgerItem[]>(MOCK_PROJECTS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/erp/ledger?per_page=20");
+      if (res.ok) {
+        const json = await res.json();
+        const items = json?.data?.items ?? json?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          setProjects(
+            items.map(
+              (item: Record<string, unknown>): LedgerItem => ({
+                id: String(item.id ?? ""),
+                project_name: String(item.project_name ?? ""),
+                budget_amount: Number(item.budget_amount ?? 0),
+                actual_cost: Number(item.actual_cost ?? 0),
+                progress_rate: Number(item.progress_rate ?? 0),
+                completion_date: item.completion_date
+                  ? String(item.completion_date)
+                  : null,
+                status: String(item.status ?? "in_progress"),
+              }),
+            ),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const totalBudget = projects.reduce((s, p) => s + p.budget_amount, 0);
+  const totalActual = projects.reduce((s, p) => s + p.actual_cost, 0);
+  const overBudgetCount = projects.filter(
+    (p) => p.actual_cost > p.budget_amount,
+  ).length;
+  const maxRevenue = Math.max(...MONTHLY_DATA.map((r) => r.revenue));
+
   const kpis = [
     {
       label: "売上高 (今月)",
@@ -81,19 +149,19 @@ export default function ExecDashboardPage() {
     },
     {
       label: "受注残高",
-      value: "189.4億円",
-      sub: "前期比 +5.2%",
+      value: `${formatOkuYen(totalBudget)}億円`,
+      sub: `${projects.length}件進行中`,
       icon: BarChart3,
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
     {
-      label: "完工件数 (今月)",
-      value: "3件",
-      sub: "年累計: 18件",
+      label: "予算超過プロジェクト",
+      value: `${overBudgetCount}件`,
+      sub: `総実績: ${formatOkuYen(totalActual)}億円`,
       icon: Building,
-      color: "text-orange-600",
-      bg: "bg-orange-50",
+      color: overBudgetCount > 0 ? "text-red-600" : "text-orange-600",
+      bg: overBudgetCount > 0 ? "bg-red-50" : "bg-orange-50",
     },
   ];
 
@@ -111,7 +179,6 @@ export default function ExecDashboardPage() {
         <TrendingUp className="w-8 h-8 text-blue-600" />
       </div>
 
-      {/* KPIカード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
@@ -132,7 +199,6 @@ export default function ExecDashboardPage() {
         })}
       </div>
 
-      {/* 月別売上グラフ代替テーブル */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50">
           <h2 className="font-semibold text-gray-700">
@@ -213,12 +279,16 @@ export default function ExecDashboardPage() {
         </div>
       </div>
 
-      {/* 進行中プロジェクト要約 */}
       <div className="bg-white rounded-lg border overflow-hidden">
-        <div className="px-4 py-3 border-b bg-gray-50">
+        <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
           <h2 className="font-semibold text-gray-700">
             進行中プロジェクト要約
           </h2>
+          {loading && (
+            <span className="text-xs text-gray-400 animate-pulse">
+              読み込み中...
+            </span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -245,48 +315,53 @@ export default function ExecDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {PROJECTS.map((p) => (
-                <tr key={p.name} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {p.name}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600">
-                    {p.budget.toFixed(1)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700 font-medium">
-                    {p.actual.toFixed(1)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            p.progress >= 90
-                              ? "bg-green-500"
-                              : p.progress >= 50
-                                ? "bg-blue-500"
-                                : "bg-yellow-500"
-                          }`}
-                          style={{ width: `${p.progress}%` }}
-                        />
+              {projects.map((p) => {
+                const { label, color } = getProjectStatus(p);
+                return (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {p.project_name}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-600">
+                      {formatOkuYen(p.budget_amount)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 font-medium">
+                      {formatOkuYen(p.actual_cost)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              p.progress_rate >= 90
+                                ? "bg-green-500"
+                                : p.progress_rate >= 50
+                                  ? "bg-blue-500"
+                                  : "bg-yellow-500"
+                            }`}
+                            style={{
+                              width: `${Math.min(100, p.progress_rate)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-600 font-medium">
+                          {p.progress_rate}%
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-600 font-medium">
-                        {p.progress}%
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {p.completion_date ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}
+                      >
+                        {label}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {p.deadline}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
