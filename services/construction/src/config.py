@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     PORT: int = 8016
     DEBUG: bool = True
 
-    DATABASE_URL: str = "postgresql+asyncpg://ceoos:ceoos_dev@localhost:5432/ceoos"
+    DATABASE_URL: str = "postgresql+asyncpg://construction-os:construction-os_dev@localhost:5432/construction-os"
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 10
 

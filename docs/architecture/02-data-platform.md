@@ -158,18 +158,18 @@ services:
   postgres:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: ceoos
-      POSTGRES_PASSWORD: ceoos_dev
-      POSTGRES_DB: ceoos
+      POSTGRES_USER: construction-os
+      POSTGRES_PASSWORD: construction-os_dev
+      POSTGRES_DB: construction-os
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
 
   timescaledb:
     image: timescale/timescaledb:2.16.1-pg16
     environment:
-      POSTGRES_USER: ceoos
-      POSTGRES_PASSWORD: ceoos_dev
-      POSTGRES_DB: ceoos_ts
+      POSTGRES_USER: construction-os
+      POSTGRES_PASSWORD: construction-os_dev
+      POSTGRES_DB: construction-os_ts
     ports: ["5433:5432"]
 
   redis:

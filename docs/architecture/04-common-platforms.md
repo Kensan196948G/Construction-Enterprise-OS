@@ -205,7 +205,7 @@ notifications (
 ### 3.4 Pythonロギング共通設定
 
 ```python
-# packages/logging/src/ceoos_logger.py
+# packages/logging/src/construction-os_logger.py
 import logging
 import structlog
 from opentelemetry import trace

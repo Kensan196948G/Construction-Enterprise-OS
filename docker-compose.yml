@@ -6,29 +6,29 @@ services:
   # ============================================
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: ceoos-postgres
+    container_name: construction-os-postgres
     environment:
-      POSTGRES_USER: ceoos
-      POSTGRES_PASSWORD: ceoos_dev
-      POSTGRES_DB: ceoos
+      POSTGRES_USER: construction-os
+      POSTGRES_PASSWORD: construction-os_dev
+      POSTGRES_DB: construction-os
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/db/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ceoos"]
+      test: ["CMD-SHELL", "pg_isready -U construction-os"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   timescaledb:
     image: timescale/timescaledb:2.16.1-pg16
-    container_name: ceoos-timescaledb
+    container_name: construction-os-timescaledb
     environment:
-      POSTGRES_USER: ceoos
-      POSTGRES_PASSWORD: ceoos_dev
-      POSTGRES_DB: ceoos_ts
+      POSTGRES_USER: construction-os
+      POSTGRES_PASSWORD: construction-os_dev
+      POSTGRES_DB: construction-os_ts
     ports:
       - "5433:5432"
     volumes:
@@ -39,7 +39,7 @@ services:
   # ============================================
   redis:
     image: redis:7-alpine
-    container_name: ceoos-redis
+    container_name: construction-os-redis
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
@@ -48,10 +48,10 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: ceoos-rabbitmq
+    container_name: construction-os-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ceoos
-      RABBITMQ_DEFAULT_PASS: ceoos_dev
+      RABBITMQ_DEFAULT_USER: construction-os
+      RABBITMQ_DEFAULT_PASS: construction-os_dev
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI
@@ -63,7 +63,7 @@ services:
   # ============================================
   elasticsearch:
     image: elasticsearch:8.14.0
-    container_name: ceoos-elasticsearch
+    container_name: construction-os-elasticsearch
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -76,7 +76,7 @@ services:
 
   kibana:
     image: kibana:8.14.0
-    container_name: ceoos-kibana
+    container_name: construction-os-kibana
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     ports:
@@ -86,7 +86,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: ceoos-minio
+    container_name: construction-os-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -102,7 +102,7 @@ services:
   # ============================================
   kafka:
     image: bitnami/kafka:3.7
-    container_name: ceoos-kafka
+    container_name: construction-os-kafka
     environment:
       KAFKA_CFG_NODE_ID: 0
       KAFKA_CFG_PROCESS_ROLES: controller,broker
