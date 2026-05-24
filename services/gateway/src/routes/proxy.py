@@ -4,7 +4,7 @@ import re
 
 import structlog
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from ..config import get_settings
 from ..services.proxy_service import ProxyService
@@ -21,19 +21,19 @@ def _match_upstream(path: str) -> tuple[str, str] | None:
     for pattern, upstream_url in settings.UPSTREAM_SERVICES.items():
         if re.match(pattern, path):
             return pattern, upstream_url
-    return None, None
+    return None
 
 
 @router.api_route(
     "/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
 )
-async def proxy_request(request: Request, path: str) -> JSONResponse:
+async def proxy_request(request: Request, path: str) -> Response:
     """全パスを捕捉し、上流サービスに転送"""
     full_path = f"/{path}"
 
-    pattern, upstream_url = _match_upstream(full_path)
-    if not upstream_url:
+    match = _match_upstream(full_path)
+    if not match:
         return JSONResponse(
             status_code=404,
             content={
@@ -45,5 +45,6 @@ async def proxy_request(request: Request, path: str) -> JSONResponse:
             },
         )
 
+    pattern, upstream_url = match
     upstream_name = pattern.lstrip("^/").replace("/", "-")
     return await proxy_service.forward(request, upstream_url, upstream_name)

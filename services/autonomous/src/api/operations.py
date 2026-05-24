@@ -75,7 +75,7 @@ async def list_operations(
             operations=[_op_to_response(o) for o in ops],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

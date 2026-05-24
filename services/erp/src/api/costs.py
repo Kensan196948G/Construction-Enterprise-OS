@@ -53,7 +53,7 @@ async def list_costs(
     items, total = await cost_service.list_costs(
         db, ledger_id, status=status, page=page, per_page=per_page
     )
-    return CostListResponse(items=items, total=total, page=page, per_page=per_page)
+    return CostListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
 @router.put("/costs/{cost_id}", response_model=CostItemResponse)

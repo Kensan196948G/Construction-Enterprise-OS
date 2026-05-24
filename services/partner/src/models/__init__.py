@@ -7,7 +7,6 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
-    Enum,
     Float,
     ForeignKey,
     Index,
@@ -32,8 +31,12 @@ class Partner(Base):
         Index("ix_partners_name", "name"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     name_kana: Mapped[str | None] = mapped_column(String(255))
     company_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -73,13 +76,15 @@ class Partner(Base):
 
 class PartnerContact(Base):
     __tablename__ = "partner_contacts"
-    __table_args__ = (
-        Index("ix_partner_contacts_partner_id", "partner_id"),
-    )
+    __table_args__ = (Index("ix_partner_contacts_partner_id", "partner_id"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     partner_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("partner.partners.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("partner.partners.id", ondelete="CASCADE"),
+        nullable=False,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str | None] = mapped_column(String(255))
@@ -103,8 +108,12 @@ class Contract(Base):
         Index("ix_contracts_status", "status"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     partner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("partner.partners.id")
     )
@@ -132,7 +141,9 @@ class Contract(Base):
         "Partner", back_populates="contracts", foreign_keys=[partner_id]
     )
     assignment: Mapped["ProjectAssignment | None"] = relationship(
-        "ProjectAssignment", back_populates="contract", foreign_keys="ProjectAssignment.contract_id"
+        "ProjectAssignment",
+        back_populates="contract",
+        foreign_keys="ProjectAssignment.contract_id",
     )
 
 
@@ -144,8 +155,12 @@ class Evaluation(Base):
         Index("ix_evaluations_evaluator_id", "evaluator_id"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     partner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("partner.partners.id")
     )
@@ -164,7 +179,9 @@ class Evaluation(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    partner: Mapped["Partner | None"] = relationship("Partner", back_populates="evaluations")
+    partner: Mapped["Partner | None"] = relationship(
+        "Partner", back_populates="evaluations"
+    )
 
 
 class ProjectAssignment(Base):
@@ -175,8 +192,12 @@ class ProjectAssignment(Base):
         Index("ix_project_assignments_contract_id", "contract_id"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     partner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("partner.partners.id")
     )
@@ -193,7 +214,9 @@ class ProjectAssignment(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    partner: Mapped["Partner | None"] = relationship("Partner", back_populates="assignments")
+    partner: Mapped["Partner | None"] = relationship(
+        "Partner", back_populates="assignments"
+    )
     contract: Mapped["Contract | None"] = relationship(
         "Contract", back_populates="assignment", foreign_keys=[contract_id]
     )

@@ -93,9 +93,9 @@ async def update_policy(
     if status is not None:
         policy.status = status
     if effective_date is not None:
-        policy.effective_date = date.fromisoformat(effective_date)
+        policy.effective_date = date.fromisoformat(effective_date)  # type: ignore[assignment]
     if review_date is not None:
-        policy.review_date = date.fromisoformat(review_date)
+        policy.review_date = date.fromisoformat(review_date)  # type: ignore[assignment]
     policy.updated_at = _utcnow()
     await db.flush()
     return policy
@@ -113,7 +113,7 @@ async def mark_policy_reviewed(
     policy.version += 1
     policy.approved_by = approved_by
     if new_review_date:
-        policy.review_date = new_review_date
+        policy.review_date = new_review_date  # type: ignore[assignment]
     policy.updated_at = _utcnow()
     await db.flush()
     return policy

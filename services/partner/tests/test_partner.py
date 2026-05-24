@@ -8,7 +8,6 @@ from httpx import AsyncClient
 
 from .conftest import (
     SAMPLE_UUID,
-    TEST_ORG_ID,
     TEST_USER_ID,
     make_mock_assignment,
     make_mock_contact,

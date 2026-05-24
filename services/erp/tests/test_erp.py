@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -155,7 +154,6 @@ class TestAuthRequired:
 # ============================================
 class TestLedgerCRUD:
     def test_create_ledger(self, client, mock_db):
-        from src.models.models import ProjectLedger
 
         org_id = uuid.uuid4()
         project_id = uuid.uuid4()

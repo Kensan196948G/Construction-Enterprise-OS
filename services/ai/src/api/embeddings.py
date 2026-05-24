@@ -11,7 +11,6 @@ from ..models.base import get_db
 from ..schemas import (
     EmbeddingRequest,
     EmbeddingSearchRequest,
-    EmbeddingSearchResponse,
     EmbeddingSearchResult,
 )
 from ..services.embedding_service import EmbeddingService

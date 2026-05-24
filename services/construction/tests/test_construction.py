@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -362,7 +361,7 @@ class TestResourceCRUD:
         )
 
         response = client.get(
-            f"/api/v1/construction/resources?resource_type=equipment",
+            "/api/v1/construction/resources?resource_type=equipment",
             headers=_auth_headers(),
         )
         assert response.status_code == 200

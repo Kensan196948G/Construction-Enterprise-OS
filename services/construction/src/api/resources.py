@@ -49,7 +49,7 @@ async def list_resources(
         page=page,
         per_page=per_page,
     )
-    return ResourceListResponse(items=items, total=total, page=page, per_page=per_page)
+    return ResourceListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
 @router.get("/resources/{resource_id}", response_model=ResourceResponse)

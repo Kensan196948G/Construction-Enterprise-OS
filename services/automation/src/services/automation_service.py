@@ -56,7 +56,9 @@ async def get_rules_paginated(
         count_query = count_query.where(AutomationRule.is_active == is_active)
     if organization_id:
         query = query.where(AutomationRule.organization_id == organization_id)
-        count_query = count_query.where(AutomationRule.organization_id == organization_id)
+        count_query = count_query.where(
+            AutomationRule.organization_id == organization_id
+        )
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -69,8 +71,12 @@ async def get_rules_paginated(
     return rules, total
 
 
-async def update_rule(db: AsyncSession, rule_id: UUID, data: dict) -> AutomationRule | None:
-    result = await db.execute(select(AutomationRule).where(AutomationRule.id == rule_id))
+async def update_rule(
+    db: AsyncSession, rule_id: UUID, data: dict
+) -> AutomationRule | None:
+    result = await db.execute(
+        select(AutomationRule).where(AutomationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         return None
@@ -86,7 +92,9 @@ async def update_rule(db: AsyncSession, rule_id: UUID, data: dict) -> Automation
 
 
 async def delete_rule(db: AsyncSession, rule_id: UUID) -> bool:
-    result = await db.execute(select(AutomationRule).where(AutomationRule.id == rule_id))
+    result = await db.execute(
+        select(AutomationRule).where(AutomationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         return False
@@ -96,7 +104,9 @@ async def delete_rule(db: AsyncSession, rule_id: UUID) -> bool:
 
 
 async def enable_rule(db: AsyncSession, rule_id: UUID) -> AutomationRule | None:
-    result = await db.execute(select(AutomationRule).where(AutomationRule.id == rule_id))
+    result = await db.execute(
+        select(AutomationRule).where(AutomationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         return None
@@ -106,7 +116,9 @@ async def enable_rule(db: AsyncSession, rule_id: UUID) -> AutomationRule | None:
 
 
 async def disable_rule(db: AsyncSession, rule_id: UUID) -> AutomationRule | None:
-    result = await db.execute(select(AutomationRule).where(AutomationRule.id == rule_id))
+    result = await db.execute(
+        select(AutomationRule).where(AutomationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         return None
@@ -115,8 +127,12 @@ async def disable_rule(db: AsyncSession, rule_id: UUID) -> AutomationRule | None
     return rule
 
 
-async def test_rule_execution(db: AsyncSession, rule_id: UUID, test_data: dict) -> dict | None:
-    result = await db.execute(select(AutomationRule).where(AutomationRule.id == rule_id))
+async def test_rule_execution(
+    db: AsyncSession, rule_id: UUID, test_data: dict
+) -> dict | None:
+    result = await db.execute(
+        select(AutomationRule).where(AutomationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         return None
@@ -166,7 +182,7 @@ def _evaluate_condition(condition: dict, input_data: dict) -> bool:
     elif operator == "lte":
         return actual is not None and actual <= value
     elif operator == "contains":
-        return value in str(actual) if actual is not None else False
+        return str(value) in str(actual) if actual is not None else False
     return False
 
 
@@ -189,9 +205,7 @@ async def create_task(db: AsyncSession, data: dict) -> ScheduledTask:
 
 
 async def get_task_by_id(db: AsyncSession, task_id: UUID) -> ScheduledTask | None:
-    result = await db.execute(
-        select(ScheduledTask).where(ScheduledTask.id == task_id)
-    )
+    result = await db.execute(select(ScheduledTask).where(ScheduledTask.id == task_id))
     return result.scalar_one_or_none()
 
 
@@ -214,7 +228,9 @@ async def get_tasks_paginated(
         count_query = count_query.where(ScheduledTask.is_active == is_active)
     if organization_id:
         query = query.where(ScheduledTask.organization_id == organization_id)
-        count_query = count_query.where(ScheduledTask.organization_id == organization_id)
+        count_query = count_query.where(
+            ScheduledTask.organization_id == organization_id
+        )
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -227,7 +243,9 @@ async def get_tasks_paginated(
     return tasks, total
 
 
-async def update_task(db: AsyncSession, task_id: UUID, data: dict) -> ScheduledTask | None:
+async def update_task(
+    db: AsyncSession, task_id: UUID, data: dict
+) -> ScheduledTask | None:
     result = await db.execute(select(ScheduledTask).where(ScheduledTask.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
@@ -313,9 +331,7 @@ async def create_trigger(db: AsyncSession, data: dict) -> Trigger:
 
 
 async def get_trigger_by_id(db: AsyncSession, trigger_id: UUID) -> Trigger | None:
-    result = await db.execute(
-        select(Trigger).where(Trigger.id == trigger_id)
-    )
+    result = await db.execute(select(Trigger).where(Trigger.id == trigger_id))
     return result.scalar_one_or_none()
 
 
@@ -351,7 +367,9 @@ async def get_triggers_paginated(
     return triggers, total
 
 
-async def update_trigger(db: AsyncSession, trigger_id: UUID, data: dict) -> Trigger | None:
+async def update_trigger(
+    db: AsyncSession, trigger_id: UUID, data: dict
+) -> Trigger | None:
     result = await db.execute(select(Trigger).where(Trigger.id == trigger_id))
     trigger = result.scalar_one_or_none()
     if not trigger:

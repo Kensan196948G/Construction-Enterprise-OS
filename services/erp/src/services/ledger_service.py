@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.models import Budget, CostItem, Invoice, ProjectLedger
+from ..models.models import Budget, CostItem, ProjectLedger
 
 
 async def create_ledger(db: AsyncSession, data: dict) -> ProjectLedger:

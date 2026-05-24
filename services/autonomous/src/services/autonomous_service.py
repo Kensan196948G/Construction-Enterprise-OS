@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import AutonomousAgent, AutonomousControl, AutonomousOperation, AutonomousTask, ConstructionSimulation, DigitalTwin, MarineRobot

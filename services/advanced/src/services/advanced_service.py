@@ -1,6 +1,6 @@
 """Advanced 統合ビジネスサービス"""
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -17,7 +17,9 @@ from ..models import (
 # ============================================
 # 港湾施工管理
 # ============================================
-async def create_marine_construction(db: AsyncSession, data: dict) -> MarineConstruction:
+async def create_marine_construction(
+    db: AsyncSession, data: dict
+) -> MarineConstruction:
     record = MarineConstruction(
         organization_id=data["organization_id"],
         project_id=data.get("project_id"),
@@ -38,7 +40,9 @@ async def create_marine_construction(db: AsyncSession, data: dict) -> MarineCons
     return record
 
 
-async def get_marine_construction_by_id(db: AsyncSession, record_id: UUID) -> MarineConstruction | None:
+async def get_marine_construction_by_id(
+    db: AsyncSession, record_id: UUID
+) -> MarineConstruction | None:
     result = await db.execute(
         select(MarineConstruction).where(MarineConstruction.id == record_id)
     )
@@ -59,7 +63,9 @@ async def list_marine_constructions(
 
     if construction_type:
         query = query.where(MarineConstruction.construction_type == construction_type)
-        count_query = count_query.where(MarineConstruction.construction_type == construction_type)
+        count_query = count_query.where(
+            MarineConstruction.construction_type == construction_type
+        )
     if status:
         query = query.where(MarineConstruction.status == status)
         count_query = count_query.where(MarineConstruction.status == status)
@@ -68,7 +74,9 @@ async def list_marine_constructions(
         count_query = count_query.where(MarineConstruction.project_id == project_id)
     if organization_id:
         query = query.where(MarineConstruction.organization_id == organization_id)
-        count_query = count_query.where(MarineConstruction.organization_id == organization_id)
+        count_query = count_query.where(
+            MarineConstruction.organization_id == organization_id
+        )
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -81,8 +89,12 @@ async def list_marine_constructions(
     return records, total
 
 
-async def update_marine_construction(db: AsyncSession, record_id: UUID, data: dict) -> MarineConstruction | None:
-    result = await db.execute(select(MarineConstruction).where(MarineConstruction.id == record_id))
+async def update_marine_construction(
+    db: AsyncSession, record_id: UUID, data: dict
+) -> MarineConstruction | None:
+    result = await db.execute(
+        select(MarineConstruction).where(MarineConstruction.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return None
@@ -96,7 +108,9 @@ async def update_marine_construction(db: AsyncSession, record_id: UUID, data: di
 
 
 async def delete_marine_construction(db: AsyncSession, record_id: UUID) -> bool:
-    result = await db.execute(select(MarineConstruction).where(MarineConstruction.id == record_id))
+    result = await db.execute(
+        select(MarineConstruction).where(MarineConstruction.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return False
@@ -131,7 +145,9 @@ async def create_inspection_record(db: AsyncSession, data: dict) -> InspectionRe
     return record
 
 
-async def get_inspection_record_by_id(db: AsyncSession, record_id: UUID) -> InspectionRecord | None:
+async def get_inspection_record_by_id(
+    db: AsyncSession, record_id: UUID
+) -> InspectionRecord | None:
     result = await db.execute(
         select(InspectionRecord).where(InspectionRecord.id == record_id)
     )
@@ -161,7 +177,9 @@ async def list_inspection_records(
         count_query = count_query.where(InspectionRecord.defect_type == defect_type)
     if organization_id:
         query = query.where(InspectionRecord.organization_id == organization_id)
-        count_query = count_query.where(InspectionRecord.organization_id == organization_id)
+        count_query = count_query.where(
+            InspectionRecord.organization_id == organization_id
+        )
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -174,8 +192,12 @@ async def list_inspection_records(
     return records, total
 
 
-async def update_inspection_record(db: AsyncSession, record_id: UUID, data: dict) -> InspectionRecord | None:
-    result = await db.execute(select(InspectionRecord).where(InspectionRecord.id == record_id))
+async def update_inspection_record(
+    db: AsyncSession, record_id: UUID, data: dict
+) -> InspectionRecord | None:
+    result = await db.execute(
+        select(InspectionRecord).where(InspectionRecord.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return None
@@ -189,7 +211,9 @@ async def update_inspection_record(db: AsyncSession, record_id: UUID, data: dict
 
 
 async def delete_inspection_record(db: AsyncSession, record_id: UUID) -> bool:
-    result = await db.execute(select(InspectionRecord).where(InspectionRecord.id == record_id))
+    result = await db.execute(
+        select(InspectionRecord).where(InspectionRecord.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return False
@@ -200,7 +224,9 @@ async def delete_inspection_record(db: AsyncSession, record_id: UUID) -> bool:
 
 async def get_defect_summary(db: AsyncSession, organization_id: UUID) -> dict:
     result = await db.execute(
-        select(InspectionRecord).where(InspectionRecord.organization_id == organization_id)
+        select(InspectionRecord).where(
+            InspectionRecord.organization_id == organization_id
+        )
     )
     records = list(result.scalars().all())
 
@@ -230,7 +256,9 @@ async def get_defect_summary(db: AsyncSession, organization_id: UUID) -> dict:
         "by_asset_type": by_asset_type,
         "by_defect_type": by_defect_type,
         "requires_action_count": requires_action_count,
-        "average_confidence": round(confidence_sum / confidence_count, 4) if confidence_count else None,
+        "average_confidence": round(confidence_sum / confidence_count, 4)
+        if confidence_count
+        else None,
     }
 
 
@@ -252,10 +280,10 @@ async def create_design_review(db: AsyncSession, data: dict) -> DesignReview:
     return record
 
 
-async def get_design_review_by_id(db: AsyncSession, record_id: UUID) -> DesignReview | None:
-    result = await db.execute(
-        select(DesignReview).where(DesignReview.id == record_id)
-    )
+async def get_design_review_by_id(
+    db: AsyncSession, record_id: UUID
+) -> DesignReview | None:
+    result = await db.execute(select(DesignReview).where(DesignReview.id == record_id))
     return result.scalar_one_or_none()
 
 
@@ -295,7 +323,9 @@ async def list_design_reviews(
     return records, total
 
 
-async def update_design_review(db: AsyncSession, record_id: UUID, data: dict) -> DesignReview | None:
+async def update_design_review(
+    db: AsyncSession, record_id: UUID, data: dict
+) -> DesignReview | None:
     result = await db.execute(select(DesignReview).where(DesignReview.id == record_id))
     record = result.scalar_one_or_none()
     if not record:
@@ -329,7 +359,7 @@ async def get_compliance_report(db: AsyncSession, review_id: UUID) -> dict | Non
         return None
 
     compliance = review.compliance_checks or {}
-    suggestions = review.ai_suggestions or []
+    suggestions: list = review.ai_suggestions or []  # type: ignore[assignment]
     violations = compliance.get("violations", [])
     passed = 0
     failed = 0
@@ -382,7 +412,9 @@ async def create_predictive_model(db: AsyncSession, data: dict) -> PredictiveMod
     return record
 
 
-async def get_predictive_model_by_id(db: AsyncSession, record_id: UUID) -> PredictiveModel | None:
+async def get_predictive_model_by_id(
+    db: AsyncSession, record_id: UUID
+) -> PredictiveModel | None:
     result = await db.execute(
         select(PredictiveModel).where(PredictiveModel.id == record_id)
     )
@@ -412,7 +444,9 @@ async def list_predictive_models(
         count_query = count_query.where(PredictiveModel.asset_type == asset_type)
     if organization_id:
         query = query.where(PredictiveModel.organization_id == organization_id)
-        count_query = count_query.where(PredictiveModel.organization_id == organization_id)
+        count_query = count_query.where(
+            PredictiveModel.organization_id == organization_id
+        )
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -425,8 +459,12 @@ async def list_predictive_models(
     return records, total
 
 
-async def update_predictive_model(db: AsyncSession, record_id: UUID, data: dict) -> PredictiveModel | None:
-    result = await db.execute(select(PredictiveModel).where(PredictiveModel.id == record_id))
+async def update_predictive_model(
+    db: AsyncSession, record_id: UUID, data: dict
+) -> PredictiveModel | None:
+    result = await db.execute(
+        select(PredictiveModel).where(PredictiveModel.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return None
@@ -443,7 +481,9 @@ async def update_predictive_model(db: AsyncSession, record_id: UUID, data: dict)
 
 
 async def delete_predictive_model(db: AsyncSession, record_id: UUID) -> bool:
-    result = await db.execute(select(PredictiveModel).where(PredictiveModel.id == record_id))
+    result = await db.execute(
+        select(PredictiveModel).where(PredictiveModel.id == record_id)
+    )
     record = result.scalar_one_or_none()
     if not record:
         return False
@@ -453,7 +493,9 @@ async def delete_predictive_model(db: AsyncSession, record_id: UUID) -> bool:
 
 
 async def get_prediction_result(db: AsyncSession, model_id: UUID) -> dict | None:
-    result = await db.execute(select(PredictiveModel).where(PredictiveModel.id == model_id))
+    result = await db.execute(
+        select(PredictiveModel).where(PredictiveModel.id == model_id)
+    )
     model = result.scalar_one_or_none()
     if not model:
         return None

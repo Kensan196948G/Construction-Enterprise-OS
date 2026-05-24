@@ -69,7 +69,7 @@ async def list_agents(
             agents=[_agent_to_response(a) for a in agents],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

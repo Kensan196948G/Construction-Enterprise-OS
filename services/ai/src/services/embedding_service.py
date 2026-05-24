@@ -4,7 +4,7 @@ import logging
 from uuid import UUID
 
 import httpx
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_settings
@@ -63,7 +63,6 @@ class EmbeddingService:
 
     async def mock_embedding(self, text: str) -> list[float]:
         import hashlib
-        import struct
         dims = 1536
         h = hashlib.sha256(text.encode()).digest()
         vec = []

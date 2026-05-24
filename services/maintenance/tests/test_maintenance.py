@@ -35,12 +35,16 @@ def _make_auth_header() -> dict:
     import base64
     import json
 
-    payload_b64 = base64.urlsafe_b64encode(
-        json.dumps(VALID_TOKEN_PAYLOAD).encode()
-    ).decode().rstrip("=")
-    header_b64 = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-    ).decode().rstrip("=")
+    payload_b64 = (
+        base64.urlsafe_b64encode(json.dumps(VALID_TOKEN_PAYLOAD).encode())
+        .decode()
+        .rstrip("=")
+    )
+    header_b64 = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+        .decode()
+        .rstrip("=")
+    )
     signature = "fake_signature"
     token = f"{header_b64}.{payload_b64}.{signature}"
     return {"Authorization": f"Bearer {token}"}
@@ -177,6 +181,7 @@ class MockInspectionSchedule:
 # Test 1: Health check
 # ═══════════════════════════════════════════════
 
+
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -188,6 +193,7 @@ def test_health_check(client):
 # ═══════════════════════════════════════════════
 # Test 2-4: Auth required
 # ═══════════════════════════════════════════════
+
 
 def test_disasters_require_auth(client):
     response = client.get("/api/v1/maintenance/disasters")
@@ -207,6 +213,7 @@ def test_inspections_require_auth(client):
 # ═══════════════════════════════════════════════
 # Test 5: Create disaster report
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_disaster_success(mock_jwt, app):
@@ -255,12 +262,16 @@ def test_create_disaster_success(mock_jwt, app):
 # Test 6: List disasters with filters
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_list_disasters(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
     dr1 = MockDisaster(
-        id=uuid.uuid4(), title="Flood damage", disaster_type="flood", severity="moderate"
+        id=uuid.uuid4(),
+        title="Flood damage",
+        disaster_type="flood",
+        severity="moderate",
     )
     dr2 = MockDisaster(
         id=uuid.uuid4(), title="Landslide", disaster_type="landslide", severity="severe"
@@ -290,6 +301,7 @@ def test_list_disasters(mock_jwt, app):
 # Test 7: Get disaster with recovery plans
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_get_disaster_with_plans(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -310,7 +322,6 @@ def test_get_disaster_with_plans(mock_jwt, app):
 
     # Override the execute to return disaster first for get_by_id, then plans
     call_count = 0
-    orig_execute = db_mock.execute
 
     async def mock_execute(stmt):
         nonlocal call_count
@@ -336,6 +347,7 @@ def test_get_disaster_with_plans(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 8: Update disaster assessment
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_update_disaster_assessment(mock_jwt, app):
@@ -375,6 +387,7 @@ def test_update_disaster_assessment(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 9: Create recovery plan
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_recovery_plan(mock_jwt, app):
@@ -421,6 +434,7 @@ def test_create_recovery_plan(mock_jwt, app):
 # Test 10: Update recovery plan progress
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_update_recovery_plan_progress(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -456,6 +470,7 @@ def test_update_recovery_plan_progress(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 11: Create maintenance record
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_maintenance_record(mock_jwt, app):
@@ -504,13 +519,12 @@ def test_create_maintenance_record(mock_jwt, app):
 # Test 12: Complete maintenance record
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_complete_maintenance_record(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
-    record = MockMaintenanceRecord(
-        id=TEST_RECORD_ID, status="in_progress"
-    )
+    record = MockMaintenanceRecord(id=TEST_RECORD_ID, status="in_progress")
 
     db_mock = AsyncMock()
     db_mock.add = MagicMock()
@@ -544,6 +558,7 @@ def test_complete_maintenance_record(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 13: List overdue maintenance records
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_list_overdue_maintenance(mock_jwt, app):
@@ -579,6 +594,7 @@ def test_list_overdue_maintenance(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 14: Schedule inspection
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_inspection_schedule(mock_jwt, app):
@@ -625,13 +641,12 @@ def test_create_inspection_schedule(mock_jwt, app):
 # Test 15: Complete inspection with checklist
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_complete_inspection_with_checklist(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
-    inspection = MockInspectionSchedule(
-        id=TEST_INSPECTION_ID, status="scheduled"
-    )
+    inspection = MockInspectionSchedule(id=TEST_INSPECTION_ID, status="scheduled")
 
     db_mock = AsyncMock()
     db_mock.add = MagicMock()
@@ -671,6 +686,7 @@ def test_complete_inspection_with_checklist(mock_jwt, app):
 # Test 16: Get upcoming inspections
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_get_upcoming_inspections(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -706,6 +722,7 @@ def test_get_upcoming_inspections(mock_jwt, app):
 # Test 17: Get overdue inspections
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_get_overdue_inspections(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -737,6 +754,7 @@ def test_get_overdue_inspections(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 18: Not found - disaster
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_disaster_not_found(mock_jwt, app):

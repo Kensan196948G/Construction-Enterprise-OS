@@ -128,7 +128,6 @@ class TestAuthRequired:
 
 class TestBIMModelCRUD:
     def test_create_model_success(self, app):
-        from src.models import BIMModel
 
         model_id = uuid4()
         org_id = uuid4()
@@ -269,7 +268,7 @@ class TestPointCloudCRUD:
 
 class TestBIMModelSchemaValidation:
     def test_response_schema_structure(self):
-        from src.schemas import APIResponse, BIMModelResponse
+        from src.schemas import APIResponse
 
         resp = APIResponse(
             success=True,

@@ -66,13 +66,15 @@ DEFAULT_TEMPLATES = [
 
 class PromptService:
     @staticmethod
-    async def seed_templates(db: AsyncSession, organization_id: UUID, created_by: UUID | None = None):
+    async def seed_templates(
+        db: AsyncSession, organization_id: UUID, created_by: UUID | None = None
+    ):
         existing = await db.execute(
             select(func.count(PromptTemplate.id)).where(
                 PromptTemplate.organization_id == organization_id
             )
         )
-        if existing.scalar() > 0:
+        if (existing.scalar() or 0) > 0:
             return
 
         for tmpl in DEFAULT_TEMPLATES:
@@ -83,7 +85,9 @@ class PromptService:
             )
             db.add(template)
         await db.flush()
-        logger.info(f"Seeded {len(DEFAULT_TEMPLATES)} prompt templates for org {organization_id}")
+        logger.info(
+            f"Seeded {len(DEFAULT_TEMPLATES)} prompt templates for org {organization_id}"
+        )
 
     @staticmethod
     async def create_template(
@@ -127,6 +131,7 @@ class PromptService:
         templates = list(result.scalars().all())
 
         from math import ceil
+
         pagination = {
             "page": page,
             "per_page": per_page,

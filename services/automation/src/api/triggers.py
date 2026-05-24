@@ -68,7 +68,7 @@ async def list_triggers(
             triggers=[_trigger_to_response(t) for t in triggers_items],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

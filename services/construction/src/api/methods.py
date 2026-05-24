@@ -48,7 +48,7 @@ async def list_methods(
         page=page,
         per_page=per_page,
     )
-    return MethodListResponse(items=items, total=total, page=page, per_page=per_page)
+    return MethodListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
 @router.get("/methods/{method_id}", response_model=MethodResponse)

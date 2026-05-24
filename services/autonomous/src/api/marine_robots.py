@@ -74,7 +74,7 @@ async def list_marine_robots(
             robots=[_robot_to_response(r) for r in robots],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

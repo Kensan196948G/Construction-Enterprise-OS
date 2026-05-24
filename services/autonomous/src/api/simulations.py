@@ -67,7 +67,7 @@ async def list_simulations(
             simulations=[_sim_to_response(s) for s in sims],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

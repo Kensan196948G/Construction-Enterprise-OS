@@ -20,14 +20,36 @@ jobs:
   python-checks:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service:
+          # Foundation layer
           - services/auth
           - services/document
           - services/workflow
           - services/gis
           - services/iot
           - services/notification
+          # Data & Intelligence layer
+          - services/analytics
+          - services/ai
+          - services/bim
+          - services/vision
+          # Platform layer
+          - services/advanced
+          - services/automation
+          - services/gateway
+          - services/partner
+          - services/platform
+          - services/security
+          # Business Application layer
+          - services/construction
+          - services/erp
+          - services/field-dx
+          - services/maintenance
+          - services/safety
+          # Autonomous layer
+          - services/autonomous
     defaults:
       run:
         working-directory: ${{ matrix.service }}

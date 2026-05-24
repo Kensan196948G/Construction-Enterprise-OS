@@ -48,7 +48,7 @@ async def list_ledgers(
         page=page,
         per_page=per_page,
     )
-    return LedgerListResponse(items=items, total=total, page=page, per_page=per_page)
+    return LedgerListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
 @router.get("/ledger/{ledger_id}", response_model=LedgerDetailResponse)

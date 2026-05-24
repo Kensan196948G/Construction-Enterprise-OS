@@ -1,7 +1,6 @@
 """協力会社管理ビジネスロジック"""
 
 import uuid
-from datetime import datetime, timezone
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,9 +21,7 @@ async def create_partner(
     return partner
 
 
-async def get_partner_by_id(
-    db: AsyncSession, partner_id: uuid.UUID
-) -> Partner | None:
+async def get_partner_by_id(db: AsyncSession, partner_id: uuid.UUID) -> Partner | None:
     result = await db.execute(
         select(Partner)
         .options(
@@ -51,7 +48,7 @@ async def list_partners(
     if status:
         conditions.append(Partner.status == status)
     if specialization:
-        conditions.append(Partner.specializations.any(specialization))
+        conditions.append(Partner.specializations.any(specialization))  # type: ignore[arg-type]
     if search:
         conditions.append(
             or_(
@@ -73,10 +70,7 @@ async def list_partners(
 
     offset = (page - 1) * per_page
     query = (
-        base_query
-        .order_by(Partner.registered_at.desc())
-        .offset(offset)
-        .limit(per_page)
+        base_query.order_by(Partner.registered_at.desc()).offset(offset).limit(per_page)
     )
     result = await db.execute(query)
     partners = list(result.scalars().all())
@@ -121,8 +115,9 @@ async def calculate_partner_rating(
     db: AsyncSession, partner_id: uuid.UUID
 ) -> float | None:
     result = await db.execute(
-        select(func.avg(Evaluation.overall_score))
-        .where(Evaluation.partner_id == partner_id)
+        select(func.avg(Evaluation.overall_score)).where(
+            Evaluation.partner_id == partner_id
+        )
     )
     avg = result.scalar()
     return round(float(avg), 1) if avg else None

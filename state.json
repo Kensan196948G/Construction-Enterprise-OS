@@ -6,16 +6,16 @@
     "release_deadline": null,
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
-    "phase": "verify",
-    "phase_detail": "全15サービス 339テスト ALL PASS。5レイヤ中 ①Foundation完遂 ②4/9 ③4/9 ④5/11 ⑤0/6",
-    "status": "stable"
+    "phase": "build",
+    "phase_detail": "WebUI全ページ実装完了（PR#2 merged）。バックエンドAPI連携が次フェーズ。",
+    "stability": "stable"
   },
   "current_session": {
     "started_at": "2026-05-24T05:45:00+09:00",
     "max_working_minutes": 300,
     "deadline": "2026-05-24T10:45:00+09:00",
     "loop": "Build",
-    "status": "completing"
+    "status": "in_progress"
   },
   "technical": {
     "backend": "Python 3.12 + FastAPI",
@@ -46,34 +46,98 @@
   },
   "progress": {
     "completed": [
+      "PR#1: CI全修正（9ジョブ全GREEN）",
+      "PR#2: WebUI全ページ実装 — projects/documents/iot/gis/workflows/settings (1,981行追加)",
       "① Foundation: 認証 (30test) + API GW (9test) + イベント (28種) + ログ (24test) + 通知 (13test) + UI (18cmp) = 全9基盤",
       "② Data&AI: GIS (25test) + 文書 (12test) + IoT (22test) + AI (29test) = 4/9",
       "③ Platform: ワークフロー (17test) + セキュリティ (23test) + 協力会社連携 (21test) = 3/9",
       "④ Business: ERP経営管理 (27test) + 安全管理 (14test) + 現場DX (20test) = 3/11",
-      "総計: 13サービス + 7パッケージ + 3アプリ = 390ファイル",
-      "テスト総計: 286 tests ALL PASS",
-      "GitHub: https://github.com/Kensan196948G/Construction-Enterprise-OS"
+      "テスト総計: 286 tests ALL PASS"
     ],
     "in_progress": [],
     "next": [
+      "WebUI → バックエンドAPI連携（現在はモックデータ）",
+      "GIS: Leaflet.js 等の実地図ライブラリ統合",
+      "ワークフロー: 状態変更インタラクション実装",
       "② Data: BIM/CIMデータ, データレイク, ベクトルDB, OCR/画像AI, 分析基盤",
-      "③ Platform: モバイル/PWA, 自動化(RPA), BIM/CIM Viewer, GIS Viewer, IoT管理",
-      "④ Business: 港湾施工管理, 災害復旧, 維持管理, 点検AI, AI設計照査, 予知保全",
-      "⑤ Autonomous: AI Agent, 自律施工, 自動最適化, デジタルツイン, 海洋ロボティクス, 自律制御"
+      "③ Platform: モバイル/PWA, 自動化(RPA)",
+      "④ Business: 港湾施工管理, 災害復旧, 維持管理, 点検AI, 予知保全",
+      "⑤ Autonomous: AI Agent, 自律施工, デジタルツイン"
     ]
-    "in_progress": ["ワークフロー基盤", "IoT統合基盤", "AI共通基盤"],
-    "next": [
-      "BIM/CIM統合基盤",
-      "モバイル/PWA基盤",
-      "協力会社連携基盤",
-      "④ Business Apps (現場DX/港湾/安全/ERP)",
-      "⑤ Autonomous (AI Agent/デジタルツイン)"
-    ]
+  },
+  "kpi": {
+    "ci_success_rate": 1,
+    "test_pass_rate": 1,
+    "security_critical": 0,
+    "blocker_count": 0
   },
   "github": {
     "enabled": true,
     "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
     "branch": "main",
+    "merged_prs": [
+      "#1 CI修正",
+      "#2 WebUI全ページ実装"
+    ],
     "note": "created 2026-05-24"
+  },
+  "compact": {
+    "last_pre_compact_at": "2026-05-24T06:36:13.110Z"
+  },
+  "execution": {
+    "current_session_start_at": "2026-05-24T06:37:55.513Z",
+    "last_trigger": "manual",
+    "last_stop_at": "2026-05-24T06:32:19.697Z"
+  },
+  "dreaming": {
+    "patterns": [],
+    "curated_memories": [],
+    "recurring_mistakes": [],
+    "last_dreaming_run": null,
+    "dreaming_enabled": false
+  },
+  "warnings": [
+    {
+      "at": "2026-05-24T06:32:19.739Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 61 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "services/advanced/src/models/base.py",
+        "services/advanced/src/schemas/__init__.py",
+        "services/advanced/src/services/advanced_service.py",
+        "services/advanced/tests/test_advanced.py",
+        "services/ai/src/api/embeddings.py",
+        "services/ai/src/api/llm.py",
+        "services/ai/src/models/base.py",
+        "services/ai/src/schemas/__init__.py",
+        "services/ai/src/services/embedding_service.py",
+        "services/ai/src/services/llm_service.py",
+        "services/ai/tests/test_ai.py",
+        "services/analytics/src/api/pipelines.py",
+        "services/analytics/src/api/reports.py",
+        "services/analytics/src/models/base.py",
+        "services/automation/src/models/base.py",
+        "services/automation/src/schemas/__init__.py",
+        "services/autonomous/src/models/base.py",
+        "services/autonomous/src/schemas/__init__.py",
+        "services/autonomous/src/services/autonomous_service.py",
+        "services/bim/src/api/elements.py",
+        "services/bim/src/models/base.py",
+        "services/bim/src/schemas/__init__.py",
+        "services/bim/tests/test_bim.py",
+        "services/construction/src/api/schedule.py",
+        "services/construction/src/api/wbs.py",
+        "services/construction/src/models/base.py",
+        "services/construction/tests/test_construction.py",
+        "services/erp/src/api/invoices.py",
+        "services/erp/src/api/ledger.py",
+        "services/erp/src/models/base.py"
+      ],
+      "truncated": true
+    }
+  ],
+  "learning": {
+    "failure_patterns": [],
+    "success_patterns": []
   }
 }

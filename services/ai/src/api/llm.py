@@ -3,7 +3,7 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,9 +11,7 @@ from ..middleware.auth import TokenData, get_current_user
 from ..models.base import get_db
 from ..schemas import (
     ChatRequest,
-    ChatResponse,
     CompletionRequest,
-    CompletionResponse,
 )
 from ..services.llm_service import MockLLMProvider, OpenAICompatibleProvider
 from ..services.prompt_service import PromptService
@@ -24,6 +22,7 @@ router = APIRouter()
 
 def _get_llm_provider() -> OpenAICompatibleProvider | MockLLMProvider:
     from ..config import get_settings
+
     s = get_settings()
     if s.LLM_API_KEY:
         return OpenAICompatibleProvider()
@@ -47,8 +46,11 @@ async def chat(
             )
             if template:
                 from jinja2 import Template
+
                 variables = body.variables or {}
-                user_content = Template(template.user_prompt_template).render(**variables)
+                user_content = Template(template.user_prompt_template).render(
+                    **variables
+                )
                 messages = [
                     {"role": "system", "content": template.system_prompt},
                 ] + messages
@@ -57,7 +59,7 @@ async def chat(
         except Exception:
             logger.exception("Failed to apply prompt template")
 
-    kwargs = {}
+    kwargs: dict[str, object] = {}
     if body.model:
         kwargs["model"] = body.model
     if body.temperature is not None:
@@ -98,8 +100,11 @@ async def chat_stream(
             )
             if template:
                 from jinja2 import Template
+
                 variables = body.variables or {}
-                user_content = Template(template.user_prompt_template).render(**variables)
+                user_content = Template(template.user_prompt_template).render(
+                    **variables
+                )
                 messages = [
                     {"role": "system", "content": template.system_prompt},
                 ] + messages
@@ -108,7 +113,7 @@ async def chat_stream(
         except Exception:
             logger.exception("Failed to apply prompt template")
 
-    kwargs = {}
+    kwargs: dict[str, object] = {}
     if body.model:
         kwargs["model"] = body.model
     if body.temperature is not None:
@@ -146,13 +151,20 @@ async def complete(
     template = await PromptService.get_template(db, body.prompt_template_id, org_id)
     if not template:
         from fastapi import HTTPException, status
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": "プロンプトテンプレートが見つかりません。"},
+            detail={
+                "code": "NOT_FOUND",
+                "message": "プロンプトテンプレートが見つかりません。",
+            },
         )
 
     from jinja2 import Template
-    user_content = Template(template.user_prompt_template).render(**(body.variables or {}))
+
+    user_content = Template(template.user_prompt_template).render(
+        **(body.variables or {})
+    )
 
     messages = [
         {"role": "system", "content": template.system_prompt},
@@ -161,7 +173,9 @@ async def complete(
 
     kwargs = {
         "model": body.model or template.model,
-        "temperature": body.temperature if body.temperature is not None else template.temperature,
+        "temperature": body.temperature
+        if body.temperature is not None
+        else template.temperature,
         "max_tokens": body.max_tokens or template.max_tokens,
     }
 

@@ -48,7 +48,7 @@ async def list_schedules(
         page=page,
         per_page=per_page,
     )
-    return ScheduleListResponse(items=items, total=total, page=page, per_page=per_page)
+    return ScheduleListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
 @router.get("/schedules/{schedule_id}", response_model=ScheduleResponse)

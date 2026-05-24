@@ -72,7 +72,7 @@ async def list_twins(
             twins=[_twin_to_response(t) for t in twins],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

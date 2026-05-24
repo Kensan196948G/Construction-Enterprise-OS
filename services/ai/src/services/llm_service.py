@@ -18,8 +18,12 @@ class LLMProvider(ABC):
         pass
 
     @abstractmethod
-    async def stream_complete(self, messages: list[dict], **kwargs) -> AsyncGenerator[str, None]:
-        pass
+    def stream_complete(
+        self, messages: list[dict], **kwargs
+    ) -> AsyncGenerator[str, None]: ...
+
+    @abstractmethod
+    async def close(self): ...
 
 
 class OpenAICompatibleProvider(LLMProvider):
@@ -63,7 +67,9 @@ class OpenAICompatibleProvider(LLMProvider):
         data = resp.json()
         return data["choices"][0]["message"]["content"]
 
-    async def stream_complete(self, messages: list[dict], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_complete(
+        self, messages: list[dict], **kwargs
+    ) -> AsyncGenerator[str, None]:
         model = kwargs.get("model", self.default_model)
         temperature = kwargs.get("temperature", 0.7)
         max_tokens = kwargs.get("max_tokens", 2000)
@@ -77,14 +83,21 @@ class OpenAICompatibleProvider(LLMProvider):
         }
 
         client = await self._get_client()
-        async with client.stream("POST", f"{self.base_url}/chat/completions", json=payload) as resp:
+        async with client.stream(
+            "POST", f"{self.base_url}/chat/completions", json=payload
+        ) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():
                 if line.startswith("data: ") and line != "data: [DONE]":
                     import json
+
                     try:
                         chunk = json.loads(line[6:])
-                        delta = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                        delta = (
+                            chunk.get("choices", [{}])[0]
+                            .get("delta", {})
+                            .get("content", "")
+                        )
                         if delta:
                             yield delta
                     except json.JSONDecodeError:
@@ -101,7 +114,9 @@ class MockLLMProvider(LLMProvider):
         last_message = messages[-1]["content"] if messages else ""
         return f"Mock response to: {last_message[:100]}..."
 
-    async def stream_complete(self, messages: list[dict], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_complete(
+        self, messages: list[dict], **kwargs
+    ) -> AsyncGenerator[str, None]:
         last_message = messages[-1]["content"] if messages else ""
         text = f"Mock response to: {last_message[:100]}..."
         for word in text.split():

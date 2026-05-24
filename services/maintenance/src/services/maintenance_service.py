@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import DisasterReport, InspectionSchedule, MaintenanceRecord, RecoveryPlan
@@ -205,7 +205,7 @@ async def update_recovery_plan(
     if status is not None:
         plan.status = status
         if status == "completed":
-            plan.completed_date = date.today()
+            plan.completed_date = date.today()  # type: ignore[assignment]
             plan.progress_percent = Decimal("100.00")
     if estimated_duration_days is not None:
         plan.estimated_duration_days = estimated_duration_days
@@ -214,9 +214,9 @@ async def update_recovery_plan(
     if actual_cost is not None:
         plan.actual_cost = actual_cost
     if start_date is not None:
-        plan.start_date = start_date
+        plan.start_date = start_date  # type: ignore[assignment]
     if completed_date is not None:
-        plan.completed_date = completed_date
+        plan.completed_date = completed_date  # type: ignore[assignment]
     if contractor is not None:
         plan.contractor = contractor
     if resources_needed is not None:
@@ -322,7 +322,7 @@ async def update_maintenance_record(
     if status is not None:
         record.status = status
         if status == "completed":
-            record.completed_date = record.completed_date or date.today()
+            record.completed_date = record.completed_date or date.today()  # type: ignore[assignment]
     if work_performed is not None:
         record.work_performed = work_performed
     if cost is not None:
@@ -330,9 +330,9 @@ async def update_maintenance_record(
     if contractor is not None:
         record.contractor = contractor
     if completed_date is not None:
-        record.completed_date = completed_date
+        record.completed_date = completed_date  # type: ignore[assignment]
     if next_maintenance_date is not None:
-        record.next_maintenance_date = next_maintenance_date
+        record.next_maintenance_date = next_maintenance_date  # type: ignore[assignment]
     if performed_by is not None:
         record.performed_by = performed_by
     if notes is not None:
@@ -431,13 +431,13 @@ async def update_inspection_schedule(
     if status is not None:
         inspection.status = status
         if status == "completed":
-            inspection.last_inspection_date = date.today()
+            inspection.last_inspection_date = date.today()  # type: ignore[assignment]
     if checklist is not None:
-        inspection.checklist = json.dumps(checklist)
+        inspection.checklist = json.dumps(checklist)  # type: ignore[assignment]
     if notes is not None:
         inspection.notes = notes
     if next_inspection_date is not None:
-        inspection.next_inspection_date = next_inspection_date
+        inspection.next_inspection_date = next_inspection_date  # type: ignore[assignment]
     if inspector is not None:
         inspection.inspector = inspector
     inspection.updated_at = _utcnow()

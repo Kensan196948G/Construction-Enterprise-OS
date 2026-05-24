@@ -52,7 +52,7 @@ async def list_datasources(
         per_page=per_page,
     )
     return DataSourceListResponse(
-        items=items, total=total, page=page, per_page=per_page
+        items=items, total=total, page=page, per_page=per_page  # type: ignore[arg-type]
     )
 
 

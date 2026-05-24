@@ -1,7 +1,5 @@
 """設定管理（環境変数ベース）"""
 
-import json
-import re
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

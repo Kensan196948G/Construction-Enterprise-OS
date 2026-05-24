@@ -7,7 +7,6 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Float,
-    ForeignKey,
     Integer,
     String,
     Text,
@@ -73,9 +72,7 @@ class ImageAnalysis(Base):
 
 class VectorIndex(Base):
     __tablename__ = "vector_indices"
-    __table_args__ = (
-        UniqueConstraint("organization_id", "collection_name"),
-    )
+    __table_args__ = (UniqueConstraint("organization_id", "collection_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

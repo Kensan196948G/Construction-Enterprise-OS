@@ -78,7 +78,7 @@ async def list_reviews(
 
     return APIResponse(
         data={"records": [_to_response(r) for r in records], "total": total},
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

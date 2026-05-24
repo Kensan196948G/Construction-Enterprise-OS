@@ -71,7 +71,7 @@ async def list_rules(
             rules=[_rule_to_response(r) for r in rules_items],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

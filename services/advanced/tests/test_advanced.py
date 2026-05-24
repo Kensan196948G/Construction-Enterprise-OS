@@ -1,6 +1,6 @@
 """Advanced Service 結合テスト"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -331,7 +331,6 @@ def test_create_inspection_record(client, auth_headers):
 # 10. Defect Summary
 # ============================================
 def test_get_defect_summary(client, auth_headers):
-    from datetime import date
     import src.api.inspections_ai as insp_module
 
     mock_insp1 = _make_mock_inspection(uuid4())

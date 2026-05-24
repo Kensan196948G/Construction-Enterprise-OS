@@ -62,7 +62,7 @@ async def list_prompts(
     template_list = [PromptTemplateResponse.model_validate(t) for t in templates]
     result = PromptTemplateListResponse(
         templates=template_list,
-        pagination=pagination,
+        pagination=pagination,  # type: ignore[arg-type]
     )
 
     meta = MetaInfo(
@@ -89,7 +89,10 @@ async def get_prompt(
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": "プロンプトテンプレートが見つかりません。"},
+            detail={
+                "code": "NOT_FOUND",
+                "message": "プロンプトテンプレートが見つかりません。",
+            },
         )
     return {
         "success": True,
@@ -114,7 +117,10 @@ async def update_prompt(
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": "プロンプトテンプレートが見つかりません。"},
+            detail={
+                "code": "NOT_FOUND",
+                "message": "プロンプトテンプレートが見つかりません。",
+            },
         )
     return {
         "success": True,
@@ -133,6 +139,9 @@ async def delete_prompt(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": "プロンプトテンプレートが見つかりません。"},
+            detail={
+                "code": "NOT_FOUND",
+                "message": "プロンプトテンプレートが見つかりません。",
+            },
         )
     return {"success": True, "data": None}

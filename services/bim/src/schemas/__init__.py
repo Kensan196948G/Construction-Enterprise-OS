@@ -1,7 +1,7 @@
 """BIM API リクエスト・レスポンス スキーマ"""
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -10,7 +10,10 @@ from pydantic import BaseModel, Field
 # ============================================
 # 共通
 # ============================================
-class APIResponse[T](BaseModel):
+T = TypeVar("T")
+
+
+class APIResponse(BaseModel, Generic[T]):
     success: bool = True
     data: T | None = None
     error: "ErrorDetail | None" = None

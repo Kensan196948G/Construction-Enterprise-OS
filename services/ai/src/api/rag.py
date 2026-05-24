@@ -14,7 +14,11 @@ from ..schemas import (
     RAGSearchRequest,
 )
 from ..services.embedding_service import EmbeddingService
-from ..services.llm_service import MockLLMProvider, OpenAICompatibleProvider
+from ..services.llm_service import (
+    LLMProvider,
+    MockLLMProvider,
+    OpenAICompatibleProvider,
+)
 from ..services.rag_service import RAGService
 
 logger = logging.getLogger(__name__)
@@ -23,8 +27,10 @@ router = APIRouter()
 
 def _get_rag_service() -> RAGService:
     from ..config import get_settings
+
     s = get_settings()
     embedding_service = EmbeddingService()
+    llm_provider: LLMProvider
     if s.LLM_API_KEY:
         llm_provider = OpenAICompatibleProvider()
     else:
@@ -42,6 +48,7 @@ async def rag_search(
     service = _get_rag_service()
 
     from ..config import get_settings
+
     use_mock = not get_settings().LLM_API_KEY
 
     try:
@@ -87,6 +94,7 @@ async def rag_generate(
     service = _get_rag_service()
 
     from ..config import get_settings
+
     use_mock = not get_settings().LLM_API_KEY
 
     try:

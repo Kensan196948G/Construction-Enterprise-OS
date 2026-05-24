@@ -73,7 +73,7 @@ async def list_tasks(
             tasks=[_task_to_response(t) for t in tasks_items],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

@@ -12,8 +12,6 @@ from ..models import BIMElement
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
-    BIMElementCategoryGroup,
-    BIMElementLevelGroup,
     BIMElementResponse,
     MetaInfo,
 )

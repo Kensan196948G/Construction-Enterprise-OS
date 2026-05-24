@@ -60,7 +60,7 @@ async def list_pending_commands(
             controls=[_ctrl_to_response(c) for c in controls],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,
@@ -109,7 +109,7 @@ async def get_target_command_history(
             controls=[_ctrl_to_response(c) for c in controls],
             total=total,
         ),
-        meta={
+        meta={  # type: ignore[arg-type]
             "page": page,
             "per_page": per_page,
             "total": total,

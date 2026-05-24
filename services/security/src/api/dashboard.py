@@ -1,6 +1,5 @@
 """Security dashboard API endpoint."""
 
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -9,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..middleware.auth import TokenData, get_current_user
 from ..models import SecurityAudit
 from ..models.base import get_db
-from ..schemas import APIResponse, SeverityCounts
+from ..schemas import APIResponse
 from ..services import incident_service, policy_service, vulnerability_service
 
 router = APIRouter()

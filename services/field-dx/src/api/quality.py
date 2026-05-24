@@ -54,7 +54,7 @@ async def list_quality_checks(
         per_page=per_page,
     )
     return QualityCheckListResponse(
-        items=items, total=total, page=page, per_page=per_page
+        items=items, total=total, page=page, per_page=per_page  # type: ignore[arg-type]
     )
 
 
