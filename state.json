@@ -182,12 +182,12 @@
     "usage_history": {
       "agents": {
         "general-purpose": {
-          "call_count": 3,
-          "last_used": "2026-05-24T06:55:47.575Z",
-          "last_description": "Update projects and workflows dashboard pages"
+          "call_count": 6,
+          "last_used": "2026-05-24T08:49:13.544Z",
+          "last_description": "セキュリティ/ワークフローページ実装"
         },
-        "_total_agent_calls": 5,
-        "_last_agent_call_at": "2026-05-24T07:07:36.025Z",
+        "_total_agent_calls": 8,
+        "_last_agent_call_at": "2026-05-24T08:49:13.544Z",
         "feature-dev_code-architect": {
           "call_count": 2,
           "last_used": "2026-05-24T07:07:36.025Z",

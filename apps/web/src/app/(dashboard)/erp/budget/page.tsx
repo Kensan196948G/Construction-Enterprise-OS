@@ -1,5 +1,271 @@
-import UnderDevelopment from "@/app/(dashboard)/_components/UnderDevelopment";
+"use client";
 
-export default function Page() {
-  return <UnderDevelopment title="予算管理" section="ERP・経営管理" />;
+import { DollarSign, TrendingUp, BarChart3, PieChart } from "lucide-react";
+
+// Mock data
+const BUDGET_PROJECTS = [
+  {
+    id: 1,
+    name: "品川タワー新築工事",
+    budget: 120000000,
+    actual: 82000000,
+    status: "進行中",
+  },
+  {
+    id: 2,
+    name: "横浜分譲マンション建設",
+    budget: 240000000,
+    actual: 84000000,
+    status: "進行中",
+  },
+  {
+    id: 3,
+    name: "大田区道路改良工事",
+    budget: 35000000,
+    actual: 28700000,
+    status: "進行中",
+  },
+  {
+    id: 4,
+    name: "渋谷複合施設改修工事",
+    budget: 480000000,
+    actual: 480000000,
+    status: "完了",
+  },
+  {
+    id: 5,
+    name: "川崎市庁舎耐震補強",
+    budget: 65000000,
+    actual: 12000000,
+    status: "計画中",
+  },
+];
+
+const BUDGET_CATEGORIES = [
+  { name: "人件費", budget: 282000000, actual: 210000000 },
+  { name: "資材費", budget: 375000000, actual: 298000000 },
+  { name: "外注費", budget: 158000000, actual: 121000000 },
+  { name: "機械費", budget: 84000000, actual: 62000000 },
+  { name: "諸経費", budget: 41000000, actual: 35700000 },
+];
+
+const STATUS_COLOR: Record<string, string> = {
+  進行中: "bg-blue-100 text-blue-800",
+  完了: "bg-green-100 text-green-800",
+  計画中: "bg-gray-100 text-gray-700",
+  超過: "bg-red-100 text-red-800",
+};
+
+function execRate(actual: number, budget: number): number {
+  return budget > 0 ? (actual / budget) * 100 : 0;
+}
+
+function rateColorClass(rate: number): string {
+  if (rate >= 100) return "text-red-600 font-semibold";
+  if (rate >= 85) return "text-yellow-600 font-semibold";
+  return "text-green-600 font-semibold";
+}
+
+export default function BudgetPage() {
+  const totalBudget = BUDGET_PROJECTS.reduce((s, p) => s + p.budget, 0);
+  const totalActual = BUDGET_PROJECTS.reduce((s, p) => s + p.actual, 0);
+  const totalRate = execRate(totalActual, totalBudget).toFixed(1);
+  const totalRemain = totalBudget - totalActual;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      {/* ページヘッダー */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">予算管理</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          プロジェクト別・費目別の予算執行状況を管理します
+        </p>
+      </div>
+
+      {/* 統計カード */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-start gap-4">
+          <div className="p-3 rounded-lg bg-blue-50">
+            <DollarSign className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">総予算額</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">
+              {totalBudget.toLocaleString()}円
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-start gap-4">
+          <div className="p-3 rounded-lg bg-orange-50">
+            <TrendingUp className="w-5 h-5 text-orange-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">実績合計</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">
+              {totalActual.toLocaleString()}円
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-start gap-4">
+          <div className="p-3 rounded-lg bg-purple-50">
+            <BarChart3 className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">執行率</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">
+              {totalRate}%
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-start gap-4">
+          <div className="p-3 rounded-lg bg-green-50">
+            <PieChart className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">残予算</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">
+              {totalRemain.toLocaleString()}円
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* プロジェクト別予算テーブル */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-800">
+            プロジェクト別 予算 vs 実績
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-6 py-3 text-left font-medium">
+                  プロジェクト名
+                </th>
+                <th className="px-6 py-3 text-right font-medium">予算額</th>
+                <th className="px-6 py-3 text-right font-medium">実績額</th>
+                <th className="px-6 py-3 text-right font-medium">執行率</th>
+                <th className="px-6 py-3 text-right font-medium">残予算</th>
+                <th className="px-6 py-3 text-center font-medium">
+                  ステータス
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {BUDGET_PROJECTS.map((p) => {
+                const rate = execRate(p.actual, p.budget);
+                const remain = p.budget - p.actual;
+                return (
+                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {p.name}
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {p.budget.toLocaleString()}円
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {p.actual.toLocaleString()}円
+                    </td>
+                    <td
+                      className={`px-6 py-4 text-right ${rateColorClass(rate)}`}
+                    >
+                      {rate.toFixed(1)}%
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {remain >= 0
+                        ? `${remain.toLocaleString()}円`
+                        : `▲${Math.abs(remain).toLocaleString()}円`}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          STATUS_COLOR[p.status] ?? "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 費目別予算テーブル */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-800">
+            費目別 予算配分・執行状況
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-6 py-3 text-left font-medium">費目</th>
+                <th className="px-6 py-3 text-right font-medium">予算額</th>
+                <th className="px-6 py-3 text-right font-medium">実績額</th>
+                <th className="px-6 py-3 text-right font-medium">残額</th>
+                <th className="px-6 py-3 text-right font-medium">執行率</th>
+                <th className="px-6 py-3 text-left font-medium w-40">
+                  進捗バー
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {BUDGET_CATEGORIES.map((c) => {
+                const rate = execRate(c.actual, c.budget);
+                const remain = c.budget - c.actual;
+                const barColor =
+                  rate >= 100
+                    ? "bg-red-500"
+                    : rate >= 85
+                      ? "bg-yellow-400"
+                      : "bg-blue-500";
+                return (
+                  <tr
+                    key={c.name}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {c.name}
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {c.budget.toLocaleString()}円
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {c.actual.toLocaleString()}円
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-700">
+                      {remain.toLocaleString()}円
+                    </td>
+                    <td
+                      className={`px-6 py-4 text-right ${rateColorClass(rate)}`}
+                    >
+                      {rate.toFixed(1)}%
+                    </td>
+                    <td className="px-6 py-4 w-40">
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${barColor}`}
+                          style={{ width: `${Math.min(rate, 100)}%` }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
