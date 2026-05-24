@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import auth, users, roles, permissions, clients, audit, ad, entra
+from .api import auth, users, roles, permissions, clients, audit, ad, entra, health
 from .models.base import engine
 
 logger = logging.getLogger(__name__)
@@ -84,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(audit.router, prefix="/api/v1/audit-logs", tags=["audit"])
     app.include_router(ad.router, prefix="/api/v1/auth/ad", tags=["ad"])
     app.include_router(entra.router, prefix="/api/v1/auth/entra", tags=["entra"])
+    app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 
     # ヘルスチェック
     @app.get("/health")

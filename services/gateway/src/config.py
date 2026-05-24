@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     UPSTREAM_SERVICES: dict[str, str] = {
         # Foundation layer — auth service (port 8000)
+        "^/api/v1/health": "http://localhost:8000",
         "^/api/v1/auth": "http://localhost:8000",
         "^/api/v1/users": "http://localhost:8000",
         "^/api/v1/roles": "http://localhost:8000",

@@ -27,9 +27,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -61,9 +66,19 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router, tags=["health"])
     app.include_router(marine.router, prefix="/api/v1/advanced/marine", tags=["marine"])
-    app.include_router(inspections_ai.router, prefix="/api/v1/advanced/inspections", tags=["inspections"])
-    app.include_router(design_review.router, prefix="/api/v1/advanced/design-reviews", tags=["design-reviews"])
-    app.include_router(predictive.router, prefix="/api/v1/advanced/predictive", tags=["predictive"])
+    app.include_router(
+        inspections_ai.router,
+        prefix="/api/v1/advanced/inspections-ai",
+        tags=["inspections-ai"],
+    )
+    app.include_router(
+        design_review.router,
+        prefix="/api/v1/advanced/design-reviews",
+        tags=["design-reviews"],
+    )
+    app.include_router(
+        predictive.router, prefix="/api/v1/advanced/predictive", tags=["predictive"]
+    )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

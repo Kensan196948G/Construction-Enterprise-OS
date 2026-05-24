@@ -10,7 +10,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from .api import budget, costs, health, invoices, ledger
+from .api import budget, costs, health, invoices, ledger, materials
 from .config import get_settings
 from .models.base import engine
 
@@ -25,9 +25,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -54,6 +59,9 @@ def create_app() -> FastAPI:
     app.include_router(budget.router, prefix="/api/v1/erp", tags=["budget"])
     app.include_router(costs.router, prefix="/api/v1/erp", tags=["costs"])
     app.include_router(invoices.router, prefix="/api/v1/erp", tags=["invoices"])
+    app.include_router(
+        materials.router, prefix="/api/v1/erp/materials", tags=["materials"]
+    )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

@@ -77,14 +77,17 @@
     "enabled": true,
     "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
     "branch": "main",
-    "merged_prs": ["#1 CI修正", "#2 WebUI全ページ実装"],
+    "merged_prs": [
+      "#1 CI修正",
+      "#2 WebUI全ページ実装"
+    ],
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T10:30:10.056Z"
+    "last_pre_compact_at": "2026-05-24T10:37:15.316Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T10:31:47.196Z",
+    "current_session_start_at": "2026-05-24T10:39:11.976Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T10:21:09.063Z"
   },
@@ -293,12 +296,12 @@
     "usage_history": {
       "agents": {
         "general-purpose": {
-          "call_count": 18,
-          "last_used": "2026-05-24T10:30:10.015Z",
-          "last_description": "Autonomous service - 6 new endpoints"
+          "call_count": 21,
+          "last_used": "2026-05-24T10:37:08.088Z",
+          "last_description": "Add health/services endpoint and API clients endpoints for common pages"
         },
-        "_total_agent_calls": 20,
-        "_last_agent_call_at": "2026-05-24T10:30:10.015Z",
+        "_total_agent_calls": 23,
+        "_last_agent_call_at": "2026-05-24T10:37:08.088Z",
         "feature-dev_code-architect": {
           "call_count": 2,
           "last_used": "2026-05-24T07:07:36.025Z",
