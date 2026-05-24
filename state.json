@@ -53,12 +53,12 @@
       "③ Platform: ワークフロー (17test) + セキュリティ (23test) + 協力会社連携 (21test) = 3/9",
       "④ Business: ERP経営管理 (27test) + 安全管理 (14test) + 現場DX (20test) = 3/11",
       "テスト総計: 286 tests ALL PASS",
-      "PR#6: WebUI→バックエンドAPI統合（全6ページ + dashboard統計 実データ化）"
+      "PR#6: WebUI→バックエンドAPI統合（全6ページ + dashboard統計 実データ化）",
+      "GIS: Leaflet.js 実地図統合（OpenStreetMap + カスタムピン）",
+      "ワークフロー: 承認・差戻しボタン実装（actionLoading で二重押し防止）"
     ],
     "in_progress": [],
     "next": [
-      "GIS: Leaflet.js 等の実地図ライブラリ統合",
-      "ワークフロー: 状態変更インタラクション実装",
       "② Data: BIM/CIMデータ, データレイク, ベクトルDB, OCR/画像AI, 分析基盤",
       "③ Platform: モバイル/PWA, 自動化(RPA)",
       "④ Business: 港湾施工管理, 災害復旧, 維持管理, 点検AI, 予知保全",
@@ -82,10 +82,10 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T07:47:00.218Z"
+    "last_pre_compact_at": "2026-05-24T07:52:22.240Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T07:48:44.288Z",
+    "current_session_start_at": "2026-05-24T07:53:48.080Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T07:03:22.985Z"
   },
