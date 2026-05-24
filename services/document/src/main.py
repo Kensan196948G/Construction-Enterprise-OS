@@ -27,6 +27,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _settings = get_settings()
     logger.info(f"Starting Document Service on {_settings.HOST}:{_settings.PORT}")
 
+    # Initialize shared auth middleware
+    try:
+        from ceo_os_auth import configure_auth
+        configure_auth(
+            jwt_public_key=getattr(_settings, 'jwt_public_key', getattr(_settings, 'JWT_PUBLIC_KEY', "dev-key")),
+            jwt_algorithm=getattr(_settings, 'JWT_ALGORITHM', "HS256"),
+        )
+    except ImportError:
+        pass  # Auth package not installed, using local middleware
+
     if _settings.ENVIRONMENT == "development":
         try:
             initialize_bucket()

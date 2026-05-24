@@ -27,6 +27,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Starting API Gateway on {settings.GATEWAY_HOST}:{settings.GATEWAY_PORT}")
 
+    # Initialize shared auth middleware
+    try:
+        from ceo_os_auth import configure_auth
+        configure_auth(
+            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
+            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+        )
+    except ImportError:
+        pass  # Auth package not installed, using local middleware
+
     upstream_count = len(settings.UPSTREAM_SERVICES)
     logger.info(f"Registered {upstream_count} upstream services")
     for pattern, url in settings.UPSTREAM_SERVICES.items():

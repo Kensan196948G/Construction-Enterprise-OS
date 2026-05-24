@@ -62,8 +62,8 @@ class WBSResponse(BaseModel):
     planned_cost: Decimal | None
     actual_cost: Decimal | None
     weight_percent: Decimal | None
-    progress_percent: Decimal
-    status: str
+    progress_percent: Decimal | None = None
+    status: str | None = None
     responsible_person: UUID | None
     created_at: datetime
     updated_at: datetime
@@ -203,12 +203,12 @@ class ScheduleResponse(BaseModel):
     actual_start: date | None
     actual_end: date | None
     duration_days: int | None
-    predecessor_ids: list[UUID]
-    successor_ids: list[UUID]
+    predecessor_ids: list[UUID] | None = None
+    successor_ids: list[UUID] | None = None
     float_days: int | None
     critical_path: bool
-    status: str
-    progress_percent: Decimal
+    status: str | None = None
+    progress_percent: Decimal | None = None
     created_at: datetime
     updated_at: datetime
 

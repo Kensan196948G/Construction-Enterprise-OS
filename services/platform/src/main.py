@@ -26,6 +26,17 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Starting Platform Service on {settings.HOST}:{settings.PORT}")
+
+    # Initialize shared auth middleware
+    try:
+        from ceo_os_auth import configure_auth
+        configure_auth(
+            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
+            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+        )
+    except ImportError:
+        pass  # Auth package not installed, using local middleware
+
     yield
     logger.info("Shutting down Platform Service")
     await engine.dispose()

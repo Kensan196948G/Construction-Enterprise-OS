@@ -26,6 +26,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Starting Auth Service on {settings.HOST}:{settings.PORT}")
 
+    # Initialize shared auth middleware
+    try:
+        from ceo_os_auth import configure_auth
+        configure_auth(
+            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
+            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+        )
+    except ImportError:
+        pass  # Auth package not installed, using local middleware
+
     # 開発環境: テーブルはAlembicマイグレーションで管理
     # 必要な場合は 'alembic upgrade head' を実行すること
 
