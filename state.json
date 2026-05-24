@@ -82,10 +82,10 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T06:55:47.606Z"
+    "last_pre_compact_at": "2026-05-24T07:00:43.312Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T06:57:09.456Z",
+    "current_session_start_at": "2026-05-24T07:02:14.807Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T06:32:19.697Z"
   },
