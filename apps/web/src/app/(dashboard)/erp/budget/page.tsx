@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { DollarSign, TrendingUp, BarChart3, PieChart } from "lucide-react";
 
-// Mock data
-const BUDGET_PROJECTS = [
+// Mock data (fallback)
+const MOCK_BUDGET_PROJECTS = [
   {
     id: 1,
     name: "品川タワー新築工事",
@@ -56,6 +57,14 @@ const STATUS_COLOR: Record<string, string> = {
   超過: "bg-red-100 text-red-800",
 };
 
+type BudgetProject = {
+  id: number;
+  name: string;
+  budget: number;
+  actual: number;
+  status: string;
+};
+
 function execRate(actual: number, budget: number): number {
   return budget > 0 ? (actual / budget) * 100 : 0;
 }
@@ -67,8 +76,42 @@ function rateColorClass(rate: number): string {
 }
 
 export default function BudgetPage() {
-  const totalBudget = BUDGET_PROJECTS.reduce((s, p) => s + p.budget, 0);
-  const totalActual = BUDGET_PROJECTS.reduce((s, p) => s + p.actual, 0);
+  const [budgetProjects, setBudgetProjects] =
+    useState<BudgetProject[]>(MOCK_BUDGET_PROJECTS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/erp/budgets?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
+        if (Array.isArray(items) && items.length > 0) {
+          setBudgetProjects(
+            items.map((item) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.project_name ?? item.name ?? ""),
+              budget: Number(item.budget_amount ?? item.budget ?? 0),
+              actual: Number(item.actual_amount ?? item.actual ?? 0),
+              status: String(item.status ?? "進行中"),
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const totalBudget = budgetProjects.reduce((s, p) => s + p.budget, 0);
+  const totalActual = budgetProjects.reduce((s, p) => s + p.actual, 0);
   const totalRate = execRate(totalActual, totalBudget).toFixed(1);
   const totalRemain = totalBudget - totalActual;
 
@@ -135,10 +178,15 @@ export default function BudgetPage() {
 
       {/* プロジェクト別予算テーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <h2 className="text-base font-semibold text-gray-800">
             プロジェクト別 予算 vs 実績
           </h2>
+          {loading && (
+            <span className="text-xs text-gray-400 animate-pulse">
+              読み込み中...
+            </span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -157,7 +205,7 @@ export default function BudgetPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {BUDGET_PROJECTS.map((p) => {
+              {budgetProjects.map((p) => {
                 const rate = execRate(p.actual, p.budget);
                 const remain = p.budget - p.actual;
                 return (

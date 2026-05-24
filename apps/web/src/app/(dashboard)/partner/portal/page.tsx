@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import {
   Bell,
   FileDown,
@@ -8,6 +9,7 @@ import {
   AlertCircle,
   Info,
   CheckCircle,
+  Building2,
 } from "lucide-react";
 
 interface Notice {
@@ -25,6 +27,17 @@ interface SharedDocument {
   type: string;
   updatedAt: string;
   fileSize: string;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  partner_type: string;
+  status: string;
+  rating: number;
+  email: string;
+  phone: string;
+  address: string;
 }
 
 const MOCK_NOTICES: Notice[] = [
@@ -137,6 +150,8 @@ const MOCK_DOCUMENTS: SharedDocument[] = [
   },
 ];
 
+const MOCK_PARTNERS: Partner[] = [];
+
 const IMPORTANCE_CONFIG = {
   high: { label: "重要", color: "bg-red-100 text-red-700", icon: AlertCircle },
   normal: { label: "通常", color: "bg-blue-100 text-blue-700", icon: Info },
@@ -152,6 +167,43 @@ const DOC_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function PartnerPortalPage() {
+  const [partners, setPartners] = useState<Partner[]>(MOCK_PARTNERS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/partner?status=active&per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setPartners(
+            data.map((item) => ({
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              partner_type: String(item.partner_type ?? ""),
+              status: String(item.status ?? ""),
+              rating: Number(item.rating ?? 0),
+              email: String(item.email ?? ""),
+              phone: String(item.phone ?? ""),
+              address: String(item.address ?? ""),
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data (empty list — notices/docs remain)
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const unreadCount = MOCK_NOTICES.filter((n) => !n.isRead).length;
   const highCount = MOCK_NOTICES.filter(
     (n) => n.importance === "high" && !n.isRead,
@@ -160,9 +212,20 @@ export default function PartnerPortalPage() {
   return (
     <div className="p-6 space-y-6">
       {/* ヘッダー */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">協力会社ポータル</h1>
-        <p className="text-sm text-gray-500 mt-1">お知らせ・書類共有ポータル</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">協力会社ポータル</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            お知らせ・書類共有ポータル
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-500 animate-pulse">
+              データ取得中...
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -318,6 +381,71 @@ export default function PartnerPortalPage() {
           </div>
         </div>
       </div>
+
+      {/* 協力会社一覧（APIから取得） */}
+      {partners.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-purple-600" />
+              登録協力会社
+            </h2>
+            <span className="text-xs text-gray-500">{partners.length}社</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    会社名
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    種別
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    ステータス
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    評価
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    連絡先
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {partners.map((partner) => (
+                  <tr
+                    key={partner.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {partner.name}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
+                      {partner.partner_type}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {partner.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {"★".repeat(Math.min(5, Math.round(partner.rating)))}
+                      <span className="text-gray-400 text-xs ml-1">
+                        ({partner.rating.toFixed(1)})
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
+                      {partner.email}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

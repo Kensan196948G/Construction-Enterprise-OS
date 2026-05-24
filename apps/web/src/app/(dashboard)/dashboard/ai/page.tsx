@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Brain, Zap, Target, TrendingUp } from "lucide-react";
 
 type ActionPriority = "critical" | "high" | "medium" | "low";
@@ -36,6 +37,26 @@ interface QueueTask {
   startedAt: string;
   estimatedDuration: string;
   progress: number; // 0-100
+}
+
+// API response types
+interface AiModel {
+  id: number | string;
+  name?: string;
+  model_name?: string;
+  purpose?: string;
+  description?: string;
+  accuracy?: number;
+  last_trained?: string;
+  next_training?: string;
+  data_points?: number;
+  dataPoints?: number;
+  status?: "active" | "retraining" | "degraded";
+}
+
+interface Report {
+  id: number | string;
+  [key: string]: unknown;
 }
 
 const RECOMMENDATIONS: AiRecommendation[] = [
@@ -292,11 +313,58 @@ const MODEL_STATUS_CONFIG: Record<
 };
 
 export default function AiDashboardPage() {
+  const [modelMetrics, setModelMetrics] =
+    useState<ModelMetrics[]>(MODEL_METRICS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [modelsRes, reportsRes] = await Promise.allSettled([
+        fetch("/api/v1/ai/models?per_page=10"),
+        fetch("/api/v1/analytics/reports?per_page=5"),
+      ]);
+
+      if (modelsRes.status === "fulfilled" && modelsRes.value.ok) {
+        const json: { items: AiModel[] } | AiModel[] =
+          await modelsRes.value.json();
+        const items: AiModel[] = Array.isArray(json)
+          ? json
+          : ((json as { items: AiModel[] }).items ?? []);
+
+        if (items.length > 0) {
+          const mapped: ModelMetrics[] = items.map((m, idx) => ({
+            id: typeof m.id === "number" ? m.id : idx + 1,
+            modelName: m.name ?? m.model_name ?? `モデル ${idx + 1}`,
+            purpose: m.purpose ?? m.description ?? "",
+            accuracy: m.accuracy ?? 0,
+            lastTrained: m.last_trained ?? "—",
+            nextTraining: m.next_training ?? "—",
+            dataPoints: m.data_points ?? m.dataPoints ?? 0,
+            status: m.status ?? "active",
+          }));
+          setModelMetrics(mapped);
+        }
+      }
+
+      // reportsRes currently unused — available for future extension
+      void reportsRes;
+    } catch {
+      // fallback to mock data — already set as default state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const critical = RECOMMENDATIONS.filter(
     (r) => r.priority === "critical",
   ).length;
   const avgAccuracy =
-    MODEL_METRICS.reduce((a, m) => a + m.accuracy, 0) / MODEL_METRICS.length;
+    modelMetrics.reduce((a, m) => a + m.accuracy, 0) / modelMetrics.length;
   const running = QUEUE_TASKS.filter((t) => t.status === "running").length;
   const failed = QUEUE_TASKS.filter((t) => t.status === "failed").length;
 
@@ -312,7 +380,7 @@ export default function AiDashboardPage() {
     {
       label: "平均モデル精度",
       value: `${avgAccuracy.toFixed(1)}%`,
-      sub: `${MODEL_METRICS.length}モデル稼働`,
+      sub: `${modelMetrics.length}モデル稼働`,
       icon: Brain,
       color: "text-purple-600",
       bg: "bg-purple-50",
@@ -346,7 +414,14 @@ export default function AiDashboardPage() {
             ダッシュボード — AI推奨アクション・予測精度・処理キュー
           </p>
         </div>
-        <Brain className="w-8 h-8 text-purple-600" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <Brain className="w-8 h-8 text-purple-600" />
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -482,7 +557,7 @@ export default function AiDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {MODEL_METRICS.map((m) => (
+              {modelMetrics.map((m) => (
                 <tr key={m.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900 text-xs">
                     {m.modelName}

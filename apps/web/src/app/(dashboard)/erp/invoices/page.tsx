@@ -1,9 +1,19 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
-// Mock data
-const INVOICES = [
+type Invoice = {
+  id: string;
+  client: string;
+  project: string;
+  amount: number;
+  issueDate: string;
+  dueDate: string;
+  status: "paid" | "pending" | "overdue";
+};
+
+const INVOICES: Invoice[] = [
   {
     id: "INV-2026-001",
     client: "東京都住宅供給公社",
@@ -118,17 +128,53 @@ const STATUS_CONFIG: Record<
 };
 
 export default function InvoicesPage() {
-  const thisMonthCount = INVOICES.filter((inv) =>
+  const [invoices, setInvoices] = useState<Invoice[]>(INVOICES);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/erp/invoices?per_page=50");
+      if (!res.ok) throw new Error("fetch failed");
+      const json = await res.json();
+      const items: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setInvoices(
+          items.map(
+            (item): Invoice => ({
+              id: String(item.id ?? ""),
+              client: String(item.client ?? item.client_name ?? ""),
+              project: String(item.project ?? item.project_name ?? ""),
+              amount: Number(item.amount ?? 0),
+              issueDate: String(item.issueDate ?? item.issue_date ?? ""),
+              dueDate: String(item.dueDate ?? item.due_date ?? ""),
+              status: String(item.status ?? "pending") as Invoice["status"],
+            }),
+          ),
+        );
+      }
+    } catch {
+      setInvoices(INVOICES);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const thisMonthCount = invoices.filter((inv) =>
     inv.issueDate.startsWith("2026-05"),
   ).length;
-  const unpaidTotal = INVOICES.filter(
-    (inv) => inv.status === "pending" || inv.status === "overdue",
-  ).reduce((s, inv) => s + inv.amount, 0);
-  const paidTotal = INVOICES.filter((inv) => inv.status === "paid").reduce(
-    (s, inv) => s + inv.amount,
-    0,
-  );
-  const overdueCount = INVOICES.filter(
+  const unpaidTotal = invoices
+    .filter((inv) => inv.status === "pending" || inv.status === "overdue")
+    .reduce((s, inv) => s + inv.amount, 0);
+  const paidTotal = invoices
+    .filter((inv) => inv.status === "paid")
+    .reduce((s, inv) => s + inv.amount, 0);
+  const overdueCount = invoices.filter(
     (inv) => inv.status === "overdue",
   ).length;
 
@@ -197,71 +243,79 @@ export default function InvoicesPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-800">請求書一覧</h2>
-          <span className="text-xs text-gray-400">全{INVOICES.length}件</span>
+          <span className="text-xs text-gray-400">全{invoices.length}件</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                <th className="px-6 py-3 text-left font-medium">請求番号</th>
-                <th className="px-6 py-3 text-left font-medium">取引先</th>
-                <th className="px-6 py-3 text-left font-medium">工事件名</th>
-                <th className="px-6 py-3 text-right font-medium">請求金額</th>
-                <th className="px-6 py-3 text-center font-medium">発行日</th>
-                <th className="px-6 py-3 text-center font-medium">支払期日</th>
-                <th className="px-6 py-3 text-center font-medium">
-                  ステータス
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {INVOICES.map((inv) => {
-                const cfg = STATUS_CONFIG[inv.status];
-                return (
-                  <tr
-                    key={inv.id}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      inv.status === "overdue" ? "bg-red-50/40" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4 font-mono text-xs font-medium text-gray-700">
-                      {inv.id}
-                    </td>
-                    <td className="px-6 py-4 text-gray-900 font-medium whitespace-nowrap">
-                      {inv.client}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
-                      {inv.project}
-                    </td>
-                    <td className="px-6 py-4 text-right font-semibold text-gray-900">
-                      {inv.amount.toLocaleString()}円
-                    </td>
-                    <td className="px-6 py-4 text-center text-gray-600">
-                      {inv.issueDate}
-                    </td>
-                    <td
-                      className={`px-6 py-4 text-center font-medium ${
-                        inv.status === "overdue"
-                          ? "text-red-600"
-                          : "text-gray-600"
+        {loading ? (
+          <div className="px-6 py-8 text-center text-sm text-gray-400">
+            読み込み中...
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                  <th className="px-6 py-3 text-left font-medium">請求番号</th>
+                  <th className="px-6 py-3 text-left font-medium">取引先</th>
+                  <th className="px-6 py-3 text-left font-medium">工事件名</th>
+                  <th className="px-6 py-3 text-right font-medium">請求金額</th>
+                  <th className="px-6 py-3 text-center font-medium">発行日</th>
+                  <th className="px-6 py-3 text-center font-medium">
+                    支払期日
+                  </th>
+                  <th className="px-6 py-3 text-center font-medium">
+                    ステータス
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {invoices.map((inv) => {
+                  const cfg = STATUS_CONFIG[inv.status];
+                  return (
+                    <tr
+                      key={inv.id}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        inv.status === "overdue" ? "bg-red-50/40" : ""
                       }`}
                     >
-                      {inv.dueDate}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}
+                      <td className="px-6 py-4 font-mono text-xs font-medium text-gray-700">
+                        {inv.id}
+                      </td>
+                      <td className="px-6 py-4 text-gray-900 font-medium whitespace-nowrap">
+                        {inv.client}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                        {inv.project}
+                      </td>
+                      <td className="px-6 py-4 text-right font-semibold text-gray-900">
+                        {inv.amount.toLocaleString()}円
+                      </td>
+                      <td className="px-6 py-4 text-center text-gray-600">
+                        {inv.issueDate}
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-center font-medium ${
+                          inv.status === "overdue"
+                            ? "text-red-600"
+                            : "text-gray-600"
+                        }`}
                       >
-                        {cfg.icon}
-                        {cfg.label}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        {inv.dueDate}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}
+                        >
+                          {cfg.icon}
+                          {cfg.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

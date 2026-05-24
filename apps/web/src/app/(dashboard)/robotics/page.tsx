@@ -1,6 +1,15 @@
 "use client";
 
-import { Plane, Bot, Cpu, Globe, ArrowRight, Activity, Clock } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import {
+  Plane,
+  Bot,
+  Cpu,
+  Globe,
+  ArrowRight,
+  Activity,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
 
 interface RoboticsCard {
@@ -22,11 +31,20 @@ interface RecentActivity {
   status: "success" | "warning" | "error" | "info";
 }
 
+type Activity = {
+  id: string;
+  time: string;
+  type: string;
+  message: string;
+  severity?: string;
+};
+
 const ROBOTICS_CARDS: RoboticsCard[] = [
   {
     id: "drone",
     title: "ドローン測量",
-    description: "UAVによる空撮・測量データ管理。飛行計画・点群データ・進捗状況をリアルタイムで確認できます。",
+    description:
+      "UAVによる空撮・測量データ管理。飛行計画・点群データ・進捗状況をリアルタイムで確認できます。",
     href: "/robotics/drone",
     icon: <Plane className="h-6 w-6" />,
     iconBg: "bg-sky-500",
@@ -36,7 +54,8 @@ const ROBOTICS_CARDS: RoboticsCard[] = [
   {
     id: "rpa",
     title: "RPA自動化",
-    description: "業務プロセスの自動化タスク管理。請求書処理・日報集計・承認フローを自動実行します。",
+    description:
+      "業務プロセスの自動化タスク管理。請求書処理・日報集計・承認フローを自動実行します。",
     href: "/robotics/rpa",
     icon: <Bot className="h-6 w-6" />,
     iconBg: "bg-violet-500",
@@ -46,7 +65,8 @@ const ROBOTICS_CARDS: RoboticsCard[] = [
   {
     id: "autonomous",
     title: "自律施工",
-    description: "自律施工機器の稼働状況・エラーログ管理。ブルドーザー・ショベル・転圧機の自律運転を監視します。",
+    description:
+      "自律施工機器の稼働状況・エラーログ管理。ブルドーザー・ショベル・転圧機の自律運転を監視します。",
     href: "/robotics/autonomous",
     icon: <Cpu className="h-6 w-6" />,
     iconBg: "bg-orange-500",
@@ -56,7 +76,8 @@ const ROBOTICS_CARDS: RoboticsCard[] = [
   {
     id: "twin",
     title: "デジタルツイン",
-    description: "建設現場のリアルタイム3Dデジタルツイン。センサーデータと連動して現場の状況を可視化します。",
+    description:
+      "建設現場のリアルタイム3Dデジタルツイン。センサーデータと連動して現場の状況を可視化します。",
     href: "/robotics/twin",
     icon: <Globe className="h-6 w-6" />,
     iconBg: "bg-teal-500",
@@ -160,11 +181,86 @@ const activityStatusDot: Record<RecentActivity["status"], string> = {
 };
 
 export default function RoboticsPage() {
+  const [activities, setActivities] = useState<Activity[]>(
+    MOCK_ACTIVITIES.map((a) => ({
+      id: a.id,
+      time: a.timestamp,
+      type: a.category,
+      message: a.content,
+      severity: a.status,
+    })),
+  );
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/autonomous/activities?per_page=20");
+      if (!res.ok) throw new Error("fetch failed");
+      const json = await res.json();
+      const items: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setActivities(
+          items.map((item: Record<string, unknown>) => ({
+            id: String(item.id ?? ""),
+            time: String(item.time ?? item.created_at ?? ""),
+            type: String(item.type ?? ""),
+            message: String(item.message ?? ""),
+            severity: item.severity ? String(item.severity) : undefined,
+          })),
+        );
+      }
+    } catch {
+      setActivities(
+        MOCK_ACTIVITIES.map((a) => ({
+          id: a.id,
+          time: a.timestamp,
+          type: a.category,
+          message: a.content,
+          severity: a.status,
+        })),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const getActivityCategory = (type: string): RecentActivity["category"] => {
+    if (
+      type === "drone" ||
+      type === "rpa" ||
+      type === "autonomous" ||
+      type === "twin"
+    ) {
+      return type;
+    }
+    return "autonomous";
+  };
+
+  const getActivityStatus = (severity?: string): RecentActivity["status"] => {
+    if (
+      severity === "success" ||
+      severity === "warning" ||
+      severity === "error" ||
+      severity === "info"
+    ) {
+      return severity;
+    }
+    return "info";
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">自動化・ロボティクス</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          自動化・ロボティクス
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
           ドローン・RPA・自律施工・デジタルツインの統合管理ダッシュボード
         </p>
@@ -212,7 +308,9 @@ export default function RoboticsPage() {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-white ${card.iconBg}`}>
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl text-white ${card.iconBg}`}
+                >
                   {card.icon}
                 </div>
                 <div>
@@ -227,7 +325,9 @@ export default function RoboticsPage() {
               </div>
               <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors mt-1" />
             </div>
-            <p className="mt-3 text-sm text-gray-600 leading-relaxed">{card.description}</p>
+            <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+              {card.description}
+            </p>
           </Link>
         ))}
       </div>
@@ -237,25 +337,42 @@ export default function RoboticsPage() {
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-gray-500" />
-            <h2 className="text-base font-semibold text-gray-900">最近のアクティビティ</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              最近のアクティビティ
+            </h2>
           </div>
-          <span className="text-sm text-gray-500">本日</span>
+          <span className="text-sm text-gray-500">
+            {loading ? "読み込み中..." : "本日"}
+          </span>
         </div>
         <div className="divide-y divide-gray-100">
-          {MOCK_ACTIVITIES.map((activity) => (
-            <div key={activity.id} className="flex items-start gap-3 px-6 py-3 hover:bg-gray-50">
-              <span className="mt-1 text-xs text-gray-400 tabular-nums w-10 flex-shrink-0">
-                {activity.timestamp}
-              </span>
-              <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${categoryBg[activity.category]}`}>
-                {categoryIcon[activity.category]}
+          {activities.map((activity) => {
+            const category = getActivityCategory(activity.type);
+            const status = getActivityStatus(activity.severity);
+            return (
+              <div
+                key={activity.id}
+                className="flex items-start gap-3 px-6 py-3 hover:bg-gray-50"
+              >
+                <span className="mt-1 text-xs text-gray-400 tabular-nums w-10 flex-shrink-0">
+                  {activity.time}
+                </span>
+                <div
+                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${categoryBg[category]}`}
+                >
+                  {categoryIcon[category]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {activity.message}
+                  </p>
+                </div>
+                <span
+                  className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${activityStatusDot[status]}`}
+                />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-700 leading-relaxed">{activity.content}</p>
-              </div>
-              <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${activityStatusDot[activity.status]}`} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

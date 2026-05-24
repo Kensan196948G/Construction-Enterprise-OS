@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Truck, Fuel, MapPin, Activity } from "lucide-react";
 
 type MachineStatus = "running" | "idle" | "stopped" | "maintenance";
@@ -166,13 +167,67 @@ function FuelBar({ level }: { level: number }) {
   );
 }
 
+// Helper to normalize API status to MachineStatus
+function normalizeMachineStatus(raw: string): MachineStatus {
+  const map: Record<string, MachineStatus> = {
+    running: "running",
+    active: "running",
+    idle: "idle",
+    stopped: "stopped",
+    inactive: "stopped",
+    maintenance: "maintenance",
+  };
+  return map[raw?.toLowerCase()] ?? "stopped";
+}
+
 export default function MachinesPage() {
+  const [machines, setMachines] = useState<Machine[]>(MOCK_MACHINES);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/iot/machines?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setMachines(
+            data.map((item) => ({
+              id: String(item.id ?? ""),
+              machineNumber: String(item.name ?? item.machine_number ?? ""),
+              type: String(item.machine_type ?? item.type ?? ""),
+              location: String(item.location ?? ""),
+              status: normalizeMachineStatus(String(item.status ?? "")),
+              engineHours: Number(item.engine_hours ?? 0),
+              fuelLevel: Number(item.fuel_level ?? item.health_score ?? 0),
+              gpsLat: String(item.gps_lat ?? ""),
+              gpsLng: String(item.gps_lng ?? ""),
+              lastComm: String(
+                item.last_comm ?? item.last_maintenance_at ?? "",
+              ),
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const stats = {
-    running: MOCK_MACHINES.filter((m) => m.status === "running").length,
-    idle: MOCK_MACHINES.filter((m) => m.status === "idle").length,
-    maintenance: MOCK_MACHINES.filter((m) => m.status === "maintenance").length,
-    stopped: MOCK_MACHINES.filter((m) => m.status === "stopped").length,
-    fuelLow: MOCK_MACHINES.filter((m) => m.fuelLevel <= 30).length,
+    running: machines.filter((m) => m.status === "running").length,
+    idle: machines.filter((m) => m.status === "idle").length,
+    maintenance: machines.filter((m) => m.status === "maintenance").length,
+    stopped: machines.filter((m) => m.status === "stopped").length,
+    fuelLow: machines.filter((m) => m.fuelLevel <= 30).length,
   };
 
   return (
@@ -184,7 +239,14 @@ export default function MachinesPage() {
             IoTセンサー — GPS位置・稼働状況・燃料監視
           </p>
         </div>
-        <Truck className="w-8 h-8 text-blue-600" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-500 animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <Truck className="w-8 h-8 text-blue-600" />
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -261,7 +323,7 @@ export default function MachinesPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {MOCK_MACHINES.map((m) => (
+              {machines.map((m) => (
                 <tr
                   key={m.id}
                   className={`hover:bg-gray-50 transition-colors ${STATUS_CONFIG[m.status].row}`}
@@ -308,7 +370,7 @@ export default function MachinesPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t bg-gray-50 text-xs text-gray-500">
-          全 {MOCK_MACHINES.length} 台 — 燃料30%以下は補給推奨
+          全 {machines.length} 台 — 燃料30%以下は補給推奨
         </div>
       </div>
     </div>

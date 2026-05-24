@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Camera, Brain, AlertCircle, CheckCircle, Search } from "lucide-react";
 
 interface InspectionItem {
@@ -10,6 +11,23 @@ interface InspectionItem {
   anomalies: string[];
   confidence: number;
   capturedAt: string;
+}
+
+// API response shape from /api/v1/advanced/inspections-ai
+interface InspectionResult {
+  id: string | number;
+  site_id?: string | number;
+  site_name?: string;
+  inspection_type?: string;
+  ai_score?: number; // 0–100 confidence
+  issues_found?: number | string[];
+  status?: string;
+  inspected_at?: string;
+  // optional mapped fields
+  file_name?: string;
+  location?: string;
+  anomalies?: string[];
+  confidence?: number;
 }
 
 const MOCK_ITEMS: InspectionItem[] = [
@@ -119,28 +137,86 @@ const ANOMALY_COLORS: Record<string, string> = {
   その他: "bg-gray-100 text-gray-700",
 };
 
+/** Map InspectionResult status string to InspectionItem status */
+function toItemStatus(s?: string): InspectionItem["status"] {
+  if (!s) return "queued";
+  const lower = s.toLowerCase();
+  if (lower.includes("完了") || lower === "completed") return "completed";
+  if (lower.includes("解析") || lower === "analyzing" || lower === "processing")
+    return "analyzing";
+  if (lower.includes("エラー") || lower === "error" || lower === "failed")
+    return "error";
+  return "queued";
+}
+
+/** Map InspectionResult → InspectionItem for display */
+function toInspectionItem(r: InspectionResult, idx: number): InspectionItem {
+  const anomalies = Array.isArray(r.anomalies)
+    ? r.anomalies
+    : Array.isArray(r.issues_found)
+      ? (r.issues_found as string[])
+      : [];
+
+  return {
+    id: String(r.id ?? `I-${String(idx + 1).padStart(3, "0")}`),
+    fileName:
+      r.file_name ??
+      `inspection_${String(r.site_id ?? idx + 1)}_${r.inspection_type ?? "ai"}.jpg`,
+    location: r.location ?? r.site_name ?? "—",
+    status: toItemStatus(r.status),
+    anomalies,
+    confidence: r.confidence ?? r.ai_score ?? 0,
+    capturedAt: r.inspected_at ?? "—",
+  };
+}
+
 export default function AIInspectionPage() {
-  const completed = MOCK_ITEMS.filter((i) => i.status === "completed").length;
-  const withAnomalies = MOCK_ITEMS.filter((i) => i.anomalies.length > 0).length;
-  const needsReview = MOCK_ITEMS.filter(
+  const [items, setItems] = useState<InspectionItem[]>(MOCK_ITEMS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/advanced/inspections-ai?per_page=20");
+      if (res.ok) {
+        const json: { items: InspectionResult[] } | InspectionResult[] =
+          await res.json();
+        const apiItems: InspectionResult[] = Array.isArray(json)
+          ? json
+          : ((json as { items: InspectionResult[] }).items ?? []);
+        if (apiItems.length > 0) {
+          setItems(apiItems.map((r, i) => toInspectionItem(r, i)));
+        }
+      }
+    } catch {
+      // fallback to mock data — already set as default state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const completed = items.filter((i) => i.status === "completed").length;
+  const withAnomalies = items.filter((i) => i.anomalies.length > 0).length;
+  const needsReview = items.filter(
     (i) => i.anomalies.length > 0 && i.confidence < 90,
   ).length;
   const avgConfidence = Math.round(
-    MOCK_ITEMS.filter((i) => i.confidence > 0).reduce(
-      (s, i) => s + i.confidence,
-      0,
-    ) / MOCK_ITEMS.filter((i) => i.confidence > 0).length,
+    items
+      .filter((i) => i.confidence > 0)
+      .reduce((s, i) => s + i.confidence, 0) /
+      (items.filter((i) => i.confidence > 0).length || 1),
   );
 
   const anomalyCounts = {
-    ひび割れ: MOCK_ITEMS.flatMap((i) => i.anomalies).filter(
-      (a) => a === "ひび割れ",
-    ).length,
-    錆び: MOCK_ITEMS.flatMap((i) => i.anomalies).filter((a) => a === "錆び")
+    ひび割れ: items.flatMap((i) => i.anomalies).filter((a) => a === "ひび割れ")
       .length,
-    剥離: MOCK_ITEMS.flatMap((i) => i.anomalies).filter((a) => a === "剥離")
-      .length,
-    その他: MOCK_ITEMS.flatMap((i) => i.anomalies).filter((a) => a === "その他")
+    錆び: items.flatMap((i) => i.anomalies).filter((a) => a === "錆び").length,
+    剥離: items.flatMap((i) => i.anomalies).filter((a) => a === "剥離").length,
+    その他: items.flatMap((i) => i.anomalies).filter((a) => a === "その他")
       .length,
   };
 
@@ -154,9 +230,16 @@ export default function AIInspectionPage() {
             点検画像のAI自動解析・異常検出
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-blue-50 px-3 py-1.5 rounded-full">
-          <Brain className="w-3.5 h-3.5 text-blue-600" />
-          Vision AI powered
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-blue-50 px-3 py-1.5 rounded-full">
+            <Brain className="w-3.5 h-3.5 text-blue-600" />
+            Vision AI powered
+          </div>
         </div>
       </div>
 
@@ -263,7 +346,7 @@ export default function AIInspectionPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {MOCK_ITEMS.map((item) => (
+              {items.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -299,7 +382,7 @@ export default function AIInspectionPage() {
                         {item.anomalies.map((a) => (
                           <span
                             key={a}
-                            className={`px-1.5 py-0.5 rounded text-xs ${ANOMALY_COLORS[a]}`}
+                            className={`px-1.5 py-0.5 rounded text-xs ${ANOMALY_COLORS[a] ?? "bg-gray-100 text-gray-700"}`}
                           >
                             {a}
                           </span>
@@ -333,7 +416,7 @@ export default function AIInspectionPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {MOCK_ITEMS.length}件
+          {items.length}件
         </div>
       </div>
     </div>

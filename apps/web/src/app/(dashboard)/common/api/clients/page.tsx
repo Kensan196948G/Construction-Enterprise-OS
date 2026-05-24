@@ -1,16 +1,91 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Key, Webhook, Activity, Shield } from "lucide-react";
 
-const API_CLIENTS = [
-  { id: 1, name: "建設現場IoTゲートウェイ", type: "IoTシステム", apiKey: "ck_live_****...****a1b2", scopes: ["iot:read", "iot:write"], lastUsed: "2024-11-30 09:05", status: "active" },
-  { id: 2, name: "会計システム連携", type: "ERPシステム", apiKey: "ck_live_****...****c3d4", scopes: ["erp:read", "erp:write"], lastUsed: "2024-11-30 08:30", status: "active" },
-  { id: 3, name: "GISマッピングAPI", type: "GISシステム", apiKey: "ck_live_****...****e5f6", scopes: ["gis:read"], lastUsed: "2024-11-29 17:45", status: "active" },
-  { id: 4, name: "工事写真管理システム", type: "文書管理", apiKey: "ck_live_****...****g7h8", scopes: ["documents:read", "documents:write"], lastUsed: "2024-11-29 14:00", status: "active" },
-  { id: 5, name: "安全管理モバイルApp", type: "モバイルアプリ", apiKey: "ck_live_****...****i9j0", scopes: ["safety:read", "safety:write"], lastUsed: "2024-11-30 07:22", status: "active" },
-  { id: 6, name: "レポート自動生成Bot", type: "自動化Bot", apiKey: "ck_live_****...****k1l2", scopes: ["projects:read", "reports:write"], lastUsed: "2024-11-30 06:00", status: "active" },
-  { id: 7, name: "旧システム連携（廃止予定）", type: "レガシーシステム", apiKey: "ck_live_****...****m3n4", scopes: ["projects:read"], lastUsed: "2024-10-15 10:00", status: "inactive" },
-  { id: 8, name: "テスト用クライアント", type: "開発・テスト", apiKey: "ck_test_****...****o5p6", scopes: ["*"], lastUsed: "2024-11-28 11:30", status: "active" },
+type ApiClient = {
+  id: number;
+  name: string;
+  type: string;
+  apiKey: string;
+  scopes: string[];
+  lastUsed: string;
+  status: string;
+};
+
+const MOCK_API_CLIENTS: ApiClient[] = [
+  {
+    id: 1,
+    name: "建設現場IoTゲートウェイ",
+    type: "IoTシステム",
+    apiKey: "ck_live_****...****a1b2",
+    scopes: ["iot:read", "iot:write"],
+    lastUsed: "2024-11-30 09:05",
+    status: "active",
+  },
+  {
+    id: 2,
+    name: "会計システム連携",
+    type: "ERPシステム",
+    apiKey: "ck_live_****...****c3d4",
+    scopes: ["erp:read", "erp:write"],
+    lastUsed: "2024-11-30 08:30",
+    status: "active",
+  },
+  {
+    id: 3,
+    name: "GISマッピングAPI",
+    type: "GISシステム",
+    apiKey: "ck_live_****...****e5f6",
+    scopes: ["gis:read"],
+    lastUsed: "2024-11-29 17:45",
+    status: "active",
+  },
+  {
+    id: 4,
+    name: "工事写真管理システム",
+    type: "文書管理",
+    apiKey: "ck_live_****...****g7h8",
+    scopes: ["documents:read", "documents:write"],
+    lastUsed: "2024-11-29 14:00",
+    status: "active",
+  },
+  {
+    id: 5,
+    name: "安全管理モバイルApp",
+    type: "モバイルアプリ",
+    apiKey: "ck_live_****...****i9j0",
+    scopes: ["safety:read", "safety:write"],
+    lastUsed: "2024-11-30 07:22",
+    status: "active",
+  },
+  {
+    id: 6,
+    name: "レポート自動生成Bot",
+    type: "自動化Bot",
+    apiKey: "ck_live_****...****k1l2",
+    scopes: ["projects:read", "reports:write"],
+    lastUsed: "2024-11-30 06:00",
+    status: "active",
+  },
+  {
+    id: 7,
+    name: "旧システム連携（廃止予定）",
+    type: "レガシーシステム",
+    apiKey: "ck_live_****...****m3n4",
+    scopes: ["projects:read"],
+    lastUsed: "2024-10-15 10:00",
+    status: "inactive",
+  },
+  {
+    id: 8,
+    name: "テスト用クライアント",
+    type: "開発・テスト",
+    apiKey: "ck_test_****...****o5p6",
+    scopes: ["*"],
+    lastUsed: "2024-11-28 11:30",
+    status: "active",
+  },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -24,16 +99,64 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function ApiClientsPage() {
-  const total = API_CLIENTS.length;
-  const active = API_CLIENTS.filter((c) => c.status === "active").length;
+  const [apiClients, setApiClients] = useState<ApiClient[]>(MOCK_API_CLIENTS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/api-clients?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setApiClients(
+            data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.name ?? ""),
+              type: String(item.client_type ?? item.type ?? ""),
+              apiKey: String(item.client_id ?? item.api_key ?? ""),
+              scopes: Array.isArray(item.permissions)
+                ? (item.permissions as unknown[]).map((s) => String(s))
+                : Array.isArray(item.scopes)
+                  ? (item.scopes as unknown[]).map((s) => String(s))
+                  : [],
+              lastUsed: String(item.last_used_at ?? item.last_used ?? ""),
+              status: String(item.status ?? "active"),
+            })),
+          );
+        }
+      }
+    } catch {
+      /* fallback to mock */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const total = apiClients.length;
+  const active = apiClients.filter((c) => c.status === "active").length;
   const todayCalls = 12847;
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">APIクライアント管理</h1>
-          <p className="text-sm text-gray-500 mt-1">外部システム連携APIキーの発行・管理</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            APIクライアント管理
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            外部システム連携APIキーの発行・管理
+            {loading && (
+              <span className="ml-2 text-blue-500 animate-pulse">
+                読み込み中...
+              </span>
+            )}
+          </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
           <Key className="w-4 h-4" />
@@ -66,7 +189,9 @@ export default function ApiClientsPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500">今日のAPIコール</p>
-            <p className="text-2xl font-bold text-gray-900">{todayCalls.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {todayCalls.toLocaleString()}
+            </p>
           </div>
         </div>
       </div>
@@ -76,19 +201,35 @@ export default function ApiClientsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">クライアント名</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">システム種別</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">APIキー</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">権限スコープ</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">最終利用</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">ステータス</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">
+                  クライアント名
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
+                  システム種別
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
+                  APIキー
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
+                  権限スコープ
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
+                  最終利用
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
+                  ステータス
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {API_CLIENTS.map((client) => (
+              {apiClients.map((client) => (
                 <tr key={client.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{client.name}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{client.type}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {client.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                    {client.type}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="font-mono text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
                       {client.apiKey}
@@ -97,15 +238,22 @@ export default function ApiClientsPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {client.scopes.map((scope) => (
-                        <span key={scope} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-mono">
+                        <span
+                          key={scope}
+                          className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-mono"
+                        >
                           {scope}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">{client.lastUsed}</td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                    {client.lastUsed}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[client.status]}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[client.status]}`}
+                    >
                       {STATUS_LABELS[client.status]}
                     </span>
                   </td>

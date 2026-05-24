@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Calculator, TrendingDown, BarChart2 } from "lucide-react";
 
-// Mock data
-const COST_WORK_TYPES = [
+// Mock data (fallback)
+const MOCK_COST_WORK_TYPES = [
   { id: 1, name: "土工事", planned: 45000000, actual: 42300000 },
   { id: 2, name: "基礎工事", planned: 78000000, actual: 82500000 },
   { id: 3, name: "躯体工事", planned: 210000000, actual: 198000000 },
@@ -22,6 +23,13 @@ const MONTHLY_COSTS = [
   { month: "5月", cost: 105800000 },
 ];
 
+type CostWorkType = {
+  id: number;
+  name: string;
+  planned: number;
+  actual: number;
+};
+
 function evalLabel(diff: number): { label: string; cls: string } {
   if (diff > 0)
     return { label: "有利差異", cls: "bg-green-100 text-green-800" };
@@ -37,8 +45,43 @@ function diffRateColor(rate: number): string {
 }
 
 export default function CostPage() {
-  const totalPlanned = COST_WORK_TYPES.reduce((s, w) => s + w.planned, 0);
-  const totalActual = COST_WORK_TYPES.reduce((s, w) => s + w.actual, 0);
+  const [costWorkTypes, setCostWorkTypes] =
+    useState<CostWorkType[]>(MOCK_COST_WORK_TYPES);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/erp/costs?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
+        if (Array.isArray(items) && items.length > 0) {
+          setCostWorkTypes(
+            items.map((item) => ({
+              id: Number(item.id ?? 0),
+              name: String(
+                item.cost_type ?? item.project_name ?? item.name ?? "",
+              ),
+              planned: Number(item.planned ?? item.budget_amount ?? 0),
+              actual: Number(item.amount ?? item.actual_amount ?? 0),
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const totalPlanned = costWorkTypes.reduce((s, w) => s + w.planned, 0);
+  const totalActual = costWorkTypes.reduce((s, w) => s + w.actual, 0);
   const totalDiff = totalPlanned - totalActual;
   const totalDiffRate =
     totalPlanned > 0 ? ((totalDiff / totalPlanned) * 100).toFixed(1) : "0.0";
@@ -120,10 +163,15 @@ export default function CostPage() {
 
       {/* 工種別原価テーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <h2 className="text-base font-semibold text-gray-800">
             工種別 原価差異分析
           </h2>
+          {loading && (
+            <span className="text-xs text-gray-400 animate-pulse">
+              読み込み中...
+            </span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -138,7 +186,7 @@ export default function CostPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {COST_WORK_TYPES.map((w) => {
+              {costWorkTypes.map((w) => {
                 const diff = w.planned - w.actual;
                 const diffRate = w.planned > 0 ? (diff / w.planned) * 100 : 0;
                 const { label, cls } = evalLabel(diff);

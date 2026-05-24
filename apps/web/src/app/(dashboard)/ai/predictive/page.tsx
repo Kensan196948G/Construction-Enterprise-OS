@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Activity, AlertTriangle, Wrench, Clock } from "lucide-react";
 
 interface Equipment {
@@ -11,6 +12,23 @@ interface Equipment {
   nextInspectionDate: string;
   status: "normal" | "warning" | "critical";
   lastMaintained: string;
+}
+
+// API response shape from /api/v1/advanced/predictive
+interface PredictiveResult {
+  id: string | number;
+  asset_id?: string;
+  asset_name?: string;
+  failure_probability?: number; // 0–1 or 0–100
+  risk_level?: "normal" | "warning" | "critical" | "low" | "medium" | "high";
+  predicted_failure_at?: string;
+  recommendation?: string;
+  // optional extra fields
+  health_score?: number;
+  remaining_life_days?: number;
+  next_inspection_date?: string;
+  last_maintained?: string;
+  location?: string;
 }
 
 const MOCK_EQUIPMENT: Equipment[] = [
@@ -114,6 +132,39 @@ const STATUS_CONFIG = {
   },
 };
 
+/** Map API risk_level to Equipment status */
+function toStatus(
+  risk: PredictiveResult["risk_level"],
+  prob?: number,
+): Equipment["status"] {
+  if (risk === "critical" || risk === "high") return "critical";
+  if (risk === "warning" || risk === "medium") return "warning";
+  if (risk === "normal" || risk === "low") return "normal";
+  // fallback: use failure_probability (0–1 scale assumed)
+  const p = (prob ?? 0) > 1 ? (prob ?? 0) / 100 : (prob ?? 0);
+  if (p >= 0.7) return "critical";
+  if (p >= 0.4) return "warning";
+  return "normal";
+}
+
+/** Map PredictiveResult → Equipment for display */
+function toEquipment(r: PredictiveResult, idx: number): Equipment {
+  const prob = r.failure_probability ?? 0;
+  const normProb = prob > 1 ? prob / 100 : prob;
+  const healthScore =
+    r.health_score != null ? r.health_score : Math.round((1 - normProb) * 100);
+  return {
+    id: String(r.id ?? `EQ-${idx + 1}`),
+    name: r.asset_name ?? r.asset_id ?? `設備 ${idx + 1}`,
+    location: r.location ?? "—",
+    healthScore,
+    remainingLifeDays: r.remaining_life_days ?? 0,
+    nextInspectionDate: r.next_inspection_date ?? r.predicted_failure_at ?? "—",
+    status: toStatus(r.risk_level, r.failure_probability),
+    lastMaintained: r.last_maintained ?? "—",
+  };
+}
+
 function HealthGauge({
   score,
   status,
@@ -142,15 +193,39 @@ function HealthGauge({
 }
 
 export default function AIPredictivePage() {
-  const warningCount = MOCK_EQUIPMENT.filter(
-    (e) => e.status === "warning",
-  ).length;
-  const criticalCount = MOCK_EQUIPMENT.filter(
-    (e) => e.status === "critical",
-  ).length;
-  const alerts = MOCK_EQUIPMENT.filter((e) => e.status !== "normal").sort(
-    (a, b) => a.healthScore - b.healthScore,
-  );
+  const [equipment, setEquipment] = useState<Equipment[]>(MOCK_EQUIPMENT);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/advanced/predictive?per_page=20");
+      if (res.ok) {
+        const json: { items: PredictiveResult[] } | PredictiveResult[] =
+          await res.json();
+        const items: PredictiveResult[] = Array.isArray(json)
+          ? json
+          : ((json as { items: PredictiveResult[] }).items ?? []);
+        if (items.length > 0) {
+          setEquipment(items.map((r, i) => toEquipment(r, i)));
+        }
+      }
+    } catch {
+      // fallback to mock data — already set as default state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const warningCount = equipment.filter((e) => e.status === "warning").length;
+  const criticalCount = equipment.filter((e) => e.status === "critical").length;
+  const alerts = equipment
+    .filter((e) => e.status !== "normal")
+    .sort((a, b) => a.healthScore - b.healthScore);
 
   return (
     <div className="p-6 space-y-6">
@@ -162,9 +237,16 @@ export default function AIPredictivePage() {
             AIによる機器健全度モニタリング・寿命予測
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-blue-50 px-3 py-1.5 rounded-full">
-          <Activity className="w-3.5 h-3.5 text-blue-600" />
-          Predictive AI
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-blue-50 px-3 py-1.5 rounded-full">
+            <Activity className="w-3.5 h-3.5 text-blue-600" />
+            Predictive AI
+          </div>
         </div>
       </div>
 
@@ -178,7 +260,7 @@ export default function AIPredictivePage() {
             <div>
               <p className="text-xs text-gray-500">監視機器数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {MOCK_EQUIPMENT.length}
+                {equipment.length}
               </p>
             </div>
           </div>
@@ -284,7 +366,7 @@ export default function AIPredictivePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {MOCK_EQUIPMENT.map((eq) => (
+              {equipment.map((eq) => (
                 <tr key={eq.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {eq.name}
@@ -328,7 +410,7 @@ export default function AIPredictivePage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {MOCK_EQUIPMENT.length}台
+          {equipment.length}台
         </div>
       </div>
     </div>

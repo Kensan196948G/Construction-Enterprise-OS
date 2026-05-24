@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import {
   FileSearch,
   Scan,
@@ -17,6 +18,23 @@ interface OcrItem {
   status: "queued" | "processing" | "completed" | "failed";
   charCount: number;
   processingTime: number | null;
+}
+
+// API response shape from /api/v1/vision/ocr/tasks or /api/v1/ai/ocr
+interface OcrTask {
+  id: string | number;
+  filename?: string;
+  file_name?: string;
+  status?: string;
+  confidence?: number;
+  extracted_text_preview?: string;
+  processed_at?: string;
+  // optional extra fields
+  doc_type?: string;
+  docType?: string;
+  uploaded_at?: string;
+  char_count?: number;
+  processing_time?: number | null;
 }
 
 const MOCK_ITEMS: OcrItem[] = [
@@ -109,16 +127,90 @@ const DOC_TYPE_COLORS: Record<string, string> = {
   検査記録: "bg-orange-100 text-orange-700",
 };
 
+/** Map API status string to OcrItem status */
+function toOcrStatus(s?: string): OcrItem["status"] {
+  if (!s) return "queued";
+  const lower = s.toLowerCase();
+  if (lower === "completed" || lower.includes("完了")) return "completed";
+  if (lower === "processing" || lower === "running" || lower.includes("処理中"))
+    return "processing";
+  if (lower === "failed" || lower === "error" || lower.includes("失敗"))
+    return "failed";
+  return "queued";
+}
+
+/** Map OcrTask → OcrItem for display */
+function toOcrItem(t: OcrTask, idx: number): OcrItem {
+  const fileName = t.filename ?? t.file_name ?? `document_${idx + 1}.pdf`;
+  const charCount =
+    t.char_count ??
+    (t.extracted_text_preview ? t.extracted_text_preview.length : 0);
+
+  return {
+    id: String(t.id ?? `O-${String(idx + 1).padStart(3, "0")}`),
+    fileName,
+    docType: t.doc_type ?? t.docType ?? "その他",
+    uploadedAt: t.uploaded_at ?? t.processed_at ?? "—",
+    status: toOcrStatus(t.status),
+    charCount,
+    processingTime: t.processing_time ?? null,
+  };
+}
+
 export default function AIOcrPage() {
-  const completed = MOCK_ITEMS.filter((i) => i.status === "completed").length;
-  const successRate = Math.round((completed / MOCK_ITEMS.length) * 100);
-  const totalChars = MOCK_ITEMS.reduce((s, i) => s + i.charCount, 0);
-  const avgTime = Math.round(
-    MOCK_ITEMS.filter((i) => i.processingTime !== null).reduce(
-      (s, i) => s + (i.processingTime ?? 0),
-      0,
-    ) / MOCK_ITEMS.filter((i) => i.processingTime !== null).length,
-  );
+  const [ocrItems, setOcrItems] = useState<OcrItem[]>(MOCK_ITEMS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Try primary endpoint first, fall back to secondary
+      const [primaryRes, secondaryRes] = await Promise.allSettled([
+        fetch("/api/v1/vision/ocr/tasks?per_page=20"),
+        fetch("/api/v1/ai/ocr?per_page=20"),
+      ]);
+
+      let apiItems: OcrTask[] = [];
+
+      if (primaryRes.status === "fulfilled" && primaryRes.value.ok) {
+        const json: { items: OcrTask[] } | OcrTask[] =
+          await primaryRes.value.json();
+        apiItems = Array.isArray(json)
+          ? json
+          : ((json as { items: OcrTask[] }).items ?? []);
+      } else if (secondaryRes.status === "fulfilled" && secondaryRes.value.ok) {
+        const json: { items: OcrTask[] } | OcrTask[] =
+          await secondaryRes.value.json();
+        apiItems = Array.isArray(json)
+          ? json
+          : ((json as { items: OcrTask[] }).items ?? []);
+      }
+
+      if (apiItems.length > 0) {
+        setOcrItems(apiItems.map((t, i) => toOcrItem(t, i)));
+      }
+    } catch {
+      // fallback to mock data — already set as default state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const completed = ocrItems.filter((i) => i.status === "completed").length;
+  const successRate = Math.round((completed / (ocrItems.length || 1)) * 100);
+  const totalChars = ocrItems.reduce((s, i) => s + i.charCount, 0);
+  const timeSamples = ocrItems.filter((i) => i.processingTime !== null);
+  const avgTime =
+    timeSamples.length > 0
+      ? Math.round(
+          timeSamples.reduce((s, i) => s + (i.processingTime ?? 0), 0) /
+            timeSamples.length,
+        )
+      : 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -130,10 +222,17 @@ export default function AIOcrPage() {
             PDF・画像からのテキスト自動抽出
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-          <Upload className="w-4 h-4" />
-          ファイルアップロード
-        </button>
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+            <Upload className="w-4 h-4" />
+            ファイルアップロード
+          </button>
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -146,7 +245,7 @@ export default function AIOcrPage() {
             <div>
               <p className="text-xs text-gray-500">今日処理数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {MOCK_ITEMS.length}
+                {ocrItems.length}
               </p>
             </div>
           </div>
@@ -196,7 +295,7 @@ export default function AIOcrPage() {
         </h2>
         <div className="flex flex-wrap gap-3">
           {Object.keys(DOC_TYPE_COLORS).map((type) => {
-            const count = MOCK_ITEMS.filter((i) => i.docType === type).length;
+            const count = ocrItems.filter((i) => i.docType === type).length;
             if (count === 0) return null;
             return (
               <div
@@ -247,7 +346,7 @@ export default function AIOcrPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {MOCK_ITEMS.map((item) => (
+              {ocrItems.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -293,7 +392,7 @@ export default function AIOcrPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {MOCK_ITEMS.length}件
+          {ocrItems.length}件
         </div>
       </div>
     </div>

@@ -1,7 +1,17 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Settings, Users, Building, Key, Database, Webhook, CheckCircle, AlertTriangle } from "lucide-react";
+import {
+  Settings,
+  Users,
+  Building,
+  Key,
+  Database,
+  Webhook,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 
 const CATEGORIES = [
   {
@@ -49,27 +59,118 @@ const CATEGORIES = [
 ];
 
 const COLOR_MAP: Record<string, { bg: string; icon: string; btn: string }> = {
-  blue: { bg: "bg-blue-50", icon: "text-blue-600", btn: "bg-blue-600 hover:bg-blue-700" },
-  green: { bg: "bg-green-50", icon: "text-green-600", btn: "bg-green-600 hover:bg-green-700" },
-  purple: { bg: "bg-purple-50", icon: "text-purple-600", btn: "bg-purple-600 hover:bg-purple-700" },
-  orange: { bg: "bg-orange-50", icon: "text-orange-600", btn: "bg-orange-600 hover:bg-orange-700" },
-  red: { bg: "bg-red-50", icon: "text-red-600", btn: "bg-red-600 hover:bg-red-700" },
-  teal: { bg: "bg-teal-50", icon: "text-teal-600", btn: "bg-teal-600 hover:bg-teal-700" },
+  blue: {
+    bg: "bg-blue-50",
+    icon: "text-blue-600",
+    btn: "bg-blue-600 hover:bg-blue-700",
+  },
+  green: {
+    bg: "bg-green-50",
+    icon: "text-green-600",
+    btn: "bg-green-600 hover:bg-green-700",
+  },
+  purple: {
+    bg: "bg-purple-50",
+    icon: "text-purple-600",
+    btn: "bg-purple-600 hover:bg-purple-700",
+  },
+  orange: {
+    bg: "bg-orange-50",
+    icon: "text-orange-600",
+    btn: "bg-orange-600 hover:bg-orange-700",
+  },
+  red: {
+    bg: "bg-red-50",
+    icon: "text-red-600",
+    btn: "bg-red-600 hover:bg-red-700",
+  },
+  teal: {
+    bg: "bg-teal-50",
+    icon: "text-teal-600",
+    btn: "bg-teal-600 hover:bg-teal-700",
+  },
 };
 
-const SERVICES = [
-  { name: "PostgreSQL", type: "データベース", status: "running", latency: "2ms" },
+type ServiceStatus = {
+  name: string;
+  status: string;
+  latency?: string;
+  version?: string;
+};
+
+const SERVICES: ServiceStatus[] = [
+  { name: "PostgreSQL", status: "running", latency: "2ms" },
+  { name: "Redis", status: "running", latency: "0.5ms" },
+  { name: "MinIO", status: "running", latency: "8ms" },
+  { name: "Kafka", status: "warning", latency: "45ms" },
+];
+
+const SERVICES_DISPLAY = [
+  {
+    name: "PostgreSQL",
+    type: "データベース",
+    status: "running",
+    latency: "2ms",
+  },
   { name: "Redis", type: "キャッシュ", status: "running", latency: "0.5ms" },
-  { name: "MinIO", type: "オブジェクトストレージ", status: "running", latency: "8ms" },
-  { name: "Kafka", type: "メッセージブローカー", status: "warning", latency: "45ms" },
+  {
+    name: "MinIO",
+    type: "オブジェクトストレージ",
+    status: "running",
+    latency: "8ms",
+  },
+  {
+    name: "Kafka",
+    type: "メッセージブローカー",
+    status: "warning",
+    latency: "45ms",
+  },
 ];
 
 export default function CommonPage() {
+  const [services, setServices] = useState<ServiceStatus[]>(SERVICES);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/health/services");
+      if (!res.ok) throw new Error("fetch failed");
+      const json = await res.json();
+      const rawServices: Record<string, unknown>[] =
+        json?.services ?? json?.data ?? [];
+      if (Array.isArray(rawServices) && rawServices.length > 0) {
+        setServices(
+          rawServices.map((s: Record<string, unknown>) => ({
+            name: String(s.name ?? ""),
+            status: String(s.status ?? "operational"),
+            latency: s.latency ? String(s.latency) : undefined,
+            version: s.version ? String(s.version) : undefined,
+          })),
+        );
+      }
+    } catch {
+      setServices(SERVICES);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const getServiceDisplay = (svcName: string) => {
+    return SERVICES_DISPLAY.find((s) => s.name === svcName);
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">共通設定</h1>
-        <p className="text-sm text-gray-500 mt-1">システム全体の設定・管理機能</p>
+        <p className="text-sm text-gray-500 mt-1">
+          システム全体の設定・管理機能
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -77,12 +178,17 @@ export default function CommonPage() {
           const colors = COLOR_MAP[cat.color];
           const Icon = cat.icon;
           return (
-            <div key={cat.title} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
+            <div
+              key={cat.title}
+              className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4"
+            >
               <div className="flex items-center gap-3">
                 <div className={`p-3 rounded-xl ${colors.bg}`}>
                   <Icon className={`w-6 h-6 ${colors.icon}`} />
                 </div>
-                <h2 className="text-base font-semibold text-gray-900">{cat.title}</h2>
+                <h2 className="text-base font-semibold text-gray-900">
+                  {cat.title}
+                </h2>
               </div>
               <p className="text-sm text-gray-500 flex-1">{cat.description}</p>
               <Link
@@ -98,30 +204,53 @@ export default function CommonPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200">
-          <h2 className="text-base font-semibold text-gray-900">システムステータス</h2>
+          <h2 className="text-base font-semibold text-gray-900">
+            システムステータス
+            {loading && (
+              <span className="ml-2 text-xs text-gray-400 font-normal">
+                読み込み中...
+              </span>
+            )}
+          </h2>
         </div>
         <div className="divide-y divide-gray-100">
-          {SERVICES.map((svc) => (
-            <div key={svc.name} className="flex items-center justify-between px-5 py-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${svc.status === "running" ? "bg-green-500" : "bg-yellow-500"}`} />
-                <span className="text-sm font-medium text-gray-900">{svc.name}</span>
-                <span className="text-xs text-gray-400">{svc.type}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-gray-500">レイテンシ: {svc.latency}</span>
-                {svc.status === "running" ? (
-                  <span className="flex items-center gap-1 text-green-700 text-xs font-medium">
-                    <CheckCircle className="w-4 h-4" /> 正常稼働
+          {services.map((svc) => {
+            const display = getServiceDisplay(svc.name);
+            const type = display?.type ?? "";
+            const latency = svc.latency ?? display?.latency ?? "";
+            return (
+              <div
+                key={svc.name}
+                className="flex items-center justify-between px-5 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-2 h-2 rounded-full ${svc.status === "running" || svc.status === "operational" ? "bg-green-500" : "bg-yellow-500"}`}
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    {svc.name}
                   </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-yellow-700 text-xs font-medium">
-                    <AlertTriangle className="w-4 h-4" /> 警告
-                  </span>
-                )}
+                  <span className="text-xs text-gray-400">{type}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {latency && (
+                    <span className="text-xs text-gray-500">
+                      レイテンシ: {latency}
+                    </span>
+                  )}
+                  {svc.status === "running" || svc.status === "operational" ? (
+                    <span className="flex items-center gap-1 text-green-700 text-xs font-medium">
+                      <CheckCircle className="w-4 h-4" /> 正常稼働
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-yellow-700 text-xs font-medium">
+                      <AlertTriangle className="w-4 h-4" /> 警告
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

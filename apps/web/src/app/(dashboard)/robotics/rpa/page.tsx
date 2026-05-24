@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import {
   Bot,
   Zap,
@@ -130,18 +131,56 @@ const RESULT_CONFIG = {
 };
 
 export default function RpaPage() {
-  const activeTasks = MOCK_TASKS.filter((t) => t.isActive).length;
-  const totalRunsThisMonth = MOCK_TASKS.reduce(
-    (s, t) => s + t.runCountThisMonth,
-    0,
-  );
-  const totalTimeSavedMin = MOCK_TASKS.reduce(
+  const [tasks, setTasks] = useState<RpaTask[]>(MOCK_TASKS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/autonomous/rpa-tasks?per_page=50");
+      const json = await res.json();
+      const items: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setTasks(
+          items.map((item: Record<string, unknown>) => ({
+            id: String(item.id ?? ""),
+            name: String(item.name ?? ""),
+            targetProcess: String(
+              item.targetProcess ?? item.target_process ?? "",
+            ),
+            schedule: String(item.schedule ?? ""),
+            lastRun: String(item.lastRun ?? item.last_run ?? ""),
+            lastResult: String(
+              item.lastResult ?? item.last_result ?? "idle",
+            ) as RpaTask["lastResult"],
+            timeSavedMin: Number(item.timeSavedMin ?? item.time_saved_min ?? 0),
+            runCountThisMonth: Number(
+              item.runCountThisMonth ?? item.run_count_this_month ?? 0,
+            ),
+            isActive: Boolean(item.isActive ?? item.is_active ?? false),
+          })),
+        );
+      }
+    } catch {
+      setTasks(MOCK_TASKS);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const activeTasks = tasks.filter((t) => t.isActive).length;
+  const totalRunsThisMonth = tasks.reduce((s, t) => s + t.runCountThisMonth, 0);
+  const totalTimeSavedMin = tasks.reduce(
     (s, t) => s + t.timeSavedMin * t.runCountThisMonth,
     0,
   );
   const successRate = Math.round(
-    (MOCK_TASKS.filter((t) => t.lastResult === "success").length /
-      MOCK_TASKS.length) *
+    (tasks.filter((t) => t.lastResult === "success").length / tasks.length) *
       100,
   );
 
@@ -173,7 +212,9 @@ export default function RpaPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500">実行中タスク数</p>
-              <p className="text-2xl font-bold text-gray-900">{activeTasks}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? "—" : activeTasks}
+              </p>
             </div>
           </div>
         </div>
@@ -185,7 +226,7 @@ export default function RpaPage() {
             <div>
               <p className="text-xs text-gray-500">今月実行回数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {totalRunsThisMonth}
+                {loading ? "—" : totalRunsThisMonth}
               </p>
             </div>
           </div>
@@ -198,7 +239,7 @@ export default function RpaPage() {
             <div>
               <p className="text-xs text-gray-500">削減工数</p>
               <p className="text-xl font-bold text-gray-900">
-                {timeSavedHours}h{timeSavedMins}m
+                {loading ? "—" : `${timeSavedHours}h${timeSavedMins}m`}
               </p>
             </div>
           </div>
@@ -210,7 +251,9 @@ export default function RpaPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500">成功率</p>
-              <p className="text-2xl font-bold text-gray-900">{successRate}%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? "—" : `${successRate}%`}
+              </p>
             </div>
           </div>
         </div>
@@ -279,7 +322,7 @@ export default function RpaPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {MOCK_TASKS.map((task) => {
+              {tasks.map((task) => {
                 const ResultIcon = RESULT_CONFIG[task.lastResult].icon;
                 return (
                   <tr
@@ -343,7 +386,7 @@ export default function RpaPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {MOCK_TASKS.length}件（有効: {activeTasks}件）
+          {tasks.length}件（有効: {activeTasks}件）
         </div>
       </div>
     </div>

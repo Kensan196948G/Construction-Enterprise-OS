@@ -84,12 +84,12 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T10:00:26.959Z"
+    "last_pre_compact_at": "2026-05-24T10:14:46.871Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T10:01:43.969Z",
+    "current_session_start_at": "2026-05-24T10:16:26.354Z",
     "last_trigger": "manual",
-    "last_stop_at": "2026-05-24T07:03:22.985Z"
+    "last_stop_at": "2026-05-24T10:21:09.063Z"
   },
   "dreaming": {
     "patterns": [],
@@ -174,6 +174,120 @@
         "services/ai/src/schemas/__init__.py"
       ],
       "truncated": true
+    },
+    {
+      "at": "2026-05-24T10:18:15.947Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 33 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/common/api/clients/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/webhooks/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/ad/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/entra/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/mfa/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/sso/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/materials/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/prices/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/work-types/page.tsx",
+        "apps/web/src/app/(dashboard)/common/org/page.tsx",
+        "apps/web/src/app/(dashboard)/common/page.tsx",
+        "apps/web/src/app/(dashboard)/common/roles/page.tsx",
+        "apps/web/src/app/(dashboard)/common/users/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/exec/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/schedule/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/wbs/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/autonomous/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/twin/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/backup/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/integrations/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/notifications/page.tsx",
+        "apps/web/src/lib/api/ai.ts",
+        "apps/web/src/lib/api/analytics.ts",
+        "apps/web/src/lib/api/bim.ts",
+        "apps/web/src/lib/api/erp.ts",
+        "apps/web/src/lib/api/maintenance.ts",
+        "apps/web/src/lib/api/notification.ts",
+        "apps/web/src/lib/api/partner.ts",
+        "apps/web/src/lib/api/safety.ts"
+      ],
+      "truncated": true
+    },
+    {
+      "at": "2026-05-24T10:20:09.031Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 33 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/common/api/clients/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/webhooks/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/ad/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/entra/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/mfa/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/sso/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/materials/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/prices/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/work-types/page.tsx",
+        "apps/web/src/app/(dashboard)/common/org/page.tsx",
+        "apps/web/src/app/(dashboard)/common/page.tsx",
+        "apps/web/src/app/(dashboard)/common/roles/page.tsx",
+        "apps/web/src/app/(dashboard)/common/users/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/exec/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/schedule/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/wbs/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/autonomous/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/twin/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/backup/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/integrations/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/notifications/page.tsx",
+        "apps/web/src/lib/api/ai.ts",
+        "apps/web/src/lib/api/analytics.ts",
+        "apps/web/src/lib/api/bim.ts",
+        "apps/web/src/lib/api/erp.ts",
+        "apps/web/src/lib/api/maintenance.ts",
+        "apps/web/src/lib/api/notification.ts",
+        "apps/web/src/lib/api/partner.ts",
+        "apps/web/src/lib/api/safety.ts"
+      ],
+      "truncated": true
+    },
+    {
+      "at": "2026-05-24T10:21:09.073Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 33 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/common/api/clients/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/webhooks/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/ad/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/entra/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/mfa/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/sso/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/materials/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/prices/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/work-types/page.tsx",
+        "apps/web/src/app/(dashboard)/common/org/page.tsx",
+        "apps/web/src/app/(dashboard)/common/page.tsx",
+        "apps/web/src/app/(dashboard)/common/roles/page.tsx",
+        "apps/web/src/app/(dashboard)/common/users/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/exec/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/schedule/page.tsx",
+        "apps/web/src/app/(dashboard)/projects/wbs/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/autonomous/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/page.tsx",
+        "apps/web/src/app/(dashboard)/robotics/twin/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/backup/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/integrations/page.tsx",
+        "apps/web/src/app/(dashboard)/settings/notifications/page.tsx",
+        "apps/web/src/lib/api/ai.ts",
+        "apps/web/src/lib/api/analytics.ts",
+        "apps/web/src/lib/api/bim.ts",
+        "apps/web/src/lib/api/erp.ts",
+        "apps/web/src/lib/api/maintenance.ts",
+        "apps/web/src/lib/api/notification.ts",
+        "apps/web/src/lib/api/partner.ts",
+        "apps/web/src/lib/api/safety.ts"
+      ],
+      "truncated": true
     }
   ],
   "learning": {
@@ -182,12 +296,12 @@
     "usage_history": {
       "agents": {
         "general-purpose": {
-          "call_count": 8,
-          "last_used": "2026-05-24T09:07:21.908Z",
-          "last_description": "文書/GIS/IoT/ダッシュボードサブページ実装"
+          "call_count": 15,
+          "last_used": "2026-05-24T10:18:10.209Z",
+          "last_description": "Robotics overview + common page conversion"
         },
-        "_total_agent_calls": 10,
-        "_last_agent_call_at": "2026-05-24T09:07:21.908Z",
+        "_total_agent_calls": 17,
+        "_last_agent_call_at": "2026-05-24T10:18:10.209Z",
         "feature-dev_code-architect": {
           "call_count": 2,
           "last_used": "2026-05-24T07:07:36.025Z",

@@ -1,6 +1,25 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Users, HardHat, Sun, Calendar } from "lucide-react";
+
+interface FieldProgress {
+  id: string;
+  site_id: string;
+  site_name: string;
+  progress_rate: number;
+  worker_count: number;
+  status: string;
+  reported_at: string;
+}
+
+interface ScheduleItem {
+  id: string;
+  time: string;
+  task: string;
+  workers: number;
+  status: string;
+}
 
 const RECENT_ALERTS = {
   safety: [
@@ -35,21 +54,54 @@ const RECENT_ALERTS = {
   ],
 };
 
-const SCHEDULE = [
-  { time: "07:00", task: "朝礼・安全確認", workers: 42, status: "完了" },
-  { time: "08:00", task: "掘削作業 第3工区", workers: 18, status: "進行中" },
+const MOCK_SCHEDULE: ScheduleItem[] = [
   {
+    id: "1",
+    time: "07:00",
+    task: "朝礼・安全確認",
+    workers: 42,
+    status: "完了",
+  },
+  {
+    id: "2",
+    time: "08:00",
+    task: "掘削作業 第3工区",
+    workers: 18,
+    status: "進行中",
+  },
+  {
+    id: "3",
     time: "09:00",
     task: "コンクリート打設 B棟基礎",
     workers: 12,
     status: "進行中",
   },
-  { time: "10:30", task: "配筋検査 第2工区", workers: 4, status: "予定" },
-  { time: "12:00", task: "昼休憩", workers: 42, status: "予定" },
-  { time: "13:00", task: "型枠組立 A棟", workers: 15, status: "予定" },
-  { time: "15:00", task: "資材搬入 鉄骨部材", workers: 6, status: "予定" },
-  { time: "17:00", task: "片付け・終礼", workers: 42, status: "予定" },
+  {
+    id: "4",
+    time: "10:30",
+    task: "配筋検査 第2工区",
+    workers: 4,
+    status: "予定",
+  },
+  { id: "5", time: "12:00", task: "昼休憩", workers: 42, status: "予定" },
+  {
+    id: "6",
+    time: "13:00",
+    task: "型枠組立 A棟",
+    workers: 15,
+    status: "予定",
+  },
+  {
+    id: "7",
+    time: "15:00",
+    task: "資材搬入 鉄骨部材",
+    workers: 6,
+    status: "予定",
+  },
+  { id: "8", time: "17:00", task: "片付け・終礼", workers: 42, status: "予定" },
 ];
+
+const MOCK_FIELD_PROGRESS: FieldProgress[] = [];
 
 const LEVEL_COLORS: Record<string, string> = {
   critical: "border-l-red-500 bg-red-50",
@@ -63,11 +115,92 @@ const SCHEDULE_STATUS: Record<string, string> = {
   予定: "bg-gray-100 text-gray-600",
 };
 
+// Helper to normalize schedule status from API
+function normalizeScheduleStatus(raw: string): string {
+  const map: Record<string, string> = {
+    completed: "完了",
+    done: "完了",
+    in_progress: "進行中",
+    active: "進行中",
+    planned: "予定",
+    scheduled: "予定",
+    pending: "予定",
+  };
+  return map[raw?.toLowerCase()] ?? raw ?? "予定";
+}
+
 export default function FieldDashboardPage() {
+  const [fieldProgress, setFieldProgress] =
+    useState<FieldProgress[]>(MOCK_FIELD_PROGRESS);
+  const [scheduleItems, setScheduleItems] =
+    useState<ScheduleItem[]>(MOCK_SCHEDULE);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch field progress reports
+      const progressRes = await fetch("/api/v1/field/progress?per_page=20");
+      if (progressRes.ok) {
+        const json = await progressRes.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setFieldProgress(
+            data.map((item) => ({
+              id: String(item.id ?? ""),
+              site_id: String(item.site_id ?? ""),
+              site_name: String(item.site_name ?? ""),
+              progress_rate: Number(item.progress_rate ?? 0),
+              worker_count: Number(item.worker_count ?? 0),
+              status: String(item.status ?? ""),
+              reported_at: String(item.reported_at ?? ""),
+            })),
+          );
+        }
+      }
+
+      // Fetch construction schedule as sub-data
+      const scheduleRes = await fetch(
+        "/api/v1/construction/schedule?per_page=20",
+      );
+      if (scheduleRes.ok) {
+        const json = await scheduleRes.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setScheduleItems(
+            data.map((item) => ({
+              id: String(item.id ?? ""),
+              time: String(item.start_time ?? item.time ?? ""),
+              task: String(item.task ?? item.name ?? item.title ?? ""),
+              workers: Number(item.workers ?? item.worker_count ?? 0),
+              status: normalizeScheduleStatus(String(item.status ?? "")),
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Derive stats from API data if available, otherwise use static values
+  const totalWorkers =
+    fieldProgress.length > 0
+      ? fieldProgress.reduce((acc, fp) => acc + fp.worker_count, 0)
+      : 42;
+
   const stats = [
     {
       label: "今日の作業員数",
-      value: "42名",
+      value: `${totalWorkers}名`,
       icon: Users,
       color: "text-blue-600",
       bg: "bg-blue-50",
@@ -81,7 +214,7 @@ export default function FieldDashboardPage() {
     },
     {
       label: "作業指示数",
-      value: "18件",
+      value: `${scheduleItems.length}件`,
       icon: Calendar,
       color: "text-purple-600",
       bg: "bg-purple-50",
@@ -99,7 +232,14 @@ export default function FieldDashboardPage() {
             ダッシュボード — 本日の作業状況・アラート
           </p>
         </div>
-        <HardHat className="w-8 h-8 text-orange-500" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-500 animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <HardHat className="w-8 h-8 text-orange-500" />
+        </div>
       </div>
 
       {/* サマリーカード */}
@@ -124,6 +264,76 @@ export default function FieldDashboardPage() {
           );
         })}
       </div>
+
+      {/* 現場進捗（APIから取得時のみ表示） */}
+      {fieldProgress.length > 0 && (
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="px-4 py-3 border-b bg-gray-50">
+            <h2 className="font-semibold text-gray-700">現場進捗状況</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    現場名
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    進捗率
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    作業員数
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    ステータス
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">
+                    報告日時
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {fieldProgress.map((fp) => (
+                  <tr
+                    key={fp.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {fp.site_name}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{
+                              width: `${Math.min(100, fp.progress_rate)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-700">
+                          {fp.progress_rate}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {fp.worker_count}名
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {fp.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {fp.reported_at}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 天気情報 */}
       <div className="bg-white rounded-lg border p-4">
@@ -205,9 +415,9 @@ export default function FieldDashboardPage() {
           </h2>
           <div className="bg-white rounded-lg border overflow-hidden">
             <div className="divide-y">
-              {SCHEDULE.map((item) => (
+              {scheduleItems.map((item) => (
                 <div
-                  key={item.time}
+                  key={item.id}
                   className="flex items-center gap-4 px-4 py-3"
                 >
                   <span className="font-mono text-sm text-gray-500 w-12 shrink-0">
@@ -220,7 +430,7 @@ export default function FieldDashboardPage() {
                     <p className="text-xs text-gray-400">{item.workers}名</p>
                   </div>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${SCHEDULE_STATUS[item.status]}`}
+                    className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${SCHEDULE_STATUS[item.status] ?? "bg-gray-100 text-gray-600"}`}
                   >
                     {item.status}
                   </span>

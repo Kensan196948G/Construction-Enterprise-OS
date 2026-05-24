@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import { Plane, Camera, Map, Wind, Clock, Plus } from "lucide-react";
 
 interface FlightRecord {
@@ -98,16 +99,57 @@ const STATUS_CONFIG = {
 };
 
 export default function DronePage() {
-  const thisMonthFlights = MOCK_FLIGHTS.filter((f) =>
+  const [flights, setFlights] = useState<FlightRecord[]>(MOCK_FLIGHTS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/autonomous/drone-flights?per_page=50");
+      const json = await res.json();
+      const items: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setFlights(
+          items.map((item: Record<string, unknown>) => ({
+            id: String(item.id ?? ""),
+            flightId: String(item.flightId ?? item.flight_id ?? ""),
+            date: String(item.date ?? ""),
+            pilot: String(item.pilot ?? item.pilot_name ?? ""),
+            area: String(item.area ?? ""),
+            altitude: Number(item.altitude ?? 0),
+            flightTimeMin: Number(
+              item.flightTimeMin ?? item.flight_time_min ?? 0,
+            ),
+            photoCount: Number(item.photoCount ?? item.photo_count ?? 0),
+            status: String(
+              item.status ?? "scheduled",
+            ) as FlightRecord["status"],
+            coverage: Number(item.coverage ?? 0),
+          })),
+        );
+      }
+    } catch {
+      setFlights(MOCK_FLIGHTS);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const thisMonthFlights = flights.filter((f) =>
     f.date.startsWith("2026-05"),
   ).length;
-  const totalFlightTime = MOCK_FLIGHTS.filter(
-    (f) => f.status === "completed",
-  ).reduce((s, f) => s + f.flightTimeMin, 0);
-  const totalPhotos = MOCK_FLIGHTS.filter(
-    (f) => f.status === "completed",
-  ).reduce((s, f) => s + f.photoCount, 0);
-  const inFlight = MOCK_FLIGHTS.find((f) => f.status === "in_flight");
+  const totalFlightTime = flights
+    .filter((f) => f.status === "completed")
+    .reduce((s, f) => s + f.flightTimeMin, 0);
+  const totalPhotos = flights
+    .filter((f) => f.status === "completed")
+    .reduce((s, f) => s + f.photoCount, 0);
+  const inFlight = flights.find((f) => f.status === "in_flight");
 
   return (
     <div className="p-6 space-y-6">
@@ -135,7 +177,7 @@ export default function DronePage() {
             <div>
               <p className="text-xs text-gray-500">今月フライト数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {thisMonthFlights}
+                {loading ? "—" : thisMonthFlights}
               </p>
             </div>
           </div>
@@ -148,7 +190,9 @@ export default function DronePage() {
             <div>
               <p className="text-xs text-gray-500">総飛行時間</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.floor(totalFlightTime / 60)}h{totalFlightTime % 60}m
+                {loading
+                  ? "—"
+                  : `${Math.floor(totalFlightTime / 60)}h${totalFlightTime % 60}m`}
               </p>
             </div>
           </div>
@@ -161,7 +205,7 @@ export default function DronePage() {
             <div>
               <p className="text-xs text-gray-500">撮影枚数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {totalPhotos.toLocaleString()}
+                {loading ? "—" : totalPhotos.toLocaleString()}
               </p>
             </div>
           </div>
@@ -268,7 +312,7 @@ export default function DronePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {MOCK_FLIGHTS.map((flight) => (
+              {flights.map((flight) => (
                 <tr
                   key={flight.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -315,7 +359,7 @@ export default function DronePage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {MOCK_FLIGHTS.length}件
+          {flights.length}件
         </div>
       </div>
     </div>

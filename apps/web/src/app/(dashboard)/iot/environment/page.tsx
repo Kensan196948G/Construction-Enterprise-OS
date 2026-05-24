@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Thermometer, Droplets, Wind, Activity } from "lucide-react";
 
 type SensorState = "normal" | "warning" | "critical" | "offline";
@@ -174,25 +175,85 @@ function ValueBar({
   );
 }
 
+// Helper to normalize API sensor status to SensorState
+function normalizeSensorState(raw: string): SensorState {
+  const map: Record<string, SensorState> = {
+    normal: "normal",
+    active: "normal",
+    warning: "warning",
+    alert: "warning",
+    critical: "critical",
+    error: "critical",
+    offline: "offline",
+    inactive: "offline",
+  };
+  return map[raw?.toLowerCase()] ?? "offline";
+}
+
 export default function EnvironmentPage() {
-  const online = MOCK_SENSORS.filter((s) => s.state !== "offline").length;
-  const alerting = MOCK_SENSORS.filter(
+  const [sensors, setSensors] = useState<EnvSensor[]>(MOCK_SENSORS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/iot/sensors?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setSensors(
+            data.map((item) => ({
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              location: String(item.location ?? ""),
+              currentValue: Number(item.value ?? 0),
+              unit: String(item.unit ?? ""),
+              normalMin: 0,
+              normalMax: 100,
+              state: normalizeSensorState(String(item.status ?? "")),
+              lastUpdated: String(item.last_reading_at ?? ""),
+              history: [],
+            })),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const online = sensors.filter((s) => s.state !== "offline").length;
+  const alerting = sensors.filter(
     (s) => s.state === "warning" || s.state === "critical",
   ).length;
-  const avgTemp = (
-    MOCK_SENSORS.filter((s) => s.unit === "°C" && s.state !== "offline").reduce(
-      (acc, s) => acc + s.currentValue,
-      0,
-    ) /
-    MOCK_SENSORS.filter((s) => s.unit === "°C" && s.state !== "offline").length
-  ).toFixed(1);
-  const avgHum = (
-    MOCK_SENSORS.filter((s) => s.unit === "%" && s.state !== "offline").reduce(
-      (acc, s) => acc + s.currentValue,
-      0,
-    ) /
-    MOCK_SENSORS.filter((s) => s.unit === "%" && s.state !== "offline").length
-  ).toFixed(0);
+  const tempSensors = sensors.filter(
+    (s) => s.unit === "°C" && s.state !== "offline",
+  );
+  const avgTemp =
+    tempSensors.length > 0
+      ? (
+          tempSensors.reduce((acc, s) => acc + s.currentValue, 0) /
+          tempSensors.length
+        ).toFixed(1)
+      : "—";
+  const humSensors = sensors.filter(
+    (s) => s.unit === "%" && s.state !== "offline",
+  );
+  const avgHum =
+    humSensors.length > 0
+      ? (
+          humSensors.reduce((acc, s) => acc + s.currentValue, 0) /
+          humSensors.length
+        ).toFixed(0)
+      : "—";
 
   return (
     <div className="p-6 space-y-6">
@@ -203,7 +264,14 @@ export default function EnvironmentPage() {
             IoTセンサー — 温湿度・CO₂・騒音・PM2.5・照度
           </p>
         </div>
-        <Activity className="w-8 h-8 text-teal-600" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-500 animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <Activity className="w-8 h-8 text-teal-600" />
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -213,7 +281,7 @@ export default function EnvironmentPage() {
           <div>
             <p className="text-xs text-gray-500">オンライン</p>
             <p className="text-2xl font-bold text-green-600">
-              {online} / {MOCK_SENSORS.length}
+              {online} / {sensors.length}
             </p>
           </div>
         </div>
@@ -273,7 +341,7 @@ export default function EnvironmentPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {MOCK_SENSORS.map((sensor) => (
+              {sensors.map((sensor) => (
                 <tr
                   key={sensor.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -351,19 +419,32 @@ export default function EnvironmentPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {MOCK_SENSORS.map((sensor) => (
+              {sensors.map((sensor) => (
                 <tr key={sensor.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2.5 text-gray-700 text-xs font-medium">
                     {sensor.name}
                   </td>
-                  {sensor.history.map((v, i) => (
-                    <td
-                      key={i}
-                      className="px-4 py-2.5 text-center text-xs text-gray-600"
-                    >
-                      {v === 0 ? <span className="text-gray-300">—</span> : v}
-                    </td>
-                  ))}
+                  {sensor.history.length > 0
+                    ? sensor.history.map((v, i) => (
+                        <td
+                          key={i}
+                          className="px-4 py-2.5 text-center text-xs text-gray-600"
+                        >
+                          {v === 0 ? (
+                            <span className="text-gray-300">—</span>
+                          ) : (
+                            v
+                          )}
+                        </td>
+                      ))
+                    : HOURS.map((h) => (
+                        <td
+                          key={h}
+                          className="px-4 py-2.5 text-center text-xs text-gray-300"
+                        >
+                          —
+                        </td>
+                      ))}
                   <td className="px-4 py-2.5 text-xs text-gray-400">
                     {sensor.unit}
                   </td>

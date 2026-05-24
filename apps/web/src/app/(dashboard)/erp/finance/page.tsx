@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { BarChart3, TrendingUp, Banknote, FileText } from "lucide-react";
 
 // Mock data — 建設業規模（億単位）
-const PL_ITEMS = [
+const MOCK_PL_ITEMS = [
   { label: "売上高", amount: 3850000000, indent: false, bold: false },
   { label: "売上原価", amount: 2926000000, indent: false, bold: false },
   { label: "売上総利益（粗利）", amount: 924000000, indent: false, bold: true },
@@ -61,11 +62,20 @@ const CASHFLOW_MONTHS = [
   },
 ];
 
-const revenue = PL_ITEMS.find((i) => i.label === "売上高")!.amount;
-const operatingProfit = PL_ITEMS.find((i) => i.label === "営業利益")!.amount;
-const operatingMargin = ((operatingProfit / revenue) * 100).toFixed(1);
-const latestCF = CASHFLOW_MONTHS[CASHFLOW_MONTHS.length - 1];
-const ytdRevenue = revenue; // 年累計（モック上は年度合計と同一）
+type PlItem = {
+  label: string;
+  amount: number;
+  indent: boolean;
+  bold: boolean;
+};
+
+type FinancialSummary = {
+  total_revenue: number;
+  total_cost: number;
+  gross_profit: number;
+  operating_profit: number;
+  projects_count: number;
+};
 
 function cfColor(val: number): string {
   if (val > 0) return "text-green-600 font-medium";
@@ -82,7 +92,83 @@ function fmtAmount(val: number): string {
   return `${sign}${abs.toLocaleString()}円`;
 }
 
+function buildPlItemsFromSummary(summary: FinancialSummary): PlItem[] {
+  const sga = summary.total_revenue - summary.total_cost - summary.gross_profit;
+  return [
+    {
+      label: "売上高",
+      amount: Number(summary.total_revenue ?? 0),
+      indent: false,
+      bold: false,
+    },
+    {
+      label: "売上原価",
+      amount: Number(summary.total_cost ?? 0),
+      indent: false,
+      bold: false,
+    },
+    {
+      label: "売上総利益（粗利）",
+      amount: Number(summary.gross_profit ?? 0),
+      indent: false,
+      bold: true,
+    },
+    {
+      label: "販売費及び一般管理費",
+      amount: Math.max(0, sga),
+      indent: true,
+      bold: false,
+    },
+    {
+      label: "営業利益",
+      amount: Number(summary.operating_profit ?? 0),
+      indent: false,
+      bold: true,
+    },
+  ];
+}
+
 export default function FinancePage() {
+  const [plItems, setPlItems] = useState<PlItem[]>(MOCK_PL_ITEMS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/erp/ledger/summary");
+      if (res.ok) {
+        const json = await res.json();
+        const summary: FinancialSummary =
+          json?.data ?? json?.summary ?? json ?? {};
+        if (
+          summary.total_revenue !== undefined ||
+          summary.operating_profit !== undefined
+        ) {
+          const derived = buildPlItemsFromSummary(summary);
+          if (derived.length > 0) {
+            setPlItems(derived);
+          }
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const revenue = plItems.find((i) => i.label === "売上高")?.amount ?? 0;
+  const operatingProfit =
+    plItems.find((i) => i.label === "営業利益")?.amount ?? 0;
+  const operatingMargin =
+    revenue > 0 ? ((operatingProfit / revenue) * 100).toFixed(1) : "0.0";
+  const latestCF = CASHFLOW_MONTHS[CASHFLOW_MONTHS.length - 1];
+  const ytdRevenue = revenue;
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* ページヘッダー */}
@@ -146,10 +232,15 @@ export default function FinancePage() {
 
       {/* 損益計算書サマリー */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <h2 className="text-base font-semibold text-gray-800">
             損益計算書サマリー（2026年度）
           </h2>
+          {loading && (
+            <span className="text-xs text-gray-400 animate-pulse">
+              読み込み中...
+            </span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -161,8 +252,11 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {PL_ITEMS.map((item) => {
-                const ratio = ((item.amount / revenue) * 100).toFixed(1);
+              {plItems.map((item) => {
+                const ratio =
+                  revenue > 0
+                    ? ((item.amount / revenue) * 100).toFixed(1)
+                    : "0.0";
                 return (
                   <tr
                     key={item.label}

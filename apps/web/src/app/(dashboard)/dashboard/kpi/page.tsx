@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Target, TrendingUp, BarChart3, CheckCircle } from "lucide-react";
 
 type KpiCategory = "安全" | "品質" | "工程" | "コスト" | "環境";
@@ -181,6 +182,19 @@ const KPI_DATA: KpiItem[] = [
   },
 ];
 
+interface SafetyStats {
+  total: number;
+  passed: number;
+  failed: number;
+  pass_rate: number;
+  pending: number;
+}
+
+interface SafetyHazard {
+  id: number;
+  [key: string]: unknown;
+}
+
 const CATEGORY_COLORS: Record<KpiCategory, string> = {
   安全: "bg-red-100 text-red-800",
   品質: "bg-blue-100 text-blue-800",
@@ -246,17 +260,92 @@ function TrendBadge({ trend, change }: { trend: KpiTrend; change: number }) {
 }
 
 export default function KpiDashboardPage() {
-  const rates = KPI_DATA.map((k) => getAchievementRate(k));
+  const [kpiData, setKpiData] = useState<KpiItem[]>(KPI_DATA);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [statsRes, hazardsRes] = await Promise.allSettled([
+        fetch("/api/v1/safety/inspections/stats"),
+        fetch("/api/v1/safety/hazards/open"),
+      ]);
+
+      let passRate: number | null = null;
+      let openHazardCount: number | null = null;
+
+      if (statsRes.status === "fulfilled" && statsRes.value.ok) {
+        const json: SafetyStats = await statsRes.value.json();
+        passRate = json.pass_rate ?? null;
+      }
+
+      if (hazardsRes.status === "fulfilled" && hazardsRes.value.ok) {
+        const json: SafetyHazard[] | { items: SafetyHazard[] } =
+          await hazardsRes.value.json();
+        const items = Array.isArray(json)
+          ? json
+          : ((json as { items: SafetyHazard[] }).items ?? []);
+        openHazardCount = items.length;
+      }
+
+      if (passRate !== null || openHazardCount !== null) {
+        setKpiData((prev) =>
+          prev.map((k) => {
+            if (k.id === 2 && passRate !== null) {
+              // 安全パトロール実施率
+              const rounded = Math.round(passRate * 10) / 10;
+              return {
+                ...k,
+                actual: rounded,
+                trend: rounded >= k.actual ? "up" : "down",
+                prevPeriodChange: Math.round((rounded - k.actual) * 10) / 10,
+              };
+            }
+            if (k.id === 3 && openHazardCount !== null) {
+              // ヒヤリハット報告件数
+              return {
+                ...k,
+                actual: openHazardCount,
+                trend:
+                  openHazardCount > k.actual
+                    ? "up"
+                    : openHazardCount < k.actual
+                      ? "down"
+                      : "flat",
+                prevPeriodChange:
+                  k.actual > 0
+                    ? Math.round(
+                        ((openHazardCount - k.actual) / k.actual) * 1000,
+                      ) / 10
+                    : 0,
+              };
+            }
+            return k;
+          }),
+        );
+      }
+    } catch {
+      // fallback to mock data — already set as default state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const rates = kpiData.map((k) => getAchievementRate(k));
   const achieved = rates.filter((r) => r >= 100).length;
-  const improving = KPI_DATA.filter((k) => k.trend === "up").length;
-  const declining = KPI_DATA.filter((k) => k.trend === "down").length;
-  const overallRate = Math.round((achieved / KPI_DATA.length) * 100);
+  const improving = kpiData.filter((k) => k.trend === "up").length;
+  const declining = kpiData.filter((k) => k.trend === "down").length;
+  const overallRate = Math.round((achieved / kpiData.length) * 100);
 
   const stats = [
     {
       label: "全KPI達成率",
       value: `${overallRate}%`,
-      sub: `${achieved} / ${KPI_DATA.length} 件達成`,
+      sub: `${achieved} / ${kpiData.length} 件達成`,
       icon: CheckCircle,
       color: "text-green-600",
       bg: "bg-green-50",
@@ -279,7 +368,7 @@ export default function KpiDashboardPage() {
     },
     {
       label: "モニタリング対象",
-      value: `${KPI_DATA.length}件`,
+      value: `${kpiData.length}件`,
       sub: "5カテゴリ",
       icon: Target,
       color: "text-purple-600",
@@ -300,7 +389,14 @@ export default function KpiDashboardPage() {
             ダッシュボード — 全社KPI達成状況・トレンド分析
           </p>
         </div>
-        <Target className="w-8 h-8 text-purple-600" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <Target className="w-8 h-8 text-purple-600" />
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -326,7 +422,7 @@ export default function KpiDashboardPage() {
 
       {/* カテゴリ別KPIテーブル */}
       {categories.map((cat) => {
-        const items = KPI_DATA.filter((k) => k.category === cat);
+        const items = kpiData.filter((k) => k.category === cat);
         return (
           <div key={cat} className="bg-white rounded-lg border overflow-hidden">
             <div className="px-4 py-3 border-b bg-gray-50 flex items-center gap-2">

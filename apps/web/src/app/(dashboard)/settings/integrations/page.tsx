@@ -1,6 +1,13 @@
 "use client";
 
-import { Link, RefreshCw, CheckCircle, AlertCircle, Settings } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Link,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Settings,
+} from "lucide-react";
 
 interface IntegrationSystem {
   id: string;
@@ -163,7 +170,10 @@ const MOCK_LOGS: IntegrationLog[] = [
   },
 ];
 
-const statusStyle: Record<IntegrationSystem["status"], { label: string; dot: string; badge: string }> = {
+const statusStyle: Record<
+  IntegrationSystem["status"],
+  { label: string; dot: string; badge: string }
+> = {
   connected: {
     label: "連携中",
     dot: "bg-green-500",
@@ -181,7 +191,10 @@ const statusStyle: Record<IntegrationSystem["status"], { label: string; dot: str
   },
 };
 
-const logResultStyle: Record<IntegrationLog["result"], { icon: React.ReactNode; className: string }> = {
+const logResultStyle: Record<
+  IntegrationLog["result"],
+  { icon: React.ReactNode; className: string }
+> = {
   success: {
     icon: <CheckCircle className="h-4 w-4 text-green-500" />,
     className: "text-green-700",
@@ -197,9 +210,85 @@ const logResultStyle: Record<IntegrationLog["result"], { icon: React.ReactNode; 
 };
 
 export default function IntegrationsPage() {
-  const connectedCount = MOCK_SYSTEMS.filter((s) => s.status === "connected").length;
-  const totalSyncToday = MOCK_SYSTEMS.reduce((s, sys) => s + sys.syncCount, 0);
-  const errorCount = MOCK_SYSTEMS.filter((s) => s.status === "error").length;
+  const [systems, setSystems] = useState<IntegrationSystem[]>(MOCK_SYSTEMS);
+  const [logs, setLogs] = useState<IntegrationLog[]>(MOCK_LOGS);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const results = await Promise.allSettled([
+      fetch("/api/v1/integrations?per_page=50"),
+      fetch("/api/v1/integrations/logs?per_page=50"),
+    ]);
+
+    const [systemsResult, logsResult] = results;
+
+    try {
+      if (systemsResult.status === "fulfilled" && systemsResult.value.ok) {
+        const json = await systemsResult.value.json();
+        const items: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(items) && items.length > 0) {
+          setSystems(
+            items.map(
+              (item): IntegrationSystem => ({
+                id: String(item.id ?? ""),
+                name: String(item.name ?? ""),
+                category: String(item.category ?? ""),
+                iconBg: String(item.iconBg ?? item.icon_bg ?? "bg-gray-500"),
+                iconText: String(item.iconText ?? item.icon_text ?? ""),
+                status: String(
+                  item.status ?? "disconnected",
+                ) as IntegrationSystem["status"],
+                lastSync:
+                  (item.lastSync ?? item.last_sync)
+                    ? String(item.lastSync ?? item.last_sync)
+                    : null,
+                syncCount: Number(item.syncCount ?? item.sync_count ?? 0),
+              }),
+            ),
+          );
+        }
+      }
+    } catch {
+      setSystems(MOCK_SYSTEMS);
+    }
+
+    try {
+      if (logsResult.status === "fulfilled" && logsResult.value.ok) {
+        const json = await logsResult.value.json();
+        const items: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(items) && items.length > 0) {
+          setLogs(
+            items.map(
+              (item): IntegrationLog => ({
+                id: String(item.id ?? ""),
+                timestamp: String(item.timestamp ?? ""),
+                systemName: String(item.systemName ?? item.system_name ?? ""),
+                event: String(item.event ?? ""),
+                result: String(
+                  item.result ?? "success",
+                ) as IntegrationLog["result"],
+              }),
+            ),
+          );
+        }
+      }
+    } catch {
+      setLogs(MOCK_LOGS);
+    }
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const connectedCount = systems.filter((s) => s.status === "connected").length;
+  const totalSyncToday = systems.reduce((s, sys) => s + sys.syncCount, 0);
+  const errorCount = systems.filter((s) => s.status === "error").length;
 
   return (
     <div className="p-6 space-y-6">
@@ -216,26 +305,36 @@ export default function IntegrationsPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">連携中システム</p>
+              <p className="text-sm font-medium text-gray-500">
+                連携中システム
+              </p>
               <p className="mt-1 text-3xl font-bold text-gray-900">
                 {connectedCount}
-                <span className="ml-1 text-lg font-medium text-gray-500">件</span>
+                <span className="ml-1 text-lg font-medium text-gray-500">
+                  件
+                </span>
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50">
               <Link className="h-6 w-6 text-green-600" />
             </div>
           </div>
-          <p className="mt-2 text-xs text-gray-400">全{MOCK_SYSTEMS.length}システム中</p>
+          <p className="mt-2 text-xs text-gray-400">
+            全{systems.length}システム中
+          </p>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">今日の同期回数</p>
+              <p className="text-sm font-medium text-gray-500">
+                今日の同期回数
+              </p>
               <p className="mt-1 text-3xl font-bold text-gray-900">
                 {totalSyncToday.toLocaleString()}
-                <span className="ml-1 text-lg font-medium text-gray-500">回</span>
+                <span className="ml-1 text-lg font-medium text-gray-500">
+                  回
+                </span>
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
@@ -251,11 +350,17 @@ export default function IntegrationsPage() {
               <p className="text-sm font-medium text-gray-500">エラー数</p>
               <p className="mt-1 text-3xl font-bold text-gray-900">
                 {errorCount}
-                <span className="ml-1 text-lg font-medium text-gray-500">件</span>
+                <span className="ml-1 text-lg font-medium text-gray-500">
+                  件
+                </span>
               </p>
             </div>
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${errorCount > 0 ? "bg-red-50" : "bg-green-50"}`}>
-              <AlertCircle className={`h-6 w-6 ${errorCount > 0 ? "text-red-600" : "text-green-600"}`} />
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-xl ${errorCount > 0 ? "bg-red-50" : "bg-green-50"}`}
+            >
+              <AlertCircle
+                className={`h-6 w-6 ${errorCount > 0 ? "text-red-600" : "text-green-600"}`}
+              />
             </div>
           </div>
           <p className="mt-2 text-xs text-gray-400">接続エラーのシステム</p>
@@ -264,61 +369,84 @@ export default function IntegrationsPage() {
 
       {/* System Cards */}
       <div>
-        <h2 className="mb-4 text-base font-semibold text-gray-900">連携システム一覧</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MOCK_SYSTEMS.map((system) => {
-            const st = statusStyle[system.status];
-            return (
-              <div key={system.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-white text-xs font-bold ${system.iconBg}`}>
-                      {system.iconText}
+        <h2 className="mb-4 text-base font-semibold text-gray-900">
+          連携システム一覧
+        </h2>
+        {loading ? (
+          <div className="py-8 text-center text-sm text-gray-400">
+            読み込み中...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {systems.map((system) => {
+              const st = statusStyle[system.status];
+              return (
+                <div
+                  key={system.id}
+                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg text-white text-xs font-bold ${system.iconBg}`}
+                      >
+                        {system.iconText}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {system.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {system.category}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{system.name}</p>
-                      <p className="text-xs text-gray-500">{system.category}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${st.dot}`} />
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}
+                      >
+                        {st.label}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${st.dot}`} />
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}>
-                      {st.label}
-                    </span>
+                  <div className="mt-4 space-y-1.5">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>最終同期</span>
+                      <span className="font-medium text-gray-700">
+                        {system.lastSync ?? "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>今日の同期</span>
+                      <span className="font-medium text-gray-700">
+                        {system.syncCount}回
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 space-y-1.5">
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>最終同期</span>
-                    <span className="font-medium text-gray-700">{system.lastSync ?? "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>今日の同期</span>
-                    <span className="font-medium text-gray-700">{system.syncCount}回</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-300 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                    <Settings className="h-3.5 w-3.5" />
-                    設定
-                  </button>
-                  {system.status === "connected" && (
-                    <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-blue-300 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      今すぐ同期
+                  <div className="mt-4 flex gap-2">
+                    <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-300 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                      <Settings className="h-3.5 w-3.5" />
+                      設定
                     </button>
-                  )}
-                  {system.status !== "connected" && (
-                    <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-green-300 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 transition-colors">
-                      <Link className="h-3.5 w-3.5" />
-                      接続
-                    </button>
-                  )}
+                    {system.status === "connected" && (
+                      <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-blue-300 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        今すぐ同期
+                      </button>
+                    )}
+                    {system.status !== "connected" && (
+                      <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-green-300 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 transition-colors">
+                        <Link className="h-3.5 w-3.5" />
+                        接続
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Integration Log */}
@@ -328,33 +456,53 @@ export default function IntegrationsPage() {
             <RefreshCw className="h-5 w-5 text-gray-500" />
             <h2 className="text-base font-semibold text-gray-900">連携ログ</h2>
           </div>
-          <span className="text-sm text-gray-500">直近{MOCK_LOGS.length}件</span>
+          <span className="text-sm text-gray-500">直近{logs.length}件</span>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">日時</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">システム名</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">イベント</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">結果</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  日時
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  システム名
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  イベント
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  結果
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {MOCK_LOGS.map((log) => {
+              {logs.map((log) => {
                 const res = logResultStyle[log.result];
                 return (
                   <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{log.timestamp}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-gray-900">{log.systemName}</span>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {log.timestamp}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{log.event}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-gray-900">
+                        {log.systemName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {log.event}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         {res.icon}
-                        <span className={`text-xs font-medium ${res.className}`}>
-                          {log.result === "success" ? "成功" : log.result === "error" ? "エラー" : "警告"}
+                        <span
+                          className={`text-xs font-medium ${res.className}`}
+                        >
+                          {log.result === "success"
+                            ? "成功"
+                            : log.result === "error"
+                              ? "エラー"
+                              : "警告"}
                         </span>
                       </div>
                     </td>

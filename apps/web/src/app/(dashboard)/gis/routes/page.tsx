@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Route, Truck, MapPin, AlertTriangle } from "lucide-react";
 
 type RouteStatus = "通常" | "工事中" | "通行止め" | "迂回推奨";
@@ -95,11 +96,71 @@ const STATUS_CONFIG: Record<RouteStatus, { className: string; dot: string }> = {
   },
 };
 
+// Helper to normalize API route status to RouteStatus
+function normalizeRouteStatus(raw: string): RouteStatus {
+  const map: Record<string, RouteStatus> = {
+    normal: "通常",
+    active: "通常",
+    open: "通常",
+    under_construction: "工事中",
+    construction: "工事中",
+    closed: "通行止め",
+    blocked: "通行止め",
+    detour: "迂回推奨",
+    detour_recommended: "迂回推奨",
+  };
+  return map[raw?.toLowerCase()] ?? "通常";
+}
+
 export default function RoutesPage() {
+  const [routes, setRoutes] = useState<TransportRoute[]>(MOCK_ROUTES);
+  const [loading, setLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/gis/routes?per_page=50");
+      if (res.ok) {
+        const json = await res.json();
+        const data: Record<string, unknown>[] =
+          json?.data?.items ?? json?.items ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setRoutes(
+            data.map((item) => {
+              const distance = Number(item.distance ?? 0);
+              const duration = Number(item.duration ?? 0);
+              return {
+                id: String(item.id ?? ""),
+                name: String(item.name ?? ""),
+                origin: String(item.origin ?? item.start_point ?? ""),
+                destination: String(item.destination ?? item.end_point ?? ""),
+                distance: distance > 0 ? `${distance.toFixed(1)} km` : "",
+                duration: duration > 0 ? `${duration} 分` : "",
+                weightLimit: String(item.weight_limit ?? ""),
+                status: normalizeRouteStatus(String(item.status ?? "")),
+                tripsThisMonth: Number(
+                  item.trips_this_month ?? item.coordinates_count ?? 0,
+                ),
+              };
+            }),
+          );
+        }
+      }
+    } catch {
+      // fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const stats = {
-    total: MOCK_ROUTES.length,
-    closed: MOCK_ROUTES.filter((r) => r.status === "通行止め").length,
-    tripsTotal: MOCK_ROUTES.reduce((acc, r) => acc + r.tripsThisMonth, 0),
+    total: routes.length,
+    closed: routes.filter((r) => r.status === "通行止め").length,
+    tripsTotal: routes.reduce((acc, r) => acc + r.tripsThisMonth, 0),
     trucks: 24,
   };
 
@@ -112,7 +173,14 @@ export default function RoutesPage() {
             GIS/地図 — 資材運搬ルート・通行状況
           </p>
         </div>
-        <Route className="w-8 h-8 text-blue-600" />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <span className="text-xs text-blue-500 animate-pulse">
+              データ取得中...
+            </span>
+          )}
+          <Route className="w-8 h-8 text-blue-600" />
+        </div>
       </div>
 
       {/* 統計カード */}
@@ -187,7 +255,7 @@ export default function RoutesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {MOCK_ROUTES.map((route) => (
+                  {routes.map((route) => (
                     <tr
                       key={route.id}
                       className="hover:bg-gray-50 transition-colors"
@@ -257,7 +325,7 @@ export default function RoutesPage() {
                 />
                 <span className="text-gray-700">{status}</span>
                 <span className="ml-auto text-gray-500 text-xs">
-                  {MOCK_ROUTES.filter((r) => r.status === status).length} ルート
+                  {routes.filter((r) => r.status === status).length} ルート
                 </span>
               </div>
             ))}
