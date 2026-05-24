@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "ceo-os-logging"
+version = "0.1.0"
+description = "CEO-OS Unified Logging - Structured JSON logging with OpenTelemetry tracing"
+authors = [
+    {name = "CEO-OS Team"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "structlog>=24.0",
+    "python-json-logger>=2.0",
+]

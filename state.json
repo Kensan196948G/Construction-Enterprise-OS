@@ -69,14 +69,12 @@
       "GitHub Actions CI/CD (lint/test/build/security)",
       "README.md 大幅更新 (表・図・アイコン多用)"
     ],
-    "in_progress": [],
+    "in_progress": ["文書管理基盤 (MinIO連携)", "統合ログ基盤 (ELK+OpenTelemetry)", "GIS基盤 (PostGIS API)"],
     "next": [
-      "API Gateway 実装 (Kong/Traefik)",
-      "イベント基盤 (Kafkaトピック定義 + 発行/購読)",
-      "統合通知基盤 (Email/SMS/Push)",
-      "統合ログ基盤 (ELK + OpenTelemetry)",
-      "文書管理基盤 (MinIO連携)",
-      "GIS基盤 (PostGIS API)"
+      "AI共通基盤 (LLM+RAG+VectorDB)",
+      "IoT統合基盤 (MQTT+Sensor+Edge)",
+      "ワークフロー基盤 (BPMN+Camunda)",
+      "BIM/CIM統合基盤"
     ]
   },
   "github": {
