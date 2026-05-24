@@ -40,6 +40,8 @@ auth-typecheck: ## Auth Service型チェック
 # フロントエンド (Next.js)
 # ============================================
 web-dev: ## Webアプリ開発サーバー起動
+	@echo "🌐 Starting on http://0.0.0.0:3100"
+	@echo "📋 Network: http://$$(hostname -I | awk '{print $$1}'):3100"
 	cd apps/web && pnpm dev
 
 # ============================================
