@@ -1,5 +1,323 @@
-import UnderDevelopment from "@/app/(dashboard)/_components/UnderDevelopment";
+"use client";
 
-export default function Page() {
-  return <UnderDevelopment title="ドローン制御" section="自動化・ロボティクス" />;
+import { Plane, Camera, Map, Wind, Clock, Plus } from "lucide-react";
+
+interface FlightRecord {
+  id: string;
+  flightId: string;
+  date: string;
+  pilot: string;
+  area: string;
+  altitude: number;
+  flightTimeMin: number;
+  photoCount: number;
+  status: "completed" | "in_flight" | "scheduled" | "cancelled";
+  coverage: number;
+}
+
+const MOCK_FLIGHTS: FlightRecord[] = [
+  {
+    id: "F-001",
+    flightId: "DRN-2026-031",
+    date: "2026-05-24",
+    pilot: "田中 航",
+    area: "品川タワー 全体",
+    altitude: 80,
+    flightTimeMin: 42,
+    photoCount: 312,
+    status: "in_flight",
+    coverage: 65,
+  },
+  {
+    id: "F-002",
+    flightId: "DRN-2026-030",
+    date: "2026-05-22",
+    pilot: "鈴木 空",
+    area: "新宿ビル 北側",
+    altitude: 60,
+    flightTimeMin: 28,
+    photoCount: 198,
+    status: "completed",
+    coverage: 100,
+  },
+  {
+    id: "F-003",
+    flightId: "DRN-2026-029",
+    date: "2026-05-20",
+    pilot: "田中 航",
+    area: "道路工事 A区間",
+    altitude: 50,
+    flightTimeMin: 55,
+    photoCount: 421,
+    status: "completed",
+    coverage: 100,
+  },
+  {
+    id: "F-004",
+    flightId: "DRN-2026-028",
+    date: "2026-05-18",
+    pilot: "山田 翼",
+    area: "大阪ビル 外壁",
+    altitude: 40,
+    flightTimeMin: 35,
+    photoCount: 267,
+    status: "completed",
+    coverage: 100,
+  },
+  {
+    id: "F-005",
+    flightId: "DRN-2026-027",
+    date: "2026-05-15",
+    pilot: "鈴木 空",
+    area: "横浜工場 屋根",
+    altitude: 30,
+    flightTimeMin: 22,
+    photoCount: 156,
+    status: "completed",
+    coverage: 100,
+  },
+  {
+    id: "F-006",
+    flightId: "DRN-2026-032",
+    date: "2026-05-26",
+    pilot: "山田 翼",
+    area: "品川タワー 東側",
+    altitude: 70,
+    flightTimeMin: 0,
+    photoCount: 0,
+    status: "scheduled",
+    coverage: 0,
+  },
+];
+
+const STATUS_CONFIG = {
+  completed: { label: "完了", color: "bg-green-100 text-green-700" },
+  in_flight: { label: "飛行中", color: "bg-blue-100 text-blue-700" },
+  scheduled: { label: "予定", color: "bg-gray-100 text-gray-600" },
+  cancelled: { label: "中止", color: "bg-red-100 text-red-700" },
+};
+
+export default function DronePage() {
+  const thisMonthFlights = MOCK_FLIGHTS.filter((f) =>
+    f.date.startsWith("2026-05"),
+  ).length;
+  const totalFlightTime = MOCK_FLIGHTS.filter(
+    (f) => f.status === "completed",
+  ).reduce((s, f) => s + f.flightTimeMin, 0);
+  const totalPhotos = MOCK_FLIGHTS.filter(
+    (f) => f.status === "completed",
+  ).reduce((s, f) => s + f.photoCount, 0);
+  const inFlight = MOCK_FLIGHTS.find((f) => f.status === "in_flight");
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">ドローン測量</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            ドローンフライト管理・空撮測量データ
+          </p>
+        </div>
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+          <Plus className="w-4 h-4" />
+          フライト計画
+        </button>
+      </div>
+
+      {/* 統計カード */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Plane className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">今月フライト数</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {thisMonthFlights}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <Clock className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">総飛行時間</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {Math.floor(totalFlightTime / 60)}h{totalFlightTime % 60}m
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Camera className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">撮影枚数</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalPhotos.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-50 rounded-lg">
+              <Map className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">面積カバレッジ</p>
+              <p className="text-2xl font-bold text-gray-900">94%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 飛行中フライト */}
+      {inFlight && (
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-200">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <h2 className="font-semibold text-gray-800">現在飛行中</h2>
+            <span className="ml-auto text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              {inFlight.flightId}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-gray-500">エリア</p>
+              <p className="text-sm font-medium text-gray-900">
+                {inFlight.area}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">パイロット</p>
+              <p className="text-sm font-medium text-gray-900">
+                {inFlight.pilot}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">高度</p>
+              <p className="text-sm font-medium text-gray-900">
+                {inFlight.altitude}m
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">撮影済み</p>
+              <p className="text-sm font-medium text-gray-900">
+                {inFlight.photoCount}枚 (推定)
+              </p>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-600">進捗</span>
+              <span className="text-xs font-medium text-blue-600">
+                {inFlight.coverage}%
+              </span>
+            </div>
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all"
+                style={{ width: `${inFlight.coverage}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* フライト一覧テーブル */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">フライト一覧</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  フライトID
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  日付
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  パイロット
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  エリア
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  高度
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  飛行時間
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  撮影枚数
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">
+                  ステータス
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {MOCK_FLIGHTS.map((flight) => (
+                <tr
+                  key={flight.id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                    {flight.flightId}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">{flight.date}</td>
+                  <td className="px-4 py-3 text-gray-700">{flight.pilot}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {flight.area}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Wind className="w-3 h-3 text-gray-400" />
+                      {flight.altitude}m
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {flight.flightTimeMin > 0
+                      ? `${flight.flightTimeMin}分`
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {flight.photoCount > 0 ? (
+                      <div className="flex items-center gap-1">
+                        <Camera className="w-3 h-3 text-gray-400" />
+                        {flight.photoCount}枚
+                      </div>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[flight.status].color}`}
+                    >
+                      {STATUS_CONFIG[flight.status].label}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
+          {MOCK_FLIGHTS.length}件
+        </div>
+      </div>
+    </div>
+  );
 }

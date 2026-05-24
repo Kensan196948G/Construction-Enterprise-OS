@@ -84,10 +84,10 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T08:38:17.589Z"
+    "last_pre_compact_at": "2026-05-24T09:02:12.190Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T08:39:48.949Z",
+    "current_session_start_at": "2026-05-24T09:03:21.349Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T07:03:22.985Z"
   },
@@ -182,12 +182,12 @@
     "usage_history": {
       "agents": {
         "general-purpose": {
-          "call_count": 6,
-          "last_used": "2026-05-24T08:49:13.544Z",
-          "last_description": "セキュリティ/ワークフローページ実装"
+          "call_count": 8,
+          "last_used": "2026-05-24T09:07:21.908Z",
+          "last_description": "文書/GIS/IoT/ダッシュボードサブページ実装"
         },
-        "_total_agent_calls": 8,
-        "_last_agent_call_at": "2026-05-24T08:49:13.544Z",
+        "_total_agent_calls": 10,
+        "_last_agent_call_at": "2026-05-24T09:07:21.908Z",
         "feature-dev_code-architect": {
           "call_count": 2,
           "last_used": "2026-05-24T07:07:36.025Z",
