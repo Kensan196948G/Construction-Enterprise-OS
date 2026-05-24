@@ -1,0 +1,105 @@
+"""契約管理ビジネスロジック"""
+
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models import Contract
+
+
+async def create_contract(
+    db: AsyncSession, organization_id: uuid.UUID, data: dict
+) -> Contract:
+    contract = Contract(
+        id=uuid.uuid4(),
+        organization_id=organization_id,
+        **data,
+    )
+    db.add(contract)
+    return contract
+
+
+async def get_contract_by_id(
+    db: AsyncSession, contract_id: uuid.UUID
+) -> Contract | None:
+    result = await db.execute(
+        select(Contract).where(Contract.id == contract_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def list_contracts(
+    db: AsyncSession,
+    *,
+    page: int = 1,
+    per_page: int = 20,
+    partner_id: uuid.UUID | None = None,
+    project_id: uuid.UUID | None = None,
+    status: str | None = None,
+    contract_type: str | None = None,
+) -> tuple[list[Contract], int]:
+    conditions = []
+    if partner_id:
+        conditions.append(Contract.partner_id == partner_id)
+    if project_id:
+        conditions.append(Contract.project_id == project_id)
+    if status:
+        conditions.append(Contract.status == status)
+    if contract_type:
+        conditions.append(Contract.contract_type == contract_type)
+
+    base_query = select(Contract)
+    if conditions:
+        base_query = base_query.where(*conditions)
+
+    count_query = select(func.count()).select_from(Contract)
+    if conditions:
+        count_query = count_query.where(*conditions)
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    offset = (page - 1) * per_page
+    query = (
+        base_query
+        .order_by(Contract.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
+    )
+    result = await db.execute(query)
+    contracts = list(result.scalars().all())
+    return contracts, total
+
+
+async def update_contract(
+    db: AsyncSession, contract_id: uuid.UUID, update_data: dict
+) -> Contract | None:
+    contract = await get_contract_by_id(db, contract_id)
+    if not contract:
+        return None
+
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(contract, field, value)
+    return contract
+
+
+async def sign_contract(
+    db: AsyncSession, contract_id: uuid.UUID, signed_by_our: uuid.UUID, signed_by_partner: str
+) -> Contract | None:
+    contract = await get_contract_by_id(db, contract_id)
+    if not contract:
+        return None
+
+    contract.status = "active"
+    contract.signed_by_our = signed_by_our
+    contract.signed_by_partner = signed_by_partner
+    contract.signed_at = datetime.now(timezone.utc)
+    return contract
+
+
+async def list_contracts_for_partner(
+    db: AsyncSession, partner_id: uuid.UUID, page: int = 1, per_page: int = 20
+) -> tuple[list[Contract], int]:
+    return await list_contracts(db, page=page, per_page=per_page, partner_id=partner_id)
