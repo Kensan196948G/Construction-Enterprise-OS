@@ -42,6 +42,7 @@ class Settings(BaseSettings):
         "^/api/v1/gis": "http://localhost:8003",
         "^/api/v1/iot": "http://localhost:8004",
         "^/api/v1/ai": "http://localhost:8005",
+        "^/api/v1/erp": "http://localhost:8020",
         "^/api/v1/construction": "http://localhost:8016",
         "^/api/v1/safety": "http://localhost:8007",
         "^/api/v1/search": "http://localhost:8006",

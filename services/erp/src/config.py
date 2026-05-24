@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: str = "development"
     HOST: str = "0.0.0.0"
-    PORT: int = 8003
+    PORT: int = 8020
     DEBUG: bool = True
 
     DATABASE_URL: str = "postgresql+asyncpg://construction-os:construction-os_dev@localhost:5432/construction-os"

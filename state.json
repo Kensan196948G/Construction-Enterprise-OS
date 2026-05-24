@@ -55,7 +55,9 @@
       "テスト総計: 286 tests ALL PASS",
       "PR#6: WebUI→バックエンドAPI統合（全6ページ + dashboard統計 実データ化）",
       "GIS: Leaflet.js 実地図統合（OpenStreetMap + カスタムピン）",
-      "ワークフロー: 承認・差戻しボタン実装（actionLoading で二重押し防止）"
+      "ワークフロー: 承認・差戻しボタン実装（actionLoading で二重押し防止）",
+      "安全管理ページ実装（ヒヤリハット・インシデント・点検記録 + API統合 + ナビ追加）",
+      "gateway safety ルーティング追加 (^/api/v1/safety → :8007)"
     ],
     "in_progress": [],
     "next": [
@@ -82,10 +84,10 @@
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-05-24T07:52:22.240Z"
+    "last_pre_compact_at": "2026-05-24T08:38:17.589Z"
   },
   "execution": {
-    "current_session_start_at": "2026-05-24T07:53:48.080Z",
+    "current_session_start_at": "2026-05-24T08:39:48.949Z",
     "last_trigger": "manual",
     "last_stop_at": "2026-05-24T07:03:22.985Z"
   },
