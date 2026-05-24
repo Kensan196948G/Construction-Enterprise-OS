@@ -1,0 +1,101 @@
+# Kafka Topics for CEO-OS
+# Applied via: kubectl apply -f kafka-topics.yaml
+# Or via Docker: kafka-topics.sh --create --topic <name> --partitions 3 --replication-factor 1
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.users
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 604800000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.documents
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 604800000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.workflows
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 2592000000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.projects
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: -1
+    segment.bytes: 1073741824
+    cleanup.policy: compact
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.iot
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 6
+  replicas: 1
+  config:
+    retention.ms: 86400000
+    segment.bytes: 536870912
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.safety
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 2592000000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ceo-os.notifications
+  namespace: ceo-os
+  labels:
+    strimzi.io/cluster: ceo-os-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 604800000
+    segment.bytes: 1073741824
