@@ -10,6 +10,7 @@ import {
   Map,
   Cpu,
   GitBranch,
+  ShieldAlert,
   Settings,
   HardHat,
   Menu,
@@ -27,6 +28,7 @@ const navigation = [
   { href: "/gis", label: "GIS", icon: Map },
   { href: "/iot", label: "IoT", icon: Cpu },
   { href: "/workflows", label: "ワークフロー", icon: GitBranch },
+  { href: "/safety", label: "安全管理", icon: ShieldAlert },
   { href: "/settings", label: "設定", icon: Settings },
 ];
 
