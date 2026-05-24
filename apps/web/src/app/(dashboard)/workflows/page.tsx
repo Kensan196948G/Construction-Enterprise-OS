@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   GitBranch,
   CheckCircle,
@@ -273,8 +273,9 @@ const stepStatusConfig: Record<string, string> = {
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
   const [isLoading, setIsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const loadWorkflows = () => {
+  const loadWorkflows = useCallback(() => {
     setIsLoading(true);
     fetch("/api/v1/workflow/instances?per_page=20")
       .then((res) => (res.ok ? res.json() : null))
@@ -316,28 +317,40 @@ export default function WorkflowsPage() {
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     loadWorkflows();
-  }, []);
+  }, [loadWorkflows]);
 
   const handleApprove = async (id: string) => {
-    await fetch(`/api/v1/workflow/instances/${id}/approve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    }).catch(() => {});
+    setActionLoading(id);
+    try {
+      await fetch(`/api/v1/workflow/instances/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // ignore network errors; UI will show stale data until next poll
+    }
     loadWorkflows();
+    setActionLoading(null);
   };
 
   const handleReject = async (id: string) => {
-    await fetch(`/api/v1/workflow/instances/${id}/reject`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    }).catch(() => {});
+    setActionLoading(id);
+    try {
+      await fetch(`/api/v1/workflow/instances/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // ignore network errors
+    }
     loadWorkflows();
+    setActionLoading(null);
   };
 
   const summaryStats = [
@@ -362,10 +375,6 @@ export default function WorkflowsPage() {
       color: "danger",
     },
   ];
-
-  // suppress unused variable warnings for action handlers (used via potential future UI)
-  void handleApprove;
-  void handleReject;
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -480,7 +489,28 @@ export default function WorkflowsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {(wf.status === "pending_approval" ||
+                    wf.status === "in_progress") && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(wf.id)}
+                        disabled={actionLoading === wf.id || isLoading}
+                        className="inline-flex items-center gap-1 rounded-lg bg-approve-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-approve-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        承認
+                      </button>
+                      <button
+                        onClick={() => handleReject(wf.id)}
+                        disabled={actionLoading === wf.id || isLoading}
+                        className="inline-flex items-center gap-1 rounded-lg border border-danger-300 px-3 py-1.5 text-xs font-semibold text-danger-700 hover:bg-danger-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        差戻し
+                      </button>
+                    </>
+                  )}
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
                   >
