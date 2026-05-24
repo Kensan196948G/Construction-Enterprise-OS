@@ -1,19 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   Map,
   MapPin,
   Layers,
   Navigation,
   AlertTriangle,
-  HardHat,
-  Truck,
-  ZoomIn,
-  ZoomOut,
-  Search,
 } from "lucide-react";
 import { sitesFromGeoJSON } from "@/lib/api/gis";
+import type { MapSitePin } from "@/components/gis/LeafletMap";
+
+// Leaflet requires DOM; load only on client side
+const LeafletMap = dynamic(() => import("@/components/gis/LeafletMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-gray-50 text-gray-400 text-sm">
+      地図を読み込み中...
+    </div>
+  ),
+});
 
 const mapLayers = [
   { id: "sites", label: "工事現場", active: true, color: "primary" },
@@ -23,15 +30,7 @@ const mapLayers = [
   { id: "equipment", label: "重機位置", active: true, color: "site" },
 ];
 
-interface SitePin {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  status: string;
-  workers: number;
-  alerts: number;
-}
+type SitePin = MapSitePin;
 
 const MOCK_SITE_PINS: SitePin[] = [
   {
@@ -188,201 +187,9 @@ export default function GISPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map Placeholder */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Map Container */}
-          <div
-            className="relative rounded-xl border border-gray-200 bg-white overflow-hidden"
-            style={{ height: "480px" }}
-          >
-            {/* Map background simulation */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-gray-100">
-              {/* Simulated map grid */}
-              <svg
-                className="absolute inset-0 w-full h-full opacity-20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <pattern
-                    id="grid"
-                    width="40"
-                    height="40"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <path
-                      d="M 40 0 L 0 0 0 40"
-                      fill="none"
-                      stroke="#94a3b8"
-                      strokeWidth="0.5"
-                    />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-              </svg>
-
-              {/* Simulated roads */}
-              <svg
-                className="absolute inset-0 w-full h-full"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <line
-                  x1="0"
-                  y1="240"
-                  x2="100%"
-                  y2="240"
-                  stroke="#e2e8f0"
-                  strokeWidth="6"
-                />
-                <line
-                  x1="0"
-                  y1="200"
-                  x2="100%"
-                  y2="300"
-                  stroke="#e2e8f0"
-                  strokeWidth="4"
-                />
-                <line
-                  x1="200"
-                  y1="0"
-                  x2="200"
-                  y2="100%"
-                  stroke="#e2e8f0"
-                  strokeWidth="6"
-                />
-                <line
-                  x1="400"
-                  y1="0"
-                  x2="350"
-                  y2="100%"
-                  stroke="#e2e8f0"
-                  strokeWidth="4"
-                />
-                <line
-                  x1="0"
-                  y1="350"
-                  x2="100%"
-                  y2="380"
-                  stroke="#e2e8f0"
-                  strokeWidth="3"
-                />
-                {/* Road labels */}
-                <text x="10" y="235" fill="#94a3b8" fontSize="10">
-                  国道15号線
-                </text>
-                <text x="205" y="120" fill="#94a3b8" fontSize="10">
-                  第一京浜
-                </text>
-              </svg>
-
-              {/* Site pins */}
-              {sitePins.map((pin, i) => {
-                const positions = [
-                  { top: "20%", left: "55%" },
-                  { top: "65%", left: "30%" },
-                  { top: "45%", left: "45%" },
-                  { top: "50%", left: "40%" },
-                  { top: "15%", left: "42%" },
-                ];
-                const pos = positions[i % positions.length];
-                return (
-                  <div
-                    key={pin.id}
-                    className="absolute transform -translate-x-1/2 -translate-y-full cursor-pointer group"
-                    style={pos}
-                  >
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full shadow-lg ${
-                        pin.status === "alert"
-                          ? "bg-danger-500"
-                          : pin.status === "planning"
-                            ? "bg-primary-300"
-                            : "bg-primary-600"
-                      }`}
-                    >
-                      {pin.status === "alert" ? (
-                        <AlertTriangle className="h-4 w-4 text-white" />
-                      ) : (
-                        <HardHat className="h-4 w-4 text-white" />
-                      )}
-                    </div>
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
-                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs whitespace-nowrap">
-                        <p className="font-semibold text-gray-900">
-                          {pin.name}
-                        </p>
-                        <p className="text-gray-500">{pin.workers}名 作業中</p>
-                        {pin.alerts > 0 && (
-                          <p className="text-danger-600">
-                            {pin.alerts}件 アラート
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Equipment markers */}
-              <div className="absolute" style={{ top: "28%", left: "52%" }}>
-                <div className="flex h-6 w-6 items-center justify-center rounded bg-site-500 shadow">
-                  <Truck className="h-3 w-3 text-white" />
-                </div>
-              </div>
-              <div className="absolute" style={{ top: "47%", left: "37%" }}>
-                <div className="flex h-6 w-6 items-center justify-center rounded bg-danger-500 shadow animate-pulse">
-                  <Truck className="h-3 w-3 text-white" />
-                </div>
-              </div>
-            </div>
-
-            {/* Map Controls */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-gray-200 shadow hover:bg-gray-50 transition-colors">
-                <ZoomIn className="h-4 w-4 text-gray-700" />
-              </button>
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-gray-200 shadow hover:bg-gray-50 transition-colors">
-                <ZoomOut className="h-4 w-4 text-gray-700" />
-              </button>
-            </div>
-
-            {/* Search Box */}
-            <div className="absolute top-4 left-4 w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="場所・工事を検索..."
-                  className="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 py-2 text-sm shadow focus:outline-none focus:border-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg border border-gray-200 shadow p-3 text-xs">
-              <p className="font-semibold text-gray-700 mb-2">凡例</p>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-primary-600" />
-                  <span className="text-gray-600">施工中現場</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-danger-500" />
-                  <span className="text-gray-600">アラート発生</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-primary-300" />
-                  <span className="text-gray-600">計画中現場</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-site-500" />
-                  <span className="text-gray-600">重機</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Map attribution */}
-            <div className="absolute bottom-4 right-4 text-[10px] text-gray-400">
-              地図データ © Construction-Enterprise-OS
-            </div>
+          {/* Real Leaflet Map */}
+          <div className="relative rounded-xl border border-gray-200 bg-white overflow-hidden" style={{ height: "480px" }}>
+            <LeafletMap sitePins={sitePins} height="480px" />
           </div>
 
           {/* Layer Controls */}
