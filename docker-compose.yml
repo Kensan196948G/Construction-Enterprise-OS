@@ -1,9 +1,39 @@
-version: '3.8'
+# ==============================================================================
+# Construction-Enterprise-OS — Full Stack Docker Compose
+# Infra: postgres / timescaledb / redis / rabbitmq / elasticsearch / kibana / minio / kafka
+# Backend: gateway + 21 FastAPI microservices
+# Frontend: web (3100) + mobile (3101)
+# ==============================================================================
+
+x-python-service: &python-service
+  build:
+    context: .
+  restart: unless-stopped
+  networks:
+    - construction-net
+
+x-python-healthcheck: &python-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+x-db-env: &db-env
+  DATABASE_URL: postgresql://construction-os:construction-os_dev@postgres:5432/construction-os
+  TIMESCALE_URL: postgresql://construction-os:construction-os_dev@timescaledb:5432/construction-os_ts
+  REDIS_URL: redis://redis:6379/0
+  RABBITMQ_URL: amqp://construction-os:construction-os_dev@rabbitmq:5672/
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  ELASTICSEARCH_URL: http://elasticsearch:9200
+  MINIO_ENDPOINT: minio:9000
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: minioadmin
+  ENVIRONMENT: docker
 
 services:
-  # ============================================
-  # データベース
-  # ============================================
+  # ============================================================
+  # 📦 インフラ基盤
+  # ============================================================
   postgres:
     image: postgis/postgis:16-3.4
     container_name: construction-os-postgres
@@ -21,6 +51,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - construction-net
 
   timescaledb:
     image: timescale/timescaledb:2.16.1-pg16
@@ -33,18 +65,29 @@ services:
       - "5433:5432"
     volumes:
       - tsdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U construction-os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - construction-net
 
-  # ============================================
-  # キャッシュ・メッセージ
-  # ============================================
   redis:
     image: redis:7-alpine
     container_name: construction-os-redis
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - construction-net
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -53,14 +96,18 @@ services:
       RABBITMQ_DEFAULT_USER: construction-os
       RABBITMQ_DEFAULT_PASS: construction-os_dev
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - construction-net
 
-  # ============================================
-  # 検索・オブジェクトストレージ
-  # ============================================
   elasticsearch:
     image: elasticsearch:8.14.0
     container_name: construction-os-elasticsearch
@@ -70,9 +117,19 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
-      - "9300:9300"
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9200/_cluster/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - construction-net
 
   kibana:
     image: kibana:8.14.0
@@ -82,7 +139,10 @@ services:
     ports:
       - "5601:5601"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - construction-net
 
   minio:
     image: minio/minio:latest
@@ -92,14 +152,18 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"    # S3 API
-      - "9001:9001"    # Console
+      - "9100:9000" # S3 API (9100 externally; gateway also uses 9000 externally)
+      - "9001:9001" # Console
     volumes:
       - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - construction-net
 
-  # ============================================
-  # Kafka (イベントバス)
-  # ============================================
   kafka:
     image: bitnami/kafka:3.7
     container_name: construction-os-kafka
@@ -107,7 +171,7 @@ services:
       KAFKA_CFG_NODE_ID: 0
       KAFKA_CFG_PROCESS_ROLES: controller,broker
       KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
@@ -115,6 +179,639 @@ services:
       - "9092:9092"
     volumes:
       - kafkadata:/bitnami/kafka
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - construction-net
+
+  # ============================================================
+  # 🚪 API Gateway (external: 9000)
+  # ============================================================
+  gateway:
+    <<: *python-service
+    build:
+      context: ./services/gateway
+    container_name: construction-os-gateway
+    environment:
+      <<: *db-env
+      GATEWAY_PORT: 9000
+      UPSTREAM_SERVICES: >-
+        {"^/api/v1/auth": "http://auth:8000",
+         "^/api/v1/users": "http://auth:8000",
+         "^/api/v1/roles": "http://auth:8000",
+         "^/api/v1/permissions": "http://auth:8000",
+         "^/api/v1/api-clients": "http://auth:8000",
+         "^/api/v1/audit-logs": "http://auth:8000",
+         "^/api/v1/documents": "http://document:8000",
+         "^/api/v1/workflow": "http://workflow:8000",
+         "^/api/v1/gis": "http://gis:8000",
+         "^/api/v1/iot": "http://iot:8000",
+         "^/api/v1/ai": "http://ai:8000",
+         "^/api/v1/construction": "http://construction:8000",
+         "^/api/v1/search": "http://analytics:8000",
+         "^/api/v1/erp": "http://erp:8000",
+         "^/api/v1/safety": "http://safety:8000",
+         "^/api/v1/bim": "http://bim:8000",
+         "^/api/v1/notification": "http://notification:8000",
+         "^/api/v1/partner": "http://partner:8000",
+         "^/api/v1/platform": "http://platform:8000",
+         "^/api/v1/automation": "http://automation:8000",
+         "^/api/v1/autonomous": "http://autonomous:8000",
+         "^/api/v1/vision": "http://vision:8000",
+         "^/api/v1/advanced": "http://advanced:8000",
+         "^/api/v1/field": "http://field-dx:8000",
+         "^/api/v1/maintenance": "http://maintenance:8000",
+         "^/api/v1/security": "http://security:8000"}
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:9000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # 🔐 Foundation Layer — 認証・権限・監査
+  # ============================================================
+  auth:
+    <<: *python-service
+    build:
+      context: ./services/auth
+    container_name: construction-os-auth
+    environment:
+      <<: *db-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  security:
+    <<: *python-service
+    build:
+      context: ./services/security
+    container_name: construction-os-security
+    environment:
+      <<: *db-env
+    ports:
+      - "8021:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  notification:
+    <<: *python-service
+    build:
+      context: ./services/notification
+    container_name: construction-os-notification
+    environment:
+      <<: *db-env
+    ports:
+      - "8017:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # 📄 Data & Intelligence Layer
+  # ============================================================
+  document:
+    <<: *python-service
+    build:
+      context: ./services/document
+    container_name: construction-os-document
+    environment:
+      <<: *db-env
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  gis:
+    <<: *python-service
+    build:
+      context: ./services/gis
+    container_name: construction-os-gis
+    environment:
+      <<: *db-env
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  iot:
+    <<: *python-service
+    build:
+      context: ./services/iot
+    container_name: construction-os-iot
+    environment:
+      <<: *db-env
+    ports:
+      - "8004:8000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  ai:
+    <<: *python-service
+    build:
+      context: ./services/ai
+    container_name: construction-os-ai
+    environment:
+      <<: *db-env
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  bim:
+    <<: *python-service
+    build:
+      context: ./services/bim
+    container_name: construction-os-bim
+    environment:
+      <<: *db-env
+    ports:
+      - "8008:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  analytics:
+    <<: *python-service
+    build:
+      context: ./services/analytics
+    container_name: construction-os-analytics
+    environment:
+      <<: *db-env
+    ports:
+      - "8014:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  vision:
+    <<: *python-service
+    build:
+      context: ./services/vision
+    container_name: construction-os-vision
+    environment:
+      <<: *db-env
+    ports:
+      - "8011:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # ⚙️ Platform Layer
+  # ============================================================
+  workflow:
+    <<: *python-service
+    build:
+      context: ./services/workflow
+    container_name: construction-os-workflow
+    environment:
+      <<: *db-env
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  platform:
+    <<: *python-service
+    build:
+      context: ./services/platform
+    container_name: construction-os-platform
+    environment:
+      <<: *db-env
+    ports:
+      - "8012:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  partner:
+    <<: *python-service
+    build:
+      context: ./services/partner
+    container_name: construction-os-partner
+    environment:
+      <<: *db-env
+    ports:
+      - "8018:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  automation:
+    <<: *python-service
+    build:
+      context: ./services/automation
+    container_name: construction-os-automation
+    environment:
+      <<: *db-env
+    ports:
+      - "8015:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # 🏗️ Business Application Layer
+  # ============================================================
+  construction:
+    <<: *python-service
+    build:
+      context: ./services/construction
+    container_name: construction-os-construction
+    environment:
+      <<: *db-env
+    ports:
+      - "8016:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  erp:
+    <<: *python-service
+    build:
+      context: ./services/erp
+    container_name: construction-os-erp
+    environment:
+      <<: *db-env
+    ports:
+      - "8020:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  safety:
+    <<: *python-service
+    build:
+      context: ./services/safety
+    container_name: construction-os-safety
+    environment:
+      <<: *db-env
+    ports:
+      - "8019:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  field-dx:
+    <<: *python-service
+    build:
+      context: ./services/field-dx
+    container_name: construction-os-field-dx
+    environment:
+      <<: *db-env
+    ports:
+      - "8007:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  maintenance:
+    <<: *python-service
+    build:
+      context: ./services/maintenance
+    container_name: construction-os-maintenance
+    environment:
+      <<: *db-env
+    ports:
+      - "8009:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # 🤖 Autonomous Layer
+  # ============================================================
+  autonomous:
+    <<: *python-service
+    build:
+      context: ./services/autonomous
+    container_name: construction-os-autonomous
+    environment:
+      <<: *db-env
+    ports:
+      - "8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  advanced:
+    <<: *python-service
+    build:
+      context: ./services/advanced
+    container_name: construction-os-advanced
+    environment:
+      <<: *db-env
+    ports:
+      - "8013:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      <<: *python-healthcheck
+
+  # ============================================================
+  # 🌐 Frontend Applications
+  # ============================================================
+  web:
+    build:
+      context: ./apps/web
+    container_name: construction-os-web
+    environment:
+      API_GATEWAY: http://gateway:9000
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "3100:3000"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - construction-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000', r => process.exit(r.statusCode === 200 ? 0 : 1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  mobile:
+    build:
+      context: ./apps/mobile
+    container_name: construction-os-mobile
+    environment:
+      API_GATEWAY: http://gateway:9000
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "3101:3101"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - construction-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3101', r => process.exit(r.statusCode === 200 ? 0 : 1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# ==============================================================================
+networks:
+  construction-net:
+    driver: bridge
 
 volumes:
   pgdata:

@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
+// API_GATEWAY (no NEXT_PUBLIC_ prefix) is server-side only — can be overridden at runtime in Docker
 const API_GATEWAY =
-  process.env.NEXT_PUBLIC_API_GATEWAY ?? "http://localhost:9000";
+  process.env.API_GATEWAY ??
+  process.env.NEXT_PUBLIC_API_GATEWAY ??
+  "http://localhost:9000";
 
 const nextConfig = {
   transpilePackages: [
