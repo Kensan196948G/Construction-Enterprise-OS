@@ -158,9 +158,32 @@ export default function ProjectsPage() {
     fetch("/api/v1/construction/schedules?per_page=20")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.data?.items?.length > 0) {
-          // Map API response to our project shape (keep mock for fields not in API)
-          // For now, if API succeeds but we have no mapping, keep mock
+        if (data?.items?.length > 0) {
+          const mapped: Project[] = (
+            data.items as {
+              id: string;
+              name: string;
+              status?: string;
+              progress?: number;
+              start_date?: string;
+              end_date?: string;
+            }[]
+          ).map((s, i) => ({
+            id: i + 1,
+            name: s.name,
+            code: s.id.slice(0, 12).toUpperCase(),
+            location: "—",
+            status: s.status ?? "active",
+            progress: s.progress ?? 0,
+            startDate: s.start_date ?? "—",
+            endDate: s.end_date ?? "—",
+            manager: "—",
+            workers: 0,
+            budget: "—",
+            spent: "—",
+            alerts: 0,
+          }));
+          setProjects(mapped);
         }
       })
       .catch(() => {})

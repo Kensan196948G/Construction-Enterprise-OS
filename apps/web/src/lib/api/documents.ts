@@ -15,10 +15,13 @@ export interface Document {
 interface DocumentListResponse {
   success: boolean;
   data: {
-    items: Document[];
-    total: number;
-    page: number;
-    per_page: number;
+    documents: Document[];
+    pagination: {
+      page: number;
+      per_page: number;
+      total: number;
+      total_pages: number;
+    };
   };
 }
 

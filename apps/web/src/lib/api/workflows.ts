@@ -26,12 +26,10 @@ export interface WorkflowInstance {
   steps?: WorkflowStep[];
 }
 
+// Workflow service returns data as an array directly (no items wrapper)
 interface WorkflowListResponse {
   success: boolean;
-  data: {
-    items: WorkflowInstance[];
-    total: number;
-  };
+  data: WorkflowInstance[];
 }
 
 export function listWorkflowInstances(params?: {

@@ -279,8 +279,39 @@ export default function WorkflowsPage() {
     fetch("/api/v1/workflow/instances?per_page=20")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.data?.items?.length > 0) {
-          // API items have different shape - keep mock for now
+        if (
+          data?.success &&
+          Array.isArray(data?.data) &&
+          data.data.length > 0
+        ) {
+          const mapped: Workflow[] = (
+            data.data as {
+              id: string;
+              title?: string;
+              workflow_type?: string;
+              status: string;
+              priority?: string;
+              created_at: string;
+              due_date?: string | null;
+              requester_id?: string;
+              project_id?: string;
+              current_step?: number;
+              steps?: WorkflowStep[];
+            }[]
+          ).map((w) => ({
+            id: w.id,
+            title: w.title ?? w.id,
+            type: w.workflow_type ?? "document_approval",
+            status: w.status,
+            priority: w.priority ?? "medium",
+            createdAt: w.created_at.slice(0, 10),
+            dueDate: w.due_date?.slice(0, 10) ?? "—",
+            requester: w.requester_id ?? "—",
+            project: w.project_id ?? "—",
+            currentStep: w.current_step ?? 0,
+            steps: w.steps ?? [],
+          }));
+          setWorkflows(mapped);
         }
       })
       .catch(() => {})

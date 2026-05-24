@@ -8,7 +8,7 @@ export interface IotDevice {
   location?: string;
   project_id?: string;
   battery_level?: number;
-  last_seen?: string;
+  last_seen_at?: string;
 }
 
 export interface IotAlert {
@@ -25,7 +25,7 @@ export interface IotAlert {
 interface DeviceListResponse {
   success: boolean;
   data: {
-    items: IotDevice[];
+    devices: IotDevice[];
     total: number;
   };
 }
@@ -33,7 +33,7 @@ interface DeviceListResponse {
 interface AlertListResponse {
   success: boolean;
   data: {
-    items: IotAlert[];
+    alerts: IotAlert[];
     total: number;
   };
 }

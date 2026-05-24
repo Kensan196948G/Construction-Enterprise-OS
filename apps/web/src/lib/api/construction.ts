@@ -11,12 +11,12 @@ export interface ConstructionSchedule {
   responsible_user_id?: string;
 }
 
+// Construction service returns this shape directly (no success/data wrapper)
 interface ScheduleListResponse {
-  success: boolean;
-  data: {
-    items: ConstructionSchedule[];
-    total: number;
-  };
+  items: ConstructionSchedule[];
+  total: number;
+  page: number;
+  per_page: number;
 }
 
 export function listSchedules(params?: { page?: number; per_page?: number }) {

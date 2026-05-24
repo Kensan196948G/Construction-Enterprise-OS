@@ -201,8 +201,49 @@ export default function IoTPage() {
     fetch("/api/v1/iot/devices?per_page=50")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.data?.items?.length > 0) {
-          // API items have different shape, keep mock for now
+        if (data?.success && data?.data?.devices?.length > 0) {
+          type ApiDevice = {
+            id: string;
+            name: string;
+            device_type: string;
+            status: "online" | "offline" | "warning" | "alert";
+            location?: string;
+            project_id?: string;
+            battery_level?: number;
+            last_seen_at?: string;
+          };
+          const grouped = (data.data.devices as ApiDevice[]).reduce<
+            Record<string, Sensor[]>
+          >((acc, d) => {
+            const key = d.project_id ?? "その他";
+            if (!acc[key]) acc[key] = [];
+            acc[key].push({
+              id: d.id,
+              name: d.name,
+              type: d.device_type,
+              value: "—",
+              threshold: "—",
+              status:
+                d.status === "online"
+                  ? "normal"
+                  : d.status === "offline"
+                    ? "offline"
+                    : d.status === "warning"
+                      ? "warning"
+                      : "alert",
+              battery: d.battery_level ?? 0,
+              lastUpdate: d.last_seen_at
+                ? new Date(d.last_seen_at).toLocaleString("ja-JP")
+                : "不明",
+            });
+            return acc;
+          }, {});
+          setSensorGroups(
+            Object.entries(grouped).map(([project, sensors]) => ({
+              project,
+              sensors,
+            })),
+          );
         }
         setLastUpdated(new Date());
       })

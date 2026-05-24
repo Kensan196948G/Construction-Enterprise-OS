@@ -147,8 +147,29 @@ export default function DocumentsPage() {
     fetch("/api/v1/documents?per_page=20")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.data?.items?.length > 0) {
-          // API items have different shape, keep mock for now
+        if (data?.success && data?.data?.documents?.length > 0) {
+          const mapped: DocItem[] = (
+            data.data.documents as {
+              id: string;
+              name: string;
+              project_name?: string;
+              file_type: string;
+              file_size: number;
+              status: "approved" | "pending" | "review";
+              created_by?: string;
+              updated_at: string;
+            }[]
+          ).map((doc, i) => ({
+            id: i + 1,
+            name: doc.name,
+            project: doc.project_name ?? "—",
+            type: doc.file_type.toLowerCase(),
+            size: `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB`,
+            status: doc.status,
+            author: doc.created_by ?? "—",
+            updatedAt: doc.updated_at.slice(0, 16).replace("T", " "),
+          }));
+          setRecentDocs(mapped);
         }
       })
       .catch(() => {})

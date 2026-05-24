@@ -13,6 +13,7 @@ import {
   ZoomOut,
   Search,
 } from "lucide-react";
+import { sitesFromGeoJSON } from "@/lib/api/gis";
 
 const mapLayers = [
   { id: "sites", label: "工事現場", active: true, color: "primary" },
@@ -145,26 +146,17 @@ export default function GISPage() {
     fetch("/api/v1/gis/sites")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.data?.items?.length > 0) {
-          const mapped: SitePin[] = data.data.items.map(
-            (s: {
-              id: number;
-              name: string;
-              latitude?: number;
-              longitude?: number;
-              status?: string;
-              worker_count?: number;
-              alert_count?: number;
-            }) => ({
-              id: s.id,
-              name: s.name,
-              lat: s.latitude ?? 35.6,
-              lng: s.longitude ?? 139.7,
-              status: s.status ?? "active",
-              workers: s.worker_count ?? 0,
-              alerts: s.alert_count ?? 0,
-            }),
-          );
+        const sites = sitesFromGeoJSON(data);
+        if (sites.length > 0) {
+          const mapped: SitePin[] = sites.map((s, i) => ({
+            id: i + 1,
+            name: s.name,
+            lat: s.latitude,
+            lng: s.longitude,
+            status: s.status ?? "active",
+            workers: 0,
+            alerts: 0,
+          }));
           setSitePins(mapped);
         }
       })
