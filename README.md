@@ -99,7 +99,7 @@ ceo-os/
 
 ---
 
-## 📊 開発状況 (5レイヤアーキテクチャ)
+## 📊 開発状況 (5レイヤアーキテクチャ) — 全21サービス
 
 | 🔢 レイヤ | コンポーネント | サービス | 🧪 テスト | 状態 |
 |---|---|---|---|---|
@@ -117,36 +117,33 @@ ceo-os/
 | | 📡 IoT | `services/iot/` | 22 | ✅ |
 | | 🤖 AI | `services/ai/` | 29 | ✅ |
 | | 🏗️ BIM/CIM | `services/bim/` | 35 | ✅ |
-| | 🗄️ データレイク | 未着手 | - | ⚪ |
-| | 🧬 ベクトルDB | 未着手 | - | ⚪ |
-| | 👁️ OCR/画像AI | 未着手 | - | ⚪ |
-| | 📈 分析基盤 | 未着手 | - | ⚪ |
+| | 👁️ OCR/画像AI | `services/vision/` | 17 | ✅ |
+| | 🧬 ベクトルDB | `services/vision/` | 17 | ✅ |
+| | 🗄️ データレイク | `services/analytics/` | 27 | ✅ |
+| | 📈 分析基盤 | `services/analytics/` | 27 | ✅ |
 | **③ Platform** | 🔄 ワークフロー | `services/workflow/` | 17 | ✅ |
 | | 🔒 セキュリティ | `services/security/` | 23 | ✅ |
 | | 🤝 協力会社連携 | `services/partner/` | 21 | ✅ |
 | | 📱 モバイル/PWA | `apps/mobile/` | - | ✅ |
-| | ⚡ 自動化 | 未着手 | - | ⚪ |
-| | 🏢 BIM Viewer | 未着手 | - | ⚪ |
-| | 🌍 GIS Viewer | 未着手 | - | ⚪ |
-| | 📡 IoT管理 | 未着手 | - | ⚪ |
+| | ⚡ 自動化 | `services/automation/` | 12 | ✅ |
+| | 🏢 BIM/GIS Viewer | `services/platform/` | 22 | ✅ |
+| | 📡 IoT管理 | `services/platform/` | 22 | ✅ |
 | **④ Business** | 💰 ERP/経営 | `services/erp/` | 27 | ✅ |
 | | ⛑️ 安全管理 | `services/safety/` | 14 | ✅ |
 | | 🏗️ 現場DX | `services/field-dx/` | 20 | ✅ |
-| | 🌊 災害復旧 | `services/maintenance/` | 18 | ✅ |
-| | 🔧 維持管理 | `services/maintenance/` | 18 | ✅ |
-| | 🚢 港湾施工 | 未着手 | - | ⚪ |
-| | 🔍 点検AI | 未着手 | - | ⚪ |
-| | 📐 施工管理 | 未着手 | - | ⚪ |
-| | 📋 AI設計照査 | 未着手 | - | ⚪ |
-| | 🔮 予知保全 | 未着手 | - | ⚪ |
-| **⑤ Autonomous** | 🧠 AI Agent | 未着手 | - | ⚪ |
+| | 🌊 災害復旧/維持管理 | `services/maintenance/` | 18 | ✅ |
+| | 🚢 港湾施工 | `services/advanced/` | 17 | ✅ |
+| | 🔍 点検AI | `services/advanced/` | 17 | ✅ |
+| | 📋 AI設計照査 | `services/advanced/` | 17 | ✅ |
+| | 🔮 予知保全 | `services/advanced/` | 17 | ✅ |
+| **⑤ Autonomous** | 🧠 AI Agent | `services/autonomous/` | 17 | ✅ |
+| | 👥 デジタルツイン | `services/autonomous/` | 17 | ✅ |
+| | 🎯 自動最適化 | `services/autonomous/` | 17 | ✅ |
 | | 🚜 自律施工 | 未着手 | - | ⚪ |
-| | 🎯 自動最適化 | 未着手 | - | ⚪ |
-| | 👥 デジタルツイン | 未着手 | - | ⚪ |
 | | 🌊 海洋ロボティクス | 未着手 | - | ⚪ |
 | | 🎮 自律制御 | 未着手 | - | ⚪ |
 
-> **総計: 15サービス + 7パッケージ + 3アプリ = 449ファイル | 339 tests ALL PASS**
+> **総計: 21サービス + 7パッケージ + 3アプリ = 582ファイル | 451 tests ALL PASS**
 
 ---
 
@@ -237,4 +234,4 @@ Proprietary - All Rights Reserved
 
 ---
 
-> **最終更新**: 2026-05-24 | **ビルド番号**: 12 | **ステータス**: 🟢 STABLE (339 PASS) | **レイヤ進捗**: ① 9/9 ② 5/9 ③ 4/9 ④ 5/11 ⑤ 0/6
+> **最終更新**: 2026-05-24 | **ビルド番号**: 15 | **ステータス**: 🟢 STABLE | **451 tests ALL PASS** | **21サービス**
