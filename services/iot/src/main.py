@@ -14,7 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import devices, sensors, telemetry, alerts, health
+from .api import (
+    devices,
+    machines,
+    sensors,
+    sensors_standalone,
+    telemetry,
+    alerts,
+    health,
+)
 from .models.base import engine
 
 logger = logging.getLogger(__name__)
@@ -28,9 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -63,8 +76,14 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["health"])
     app.include_router(devices.router, prefix="/api/v1/iot/devices", tags=["devices"])
     app.include_router(sensors.router, prefix="/api/v1/iot/devices", tags=["sensors"])
-    app.include_router(telemetry.router, prefix="/api/v1/iot/telemetry", tags=["telemetry"])
+    app.include_router(
+        telemetry.router, prefix="/api/v1/iot/telemetry", tags=["telemetry"]
+    )
     app.include_router(alerts.router, prefix="/api/v1/iot", tags=["alerts"])
+    app.include_router(machines.router, prefix="/api/v1/iot", tags=["machines"])
+    app.include_router(
+        sensors_standalone.router, prefix="/api/v1/iot", tags=["sensors-standalone"]
+    )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

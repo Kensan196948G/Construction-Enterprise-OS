@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import {
   GitBranch,
   CheckCircle,
@@ -11,10 +14,10 @@ import {
   User,
   Calendar,
   FileText,
-  ArrowRight,
 } from "lucide-react";
 
-const workflows = [
+// Mock data (fallback)
+const MOCK_WORKFLOWS = [
   {
     id: "WF-2024-089",
     title: "品川タワー 施工計画書 Rev3 承認",
@@ -187,6 +190,27 @@ const workflows = [
   },
 ];
 
+interface WorkflowStep {
+  label: string;
+  status: string;
+  assignee: string | null;
+  completedAt: string | null;
+}
+
+interface Workflow {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  dueDate: string;
+  requester: string;
+  project: string;
+  currentStep: number;
+  steps: WorkflowStep[];
+}
+
 const workflowTypeConfig: Record<string, { label: string; className: string }> =
   {
     document_approval: {
@@ -246,14 +270,112 @@ const stepStatusConfig: Record<string, string> = {
   rejected: "bg-danger-500 text-white border-danger-500",
 };
 
-const summaryStats = [
-  { label: "承認待ち", value: 2, color: "safety" },
-  { label: "進行中", value: 1, color: "primary" },
-  { label: "本日承認済", value: 1, color: "approve" },
-  { label: "差戻し", value: 1, color: "danger" },
-];
-
 export default function WorkflowsPage() {
+  const [workflows, setWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const loadWorkflows = useCallback(() => {
+    setIsLoading(true);
+    fetch("/api/v1/workflow/instances?per_page=20")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (
+          data?.success &&
+          Array.isArray(data?.data) &&
+          data.data.length > 0
+        ) {
+          const mapped: Workflow[] = (
+            data.data as {
+              id: string;
+              title?: string;
+              workflow_type?: string;
+              status: string;
+              priority?: string;
+              created_at: string;
+              due_date?: string | null;
+              requester_id?: string;
+              project_id?: string;
+              current_step?: number;
+              steps?: WorkflowStep[];
+            }[]
+          ).map((w) => ({
+            id: w.id,
+            title: w.title ?? w.id,
+            type: w.workflow_type ?? "document_approval",
+            status: w.status,
+            priority: w.priority ?? "medium",
+            createdAt: w.created_at.slice(0, 10),
+            dueDate: w.due_date?.slice(0, 10) ?? "—",
+            requester: w.requester_id ?? "—",
+            project: w.project_id ?? "—",
+            currentStep: w.current_step ?? 0,
+            steps: w.steps ?? [],
+          }));
+          setWorkflows(mapped);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadWorkflows();
+  }, [loadWorkflows]);
+
+  const handleApprove = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await fetch(`/api/v1/workflow/instances/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // ignore network errors; UI will show stale data until next poll
+    }
+    loadWorkflows();
+    setActionLoading(null);
+  };
+
+  const handleReject = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await fetch(`/api/v1/workflow/instances/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // ignore network errors
+    }
+    loadWorkflows();
+    setActionLoading(null);
+  };
+
+  const summaryStats = [
+    {
+      label: "承認待ち",
+      value: workflows.filter((w) => w.status === "pending_approval").length,
+      color: "safety",
+    },
+    {
+      label: "進行中",
+      value: workflows.filter((w) => w.status === "in_progress").length,
+      color: "primary",
+    },
+    {
+      label: "本日承認済",
+      value: workflows.filter((w) => w.status === "approved").length,
+      color: "approve",
+    },
+    {
+      label: "差戻し",
+      value: workflows.filter((w) => w.status === "rejected").length,
+      color: "danger",
+    },
+  ];
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -367,7 +489,28 @@ export default function WorkflowsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {(wf.status === "pending_approval" ||
+                    wf.status === "in_progress") && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(wf.id)}
+                        disabled={actionLoading === wf.id || isLoading}
+                        className="inline-flex items-center gap-1 rounded-lg bg-approve-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-approve-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        承認
+                      </button>
+                      <button
+                        onClick={() => handleReject(wf.id)}
+                        disabled={actionLoading === wf.id || isLoading}
+                        className="inline-flex items-center gap-1 rounded-lg border border-danger-300 px-3 py-1.5 text-xs font-semibold text-danger-700 hover:bg-danger-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        差戻し
+                      </button>
+                    </>
+                  )}
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
                   >
@@ -426,7 +569,7 @@ export default function WorkflowsPage() {
 
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-gray-500">
-        <span>全 5 件</span>
+        <span>全 {workflows.length} 件</span>
         <div className="flex gap-1">
           <button
             className="rounded-lg border border-gray-200 px-3 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-50"

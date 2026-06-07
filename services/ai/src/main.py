@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import health, llm, embeddings, rag, prompts
+from .api import health, llm, embeddings, rag, prompts, ocr, models
 from .models.base import engine
 
 logger = logging.getLogger(__name__)
@@ -28,9 +28,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(_settings, 'jwt_public_key', getattr(_settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(_settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                _settings,
+                "jwt_public_key",
+                getattr(_settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(_settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -65,6 +70,8 @@ def create_app() -> FastAPI:
     app.include_router(embeddings.router, prefix="/api/v1/ai", tags=["embeddings"])
     app.include_router(rag.router, prefix="/api/v1/ai", tags=["rag"])
     app.include_router(prompts.router, prefix="/api/v1/ai", tags=["prompts"])
+    app.include_router(ocr.router, prefix="/api/v1/ai/ocr", tags=["ocr"])
+    app.include_router(models.router, prefix="/api/v1/ai", tags=["models"])
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

@@ -10,7 +10,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from .api import health, progress, quality, reports
+from .api import health, instructions, photos, progress, quality, reports
 from .config import get_settings
 from .models.base import engine
 
@@ -25,9 +25,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -53,6 +58,10 @@ def create_app() -> FastAPI:
     app.include_router(reports.router, prefix="/api/v1/field", tags=["reports"])
     app.include_router(progress.router, prefix="/api/v1/field", tags=["progress"])
     app.include_router(quality.router, prefix="/api/v1/field", tags=["quality"])
+    app.include_router(
+        instructions.router, prefix="/api/v1/field", tags=["instructions"]
+    )
+    app.include_router(photos.router, prefix="/api/v1/field", tags=["photos"])
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

@@ -14,7 +14,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import auth, users, roles, permissions, clients, audit
+from .api import (
+    auth,
+    users,
+    roles,
+    permissions,
+    clients,
+    audit,
+    ad,
+    entra,
+    health,
+    organizations,
+)
 from .models.base import engine
 
 logger = logging.getLogger(__name__)
@@ -29,9 +40,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -70,9 +86,19 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
     app.include_router(roles.router, prefix="/api/v1/roles", tags=["roles"])
-    app.include_router(permissions.router, prefix="/api/v1/permissions", tags=["permissions"])
-    app.include_router(clients.router, prefix="/api/v1/api-clients", tags=["api-clients"])
+    app.include_router(
+        permissions.router, prefix="/api/v1/permissions", tags=["permissions"]
+    )
+    app.include_router(
+        clients.router, prefix="/api/v1/api-clients", tags=["api-clients"]
+    )
     app.include_router(audit.router, prefix="/api/v1/audit-logs", tags=["audit"])
+    app.include_router(ad.router, prefix="/api/v1/auth/ad", tags=["ad"])
+    app.include_router(entra.router, prefix="/api/v1/auth/entra", tags=["entra"])
+    app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
+    app.include_router(
+        organizations.router, prefix="/api/v1/users", tags=["organizations"]
+    )
 
     # ヘルスチェック
     @app.get("/health")

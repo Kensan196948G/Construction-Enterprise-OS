@@ -114,7 +114,7 @@ def test_proxy_request_with_valid_token_format(client):
     )
 
     response = client.get(
-        "/api/v1/search/test",
+        "/api/v1/construction/test",
         headers={"Authorization": f"Bearer {token}"},
     )
     # 認証は通るが上流サービス未起動なので 502

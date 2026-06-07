@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..middleware.auth import TokenData, get_current_user
@@ -17,6 +18,113 @@ from ..schemas import (
 from ..services import field_service
 
 router = APIRouter()
+
+
+class ZoneProgressItem(BaseModel):
+    id: str
+    zone_name: str
+    plan_pct: float
+    actual_pct: float
+    diff: float
+    status: str
+
+
+class WorkReportItem(BaseModel):
+    id: str
+    time: str
+    content: str
+    worker: str
+    zone: str
+    note: str | None = None
+
+
+_MOCK_ZONES = [
+    ZoneProgressItem(
+        id="z1",
+        zone_name="第1工区",
+        plan_pct=75.0,
+        actual_pct=72.3,
+        diff=-2.7,
+        status="behind",
+    ),
+    ZoneProgressItem(
+        id="z2",
+        zone_name="第2工区",
+        plan_pct=60.0,
+        actual_pct=63.5,
+        diff=3.5,
+        status="ahead",
+    ),
+    ZoneProgressItem(
+        id="z3",
+        zone_name="第3工区",
+        plan_pct=90.0,
+        actual_pct=85.2,
+        diff=-4.8,
+        status="behind",
+    ),
+    ZoneProgressItem(
+        id="z4",
+        zone_name="仮設工区",
+        plan_pct=100.0,
+        actual_pct=100.0,
+        diff=0.0,
+        status="complete",
+    ),
+]
+
+_MOCK_TODAY_REPORTS = [
+    WorkReportItem(
+        id="r1",
+        time="08:30",
+        content="コンクリート打設開始（第1工区東側）",
+        worker="山田 太郎",
+        zone="第1工区",
+        note=None,
+    ),
+    WorkReportItem(
+        id="r2",
+        time="10:15",
+        content="鉄筋検査完了",
+        worker="鈴木 次郎",
+        zone="第2工区",
+        note="写真撮影済み",
+    ),
+    WorkReportItem(
+        id="r3",
+        time="11:00",
+        content="掘削作業完了",
+        worker="佐藤 三郎",
+        zone="第3工区",
+        note=None,
+    ),
+    WorkReportItem(
+        id="r4",
+        time="13:30",
+        content="型枠設置開始",
+        worker="田中 花子",
+        zone="第1工区",
+        note="工程表通り進捗",
+    ),
+    WorkReportItem(
+        id="r5",
+        time="14:45",
+        content="品質検査（コンクリート）",
+        worker="高橋 五郎",
+        zone="第2工区",
+        note="強度試験実施",
+    ),
+]
+
+
+@router.get("/progress/zones")
+async def get_progress_zones():
+    return {"data": [z.model_dump() for z in _MOCK_ZONES]}
+
+
+@router.get("/progress/reports/today")
+async def get_today_reports():
+    return {"data": [r.model_dump() for r in _MOCK_TODAY_REPORTS]}
 
 
 @router.post(
@@ -52,7 +160,10 @@ async def list_progress(
         per_page=per_page,
     )
     return ProgressListResponse(
-        items=items, total=total, page=page, per_page=per_page  # type: ignore[arg-type]
+        items=items,
+        total=total,
+        page=page,
+        per_page=per_page,  # type: ignore[arg-type]
     )
 
 

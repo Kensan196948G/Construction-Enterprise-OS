@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   ClipboardList,
   CheckSquare,
@@ -8,66 +11,156 @@ import {
   Search,
   Settings,
   Users,
-} from 'lucide-react'
+} from "lucide-react";
 
-const stats = [
-  {
-    label: '進行中工事',
-    value: '12',
-    icon: ClipboardList,
-    trend: '+2 今月',
-    trendUp: true,
-    color: 'primary',
-  },
-  {
-    label: '要承認',
-    value: '5',
-    icon: CheckSquare,
-    trend: '3件 期限切迫',
-    trendUp: true,
-    color: 'safety',
-  },
-  {
-    label: 'IoTアラート',
-    value: '3',
-    icon: AlertTriangle,
-    trend: '要対応',
-    trendUp: false,
-    color: 'danger',
-  },
-  {
-    label: '新着文書',
-    value: '28',
-    icon: FileText,
-    trend: '+8 今週',
-    trendUp: true,
-    color: 'approve',
-  },
-]
-
-const activities = [
-  { action: '安全パトロール報告書が提出されました', project: '品川タワー新築工事', time: '10分前' },
-  { action: '工程会議議事録の承認依頼', project: '横浜分譲マンション', time: '32分前' },
-  { action: 'コンクリート強度試験結果がアップロードされました', project: '大田区土木工事', time: '1時間前' },
-  { action: '週間安全サイクルが完了しました', project: '新宿再開発ビル', time: '2時間前' },
-  { action: '重機稼働データの異常を検知', project: '川崎物流センター', time: '3時間前' },
-]
-
-const quickActions = [
-  { icon: Plus, label: '新規工事登録' },
-  { icon: Search, label: '図面検索' },
-  { icon: Users, label: '作業員管理' },
-  { icon: Settings, label: 'システム設定' },
-]
-
-const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
-  primary: { bg: 'bg-primary-50', text: 'text-primary-600', icon: 'text-primary-500' },
-  safety: { bg: 'bg-safety-50', text: 'text-safety-700', icon: 'text-safety-500' },
-  danger: { bg: 'bg-danger-50', text: 'text-danger-700', icon: 'text-danger-500' },
-  approve: { bg: 'bg-approve-50', text: 'text-approve-700', icon: 'text-approve-500' },
+interface DashboardStats {
+  activeProjects: number;
+  pendingApprovals: number;
+  iotAlerts: number;
+  newDocuments: number;
 }
 
+const MOCK_STATS: DashboardStats = {
+  activeProjects: 12,
+  pendingApprovals: 5,
+  iotAlerts: 3,
+  newDocuments: 28,
+};
+
+const activities = [
+  {
+    action: "安全パトロール報告書が提出されました",
+    project: "品川タワー新築工事",
+    time: "10分前",
+  },
+  {
+    action: "工程会議議事録の承認依頼",
+    project: "横浜分譲マンション",
+    time: "32分前",
+  },
+  {
+    action: "コンクリート強度試験結果がアップロードされました",
+    project: "大田区土木工事",
+    time: "1時間前",
+  },
+  {
+    action: "週間安全サイクルが完了しました",
+    project: "新宿再開発ビル",
+    time: "2時間前",
+  },
+  {
+    action: "重機稼働データの異常を検知",
+    project: "川崎物流センター",
+    time: "3時間前",
+  },
+];
+
+const quickActions = [
+  { icon: Plus, label: "新規工事登録" },
+  { icon: Search, label: "図面検索" },
+  { icon: Users, label: "作業員管理" },
+  { icon: Settings, label: "システム設定" },
+];
+
+const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
+  primary: {
+    bg: "bg-primary-50",
+    text: "text-primary-600",
+    icon: "text-primary-500",
+  },
+  safety: {
+    bg: "bg-safety-50",
+    text: "text-safety-700",
+    icon: "text-safety-500",
+  },
+  danger: {
+    bg: "bg-danger-50",
+    text: "text-danger-700",
+    icon: "text-danger-500",
+  },
+  approve: {
+    bg: "bg-approve-50",
+    text: "text-approve-700",
+    icon: "text-approve-500",
+  },
+};
+
 export default function DashboardPage() {
+  const [dashStats, setDashStats] = useState<DashboardStats>(MOCK_STATS);
+
+  useEffect(() => {
+    Promise.allSettled([
+      fetch("/api/v1/construction/schedules?per_page=1").then((r) =>
+        r.ok ? r.json() : null,
+      ),
+      fetch("/api/v1/workflow/instances/pending").then((r) =>
+        r.ok ? r.json() : null,
+      ),
+      fetch("/api/v1/iot/alerts?per_page=1").then((r) =>
+        r.ok ? r.json() : null,
+      ),
+      fetch("/api/v1/documents?per_page=1").then((r) =>
+        r.ok ? r.json() : null,
+      ),
+    ]).then(([schedules, workflows, alerts, documents]) => {
+      setDashStats({
+        activeProjects:
+          schedules.status === "fulfilled" && schedules.value?.total != null
+            ? schedules.value.total
+            : MOCK_STATS.activeProjects,
+        pendingApprovals:
+          workflows.status === "fulfilled" &&
+          Array.isArray(workflows.value?.data)
+            ? workflows.value.data.length
+            : MOCK_STATS.pendingApprovals,
+        iotAlerts:
+          alerts.status === "fulfilled" && alerts.value?.data?.total != null
+            ? alerts.value.data.total
+            : MOCK_STATS.iotAlerts,
+        newDocuments:
+          documents.status === "fulfilled" &&
+          documents.value?.data?.pagination?.total != null
+            ? documents.value.data.pagination.total
+            : MOCK_STATS.newDocuments,
+      });
+    });
+  }, []);
+
+  const stats = [
+    {
+      label: "進行中工事",
+      value: String(dashStats.activeProjects),
+      icon: ClipboardList,
+      trend: "+2 今月",
+      trendUp: true,
+      color: "primary",
+    },
+    {
+      label: "要承認",
+      value: String(dashStats.pendingApprovals),
+      icon: CheckSquare,
+      trend: "3件 期限切迫",
+      trendUp: true,
+      color: "safety",
+    },
+    {
+      label: "IoTアラート",
+      value: String(dashStats.iotAlerts),
+      icon: AlertTriangle,
+      trend: "要対応",
+      trendUp: false,
+      color: "danger",
+    },
+    {
+      label: "新着文書",
+      value: String(dashStats.newDocuments),
+      icon: FileText,
+      trend: "+8 今週",
+      trendUp: true,
+      color: "approve",
+    },
+  ];
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Welcome */}
@@ -83,8 +176,8 @@ export default function DashboardPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
-          const Icon = stat.icon
-          const colors = colorMap[stat.color]
+          const Icon = stat.icon;
+          const colors = colorMap[stat.color];
           return (
             <div
               key={stat.label}
@@ -104,13 +197,13 @@ export default function DashboardPage() {
               </p>
               <p
                 className={`mt-2 text-xs ${
-                  stat.trendUp ? 'text-approve-600' : 'text-danger-600'
+                  stat.trendUp ? "text-approve-600" : "text-danger-600"
                 }`}
               >
                 {stat.trend}
               </p>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -125,8 +218,13 @@ export default function DashboardPage() {
           </div>
           <div className="divide-y divide-gray-100">
             {activities.map((item, i) => (
-              <div key={i} className="px-5 py-4 hover:bg-gray-50 transition-colors">
-                <p className="text-sm font-medium text-gray-900">{item.action}</p>
+              <div
+                key={i}
+                className="px-5 py-4 hover:bg-gray-50 transition-colors"
+              >
+                <p className="text-sm font-medium text-gray-900">
+                  {item.action}
+                </p>
                 <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
                   <span>{item.project}</span>
                   <span>•</span>
@@ -142,7 +240,7 @@ export default function DashboardPage() {
           <h2 className="font-bold text-gray-900 mb-4">クイックアクション</h2>
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map((action) => {
-              const Icon = action.icon
+              const Icon = action.icon;
               return (
                 <button
                   key={action.label}
@@ -153,7 +251,7 @@ export default function DashboardPage() {
                     {action.label}
                   </span>
                 </button>
-              )
+              );
             })}
           </div>
 
@@ -174,5 +272,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

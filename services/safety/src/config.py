@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Application
     ENVIRONMENT: str = "development"
     HOST: str = "0.0.0.0"
-    PORT: int = 8006
+    PORT: int = 8007
     DEBUG: bool = True
 
     # CORS

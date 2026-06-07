@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import notifications, templates
+from .api import notifications, templates, webhooks
 from .api.health import router as health_router
 from .models.base import engine
 from .models.base import async_session
@@ -31,9 +31,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -46,7 +51,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 logger.info("Default notification templates seeded")
             except Exception:
                 await db.rollback()
-                logger.exception("Failed to seed default templates — DB may not be ready")
+                logger.exception(
+                    "Failed to seed default templates — DB may not be ready"
+                )
 
     yield
 
@@ -75,9 +82,14 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router, tags=["health"])
-    app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
+    app.include_router(
+        notifications.router, prefix="/api/v1/notifications", tags=["notifications"]
+    )
     app.include_router(
         templates.router, prefix="/api/v1/notification-templates", tags=["templates"]
+    )
+    app.include_router(
+        webhooks.router, prefix="/api/v1/notification/webhooks", tags=["webhooks"]
     )
 
     @app.exception_handler(Exception)

@@ -370,3 +370,118 @@ class ControlResponse(BaseModel):
 class ControlListResponse(BaseModel):
     controls: list[ControlResponse]
     total: int
+
+
+# ============================================
+# Autonomous Machines
+# ============================================
+class MachineResponse(BaseModel):
+    id: str
+    machine_no: str
+    machine_type: str
+    status: str
+    location: str | None = None
+    battery_level: float | None = None
+    current_task: str | None = None
+    last_updated: str | None = None
+
+
+class MachineListResponse(BaseModel):
+    items: list[MachineResponse]
+    total: int
+
+
+# ============================================
+# Drone Flights
+# ============================================
+class DroneFlightResponse(BaseModel):
+    id: str
+    flight_id: str
+    date: str
+    pilot: str
+    area: str
+    altitude: float
+    flight_time_min: int
+    photo_count: int
+    status: str
+    coverage: float
+
+
+class DroneFlightListResponse(BaseModel):
+    items: list[DroneFlightResponse]
+    total: int
+
+
+# ============================================
+# RPA Tasks (autonomous/rpa)
+# ============================================
+class RpaTaskResponse(BaseModel):
+    id: str
+    name: str
+    trigger: str
+    schedule: str | None = None
+    last_result: str
+    last_run: str | None = None
+    avg_duration_min: float
+    runs_this_month: int
+    is_active: bool
+
+
+class RpaTaskListResponse(BaseModel):
+    items: list[RpaTaskResponse]
+    total: int
+
+
+# ============================================
+# Twin Sensors
+# ============================================
+class TwinSensorResponse(BaseModel):
+    id: str
+    sensor_id: str
+    twin_id: str | None = None
+    sensor_type: str
+    location: str
+    value: float
+    unit: str
+    status: str
+    last_updated: str | None = None
+
+
+class TwinSensorListResponse(BaseModel):
+    items: list[TwinSensorResponse]
+    total: int
+
+
+# ============================================
+# Activities
+# ============================================
+class ActivityResponse(BaseModel):
+    id: str
+    time: str
+    activity_type: str
+    message: str
+    severity: str | None = None
+
+
+class ActivityListResponse(BaseModel):
+    items: list[ActivityResponse]
+    total: int
+
+
+# ============================================
+# Error Logs
+# ============================================
+class ErrorLogResponse(BaseModel):
+    id: str
+    machine_no: str
+    error_code: str
+    message: str
+    severity: str
+    occurred_at: str
+    resolved_at: str | None = None
+    status: str
+
+
+class ErrorLogListResponse(BaseModel):
+    items: list[ErrorLogResponse]
+    total: int
