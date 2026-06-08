@@ -1,19 +1,17 @@
 """APIクライアント管理エンドポイント（M2M認証用）"""
 
-from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..middleware.auth_middleware import require_permission
+from ..middleware.auth_middleware import get_optional_current_user, require_permission
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
     ApiClientCreateRequest,
     ApiClientCreateResponse,
-    ApiClientResponse,
     TokenData,
 )
 from ..services.client_service import (
@@ -137,14 +135,18 @@ async def list_clients(
     org_id: UUID | None = Query(None, alias="organization_id"),
     per_page: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    current_user: TokenData | None = Depends(get_optional_current_user),
 ):
     """APIクライアント一覧取得。organization_id 省略時はスタブデータを返す。"""
     if org_id is None:
         # Dashboard overview: return stub data without requiring auth or DB
         return APIResponse(data=_STUB_CLIENTS[:per_page])
 
-    # Authenticated path requires permission
-    from ..middleware.auth_middleware import get_current_user
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "AUTH_REQUIRED", "message": "認証が必要です。"},
+        )
 
     clients_list = await get_api_clients(db, org_id)
     return APIResponse(

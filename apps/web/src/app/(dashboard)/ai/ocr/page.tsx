@@ -8,7 +8,9 @@ import {
   CheckCircle,
   Upload,
   Clock,
+  Filter,
 } from "lucide-react";
+import { listOcrResults, type OcrResult } from "../../../../lib/api/vision";
 
 interface OcrItem {
   id: string;
@@ -18,23 +20,6 @@ interface OcrItem {
   status: "queued" | "processing" | "completed" | "failed";
   charCount: number;
   processingTime: number | null;
-}
-
-// API response shape from /api/v1/vision/ocr/tasks or /api/v1/ai/ocr
-interface OcrTask {
-  id: string | number;
-  filename?: string;
-  file_name?: string;
-  status?: string;
-  confidence?: number;
-  extracted_text_preview?: string;
-  processed_at?: string;
-  // optional extra fields
-  doc_type?: string;
-  docType?: string;
-  uploaded_at?: string;
-  char_count?: number;
-  processing_time?: number | null;
 }
 
 const MOCK_ITEMS: OcrItem[] = [
@@ -127,67 +112,46 @@ const DOC_TYPE_COLORS: Record<string, string> = {
   検査記録: "bg-orange-100 text-orange-700",
 };
 
-/** Map API status string to OcrItem status */
-function toOcrStatus(s?: string): OcrItem["status"] {
-  if (!s) return "queued";
-  const lower = s.toLowerCase();
-  if (lower === "completed" || lower.includes("完了")) return "completed";
-  if (lower === "processing" || lower === "running" || lower.includes("処理中"))
-    return "processing";
-  if (lower === "failed" || lower === "error" || lower.includes("失敗"))
-    return "failed";
-  return "queued";
+/** Map OcrResult.status → OcrItem.status ("pending" becomes "queued") */
+function toOcrStatus(s: OcrResult["status"]): OcrItem["status"] {
+  if (s === "completed") return "completed";
+  if (s === "processing") return "processing";
+  if (s === "failed") return "failed";
+  return "queued"; // covers "pending"
 }
 
-/** Map OcrTask → OcrItem for display */
-function toOcrItem(t: OcrTask, idx: number): OcrItem {
-  const fileName = t.filename ?? t.file_name ?? `document_${idx + 1}.pdf`;
-  const charCount =
-    t.char_count ??
-    (t.extracted_text_preview ? t.extracted_text_preview.length : 0);
+/** Map OcrResult → OcrItem for display */
+function toOcrItem(r: OcrResult, idx: number): OcrItem {
+  const fileName = r.file_key?.split("/").pop() ?? `document_${idx + 1}.pdf`;
+  const charCount = r.extracted_text?.length ?? 0;
+  const processingTime =
+    r.processing_time_ms != null
+      ? Math.round(r.processing_time_ms / 1000)
+      : null;
 
   return {
-    id: String(t.id ?? `O-${String(idx + 1).padStart(3, "0")}`),
+    id: r.id,
     fileName,
-    docType: t.doc_type ?? t.docType ?? "その他",
-    uploadedAt: t.uploaded_at ?? t.processed_at ?? "—",
-    status: toOcrStatus(t.status),
+    docType: "その他",
+    uploadedAt: r.created_at ?? "—",
+    status: toOcrStatus(r.status),
     charCount,
-    processingTime: t.processing_time ?? null,
+    processingTime,
   };
 }
 
 export default function AIOcrPage() {
   const [ocrItems, setOcrItems] = useState<OcrItem[]>(MOCK_ITEMS);
   const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [docTypeFilter, setDocTypeFilter] = useState<string>("all");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Try primary endpoint first, fall back to secondary
-      const [primaryRes, secondaryRes] = await Promise.allSettled([
-        fetch("/api/v1/vision/ocr/tasks?per_page=20"),
-        fetch("/api/v1/ai/ocr?per_page=20"),
-      ]);
-
-      let apiItems: OcrTask[] = [];
-
-      if (primaryRes.status === "fulfilled" && primaryRes.value.ok) {
-        const json: { items: OcrTask[] } | OcrTask[] =
-          await primaryRes.value.json();
-        apiItems = Array.isArray(json)
-          ? json
-          : ((json as { items: OcrTask[] }).items ?? []);
-      } else if (secondaryRes.status === "fulfilled" && secondaryRes.value.ok) {
-        const json: { items: OcrTask[] } | OcrTask[] =
-          await secondaryRes.value.json();
-        apiItems = Array.isArray(json)
-          ? json
-          : ((json as { items: OcrTask[] }).items ?? []);
-      }
-
-      if (apiItems.length > 0) {
-        setOcrItems(apiItems.map((t, i) => toOcrItem(t, i)));
+      const results = await listOcrResults({ limit: 20 });
+      if (results.length > 0) {
+        setOcrItems(results.map((r, i) => toOcrItem(r, i)));
       }
     } catch {
       // fallback to mock data — already set as default state
@@ -211,6 +175,14 @@ export default function AIOcrPage() {
             timeSamples.length,
         )
       : 0;
+
+  const filteredItems = ocrItems.filter((i) => {
+    const matchStatus = statusFilter === "all" || i.status === statusFilter;
+    const matchType = docTypeFilter === "all" || i.docType === docTypeFilter;
+    return matchStatus && matchType;
+  });
+
+  const docTypes = Array.from(new Set(ocrItems.map((i) => i.docType)));
 
   return (
     <div className="p-6 space-y-6">
@@ -318,8 +290,34 @@ export default function AIOcrPage() {
 
       {/* 処理キューテーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">処理キュー</h2>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="all">全ステータス</option>
+              <option value="queued">待機中</option>
+              <option value="processing">処理中</option>
+              <option value="completed">完了</option>
+              <option value="failed">失敗</option>
+            </select>
+            <select
+              value={docTypeFilter}
+              onChange={(e) => setDocTypeFilter(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="all">全書類種別</option>
+              {docTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -346,7 +344,7 @@ export default function AIOcrPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {ocrItems.map((item) => (
+              {filteredItems.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -392,7 +390,10 @@ export default function AIOcrPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {ocrItems.length}件
+          {filteredItems.length}件
+          {filteredItems.length !== ocrItems.length && (
+            <span className="ml-1 text-gray-400">（全{ocrItems.length}件中）</span>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,16 @@
-"""BIMサービス ユーティリティ"""
+"""BIMサービス — CRUD operations and spatial utilities"""
+
+from uuid import UUID
 
 from geoalchemy2 import WKTElement
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models import BIMModel
+from ..schemas import BIMModelCreate, BIMModelUpdate
+
+
+# ── Spatial utilities ──────────────────────────────────────────────────────────
 
 
 def geojson_to_wkt_element(geometry: dict) -> WKTElement | None:
@@ -22,3 +32,101 @@ def geojson_to_wkt_element(geometry: dict) -> WKTElement | None:
         return WKTElement(f"POINT Z({coords[0]} {coords[1]} {coords[2]})", srid=4326)
 
     return None
+
+
+# ── BIM Model CRUD ─────────────────────────────────────────────────────────────
+
+
+async def create_bim_model(
+    db: AsyncSession, body: BIMModelCreate, uploaded_by: UUID
+) -> BIMModel:
+    model = BIMModel(
+        organization_id=body.organization_id,
+        project_id=body.project_id,
+        name=body.name,
+        description=body.description,
+        model_type=body.model_type,
+        file_format=body.file_format,
+        file_size=body.file_size,
+        file_key=body.file_key,
+        version=body.version,
+        status=body.status,
+        author=body.author,
+        software=body.software,
+        coordinate_system=body.coordinate_system,
+        bounding_box=body.bounding_box,
+        discipline=body.discipline,
+        lod=body.lod,
+        tags=body.tags,
+        metadata_=body.metadata,
+        uploaded_by=uploaded_by,
+    )
+    db.add(model)
+    await db.flush()
+    await db.refresh(model)
+    return model
+
+
+async def list_bim_models(
+    db: AsyncSession,
+    *,
+    page: int = 1,
+    per_page: int = 20,
+    model_type: str | None = None,
+    status: str | None = None,
+    project_id: UUID | None = None,
+) -> tuple[list[BIMModel], int]:
+    query = select(BIMModel)
+    count_query = select(func.count(BIMModel.id))
+
+    if model_type:
+        query = query.where(BIMModel.model_type == model_type)
+        count_query = count_query.where(BIMModel.model_type == model_type)
+    if status:
+        query = query.where(BIMModel.status == status)
+        count_query = count_query.where(BIMModel.status == status)
+    if project_id:
+        query = query.where(BIMModel.project_id == project_id)
+        count_query = count_query.where(BIMModel.project_id == project_id)
+
+    total = (await db.execute(count_query)).scalar() or 0
+    query = (
+        query.order_by(BIMModel.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    models = (await db.execute(query)).scalars().all()
+    return list(models), total
+
+
+async def get_bim_model(db: AsyncSession, model_id: UUID) -> BIMModel | None:
+    result = await db.execute(select(BIMModel).where(BIMModel.id == model_id))
+    return result.scalar_one_or_none()
+
+
+async def update_bim_model(
+    db: AsyncSession, model_id: UUID, body: BIMModelUpdate
+) -> BIMModel | None:
+    model = await get_bim_model(db, model_id)
+    if not model:
+        return None
+
+    update_data = body.model_dump(exclude_unset=True)
+    if "metadata" in update_data:
+        update_data["metadata_"] = update_data.pop("metadata")
+
+    for key, value in update_data.items():
+        setattr(model, key, value)
+
+    await db.flush()
+    await db.refresh(model)
+    return model
+
+
+async def delete_bim_model(db: AsyncSession, model_id: UUID) -> bool:
+    model = await get_bim_model(db, model_id)
+    if not model:
+        return False
+    await db.delete(model)
+    await db.flush()
+    return True

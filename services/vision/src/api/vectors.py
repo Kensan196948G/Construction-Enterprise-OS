@@ -131,18 +131,8 @@ async def semantic_search(
             detail={"code": "NOT_FOUND", "message": "Vector index not found."},
         )
 
-    mock_results = [
-        {
-            "source_id": str(UUID("00000000-0000-0000-0000-000000000001")),
-            "source_type": "document",
-            "chunk_index": i,
-            "content": f"Mock result {i+1} for query: {body.query_text[:30]}",
-            "similarity": round(0.95 - (i * 0.1), 2),
-            "metadata": {"score": 0.95 - i * 0.1},
-        }
-        for i in range(min(body.top_k, 5))
-    ]
-    return APIResponse(data=mock_results)
+    results = vision_service.build_search_results(body.query_text, body.top_k)
+    return APIResponse(data=results)
 
 
 @router.post("/vectors/index", status_code=status.HTTP_201_CREATED)

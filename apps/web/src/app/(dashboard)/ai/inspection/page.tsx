@@ -177,7 +177,7 @@ export default function AIInspectionPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/advanced/inspections-ai?per_page=20");
+      const res = await fetch("/api/v1/advanced/inspections?per_page=20");
       if (res.ok) {
         const json: { items: InspectionResult[] } | InspectionResult[] =
           await res.json();

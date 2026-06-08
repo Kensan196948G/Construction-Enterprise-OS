@@ -31,13 +31,19 @@ async def get_current_user(
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_TOKEN", "message": "トークンが無効または期限切れです。"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "トークンが無効または期限切れです。",
+            },
         )
 
     if token_data.type != "user":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "このAPIにはユーザートークンが必要です。"},
+            detail={
+                "code": "FORBIDDEN",
+                "message": "このAPIにはユーザートークンが必要です。",
+            },
         )
 
     return token_data
@@ -58,16 +64,32 @@ async def get_current_client(
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_TOKEN", "message": "トークンが無効または期限切れです。"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "トークンが無効または期限切れです。",
+            },
         )
 
     if token_data.type != "client":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "このAPIにはM2Mトークンが必要です。"},
+            detail={
+                "code": "FORBIDDEN",
+                "message": "このAPIにはM2Mトークンが必要です。",
+            },
         )
 
     return token_data
+
+
+async def get_optional_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    db: AsyncSession = Depends(get_db),
+) -> TokenData | None:
+    """Optional auth — returns None when no Bearer token is present."""
+    if not credentials:
+        return None
+    return decode_token(credentials.credentials)
 
 
 def require_permission(resource: str, action: str):

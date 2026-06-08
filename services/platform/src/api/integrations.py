@@ -196,9 +196,9 @@ async def list_integration_logs(
 ):
     items = MOCK_LOGS
     if system_id:
-        items = [l for l in items if l.system_id == system_id]
+        items = [log for log in items if log.system_id == system_id]
     if status:
-        items = [l for l in items if l.status == status]
+        items = [log for log in items if log.status == status]
     start = (page - 1) * per_page
     return IntegrationLogListResponse(
         items=items[start : start + per_page], total=len(items)

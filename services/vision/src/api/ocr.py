@@ -104,80 +104,31 @@ async def get_ocr_result(
     return APIResponse(data=_ocr_to_response(ocr))
 
 
-_MOCK_OCR_TASKS = [
-    OcrTaskItem(
-        id="ocr-task-001",
-        name="工事請求書_2024-01.pdf",
-        doc_type="invoice",
-        status="completed",
-        char_count=2480,
-        processing_time=3.2,
-        created_at="2024-01-15T09:00:00Z",
-        confidence=0.97,
-    ),
-    OcrTaskItem(
-        id="ocr-task-002",
-        name="橋梁設計図面_A棟.pdf",
-        doc_type="drawing",
-        status="completed",
-        char_count=1890,
-        processing_time=5.1,
-        created_at="2024-01-16T10:30:00Z",
-        confidence=0.93,
-    ),
-    OcrTaskItem(
-        id="ocr-task-003",
-        name="工事仕様書_道路改良.pdf",
-        doc_type="specification",
-        status="processing",
-        char_count=0,
-        processing_time=None,
-        created_at="2024-01-17T08:00:00Z",
-        confidence=None,
-    ),
-    OcrTaskItem(
-        id="ocr-task-004",
-        name="請負契約書_2024年度.pdf",
-        doc_type="contract",
-        status="completed",
-        char_count=5320,
-        processing_time=8.7,
-        created_at="2024-01-18T14:00:00Z",
-        confidence=0.99,
-    ),
-    OcrTaskItem(
-        id="ocr-task-005",
-        name="施工管理報告書_Q1.pdf",
-        doc_type="report",
-        status="failed",
-        char_count=0,
-        processing_time=None,
-        created_at="2024-01-19T11:00:00Z",
-        confidence=None,
-    ),
-    OcrTaskItem(
-        id="ocr-task-006",
-        name="安全点検仕様書_2024.pdf",
-        doc_type="specification",
-        status="queued",
-        char_count=0,
-        processing_time=None,
-        created_at="2024-01-20T09:30:00Z",
-        confidence=None,
-    ),
-]
-
-
 @router.get("/vision/ocr/tasks")
 async def list_ocr_tasks(
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
+    db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    """OCR task list endpoint for frontend dashboard."""
-    start = (page - 1) * per_page
-    end = start + per_page
-    tasks = _MOCK_OCR_TASKS[start:end]
+    """OCR task list — delegates to DB-backed OCR results."""
+    skip = (page - 1) * per_page
+    results = await vision_service.get_ocr_results(db, skip=skip, limit=per_page)
+    tasks = [
+        OcrTaskItem(
+            id=str(r.id),
+            name=r.file_key or str(r.id),
+            doc_type="document",
+            status=r.status,
+            char_count=len(r.extracted_text) if r.extracted_text else 0,
+            processing_time=(
+                r.processing_time_ms / 1000.0 if r.processing_time_ms else None
+            ),
+            created_at=r.created_at.isoformat() if r.created_at else "",
+            confidence=r.confidence,
+        )
+        for r in results
+    ]
     return APIResponse(
-        data=OcrTaskListResponse(tasks=tasks, total=len(_MOCK_OCR_TASKS)).model_dump()
+        data=OcrTaskListResponse(tasks=tasks, total=len(tasks)).model_dump()
     )
