@@ -777,3 +777,385 @@ def test_disaster_not_found(mock_jwt, app):
         headers=_make_auth_header(),
     )
     assert response.status_code == 404
+
+
+# ═══════════════════════════════════════════════
+# Test 19: Update disaster - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_update_disaster_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.put(
+        f"/api/v1/maintenance/disasters/{TEST_DISASTER_ID}",
+        json={"status": "contained"},
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 20: List maintenance records
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_list_maintenance_records(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    rec1 = MockMaintenanceRecord(
+        id=uuid.uuid4(), asset_name="Bridge B", asset_type="bridge"
+    )
+    rec2 = MockMaintenanceRecord(
+        id=uuid.uuid4(), asset_name="Road C", asset_type="road"
+    )
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([rec1, rec2]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        "/api/v1/maintenance/records?asset_type=bridge",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 2
+    assert data[0]["asset_name"] == "Bridge B"
+
+
+# ═══════════════════════════════════════════════
+# Test 21: Get maintenance record by ID
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_maintenance_record(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    record = MockMaintenanceRecord(id=TEST_RECORD_ID, asset_name="Bridge A")
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([record]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/records/{TEST_RECORD_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["id"] == str(TEST_RECORD_ID)
+    assert data["asset_name"] == "Bridge A"
+
+
+# ═══════════════════════════════════════════════
+# Test 22: Get maintenance record - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_maintenance_record_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/records/{TEST_RECORD_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 23: Update maintenance record - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_update_maintenance_record_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.put(
+        f"/api/v1/maintenance/records/{TEST_RECORD_ID}",
+        json={"status": "completed"},
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 24: Get recovery plan by ID
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_recovery_plan(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    plan = MockRecoveryPlan(id=TEST_PLAN_ID, title="Road Repair Plan")
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([plan]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/recovery-plans/{TEST_PLAN_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["id"] == str(TEST_PLAN_ID)
+    assert data["title"] == "Road Repair Plan"
+
+
+# ═══════════════════════════════════════════════
+# Test 25: Get recovery plan - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_recovery_plan_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/recovery-plans/{TEST_PLAN_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 26: Update recovery plan - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_update_recovery_plan_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.put(
+        f"/api/v1/maintenance/recovery-plans/{TEST_PLAN_ID}",
+        json={"status": "in_progress", "progress_percent": "50.00"},
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 27: List inspection schedules
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_list_inspections(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    insp1 = MockInspectionSchedule(
+        id=uuid.uuid4(), asset_name="Dam A", status="scheduled"
+    )
+    insp2 = MockInspectionSchedule(
+        id=uuid.uuid4(), asset_name="Bridge B", status="scheduled"
+    )
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([insp1, insp2]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        "/api/v1/maintenance/inspections?status=scheduled",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 2
+    assert data[0]["asset_name"] == "Dam A"
+
+
+# ═══════════════════════════════════════════════
+# Test 28: Get inspection by ID
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_inspection(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    inspection = MockInspectionSchedule(id=TEST_INSPECTION_ID, asset_name="Dam Wall")
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([inspection]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/inspections/{TEST_INSPECTION_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["id"] == str(TEST_INSPECTION_ID)
+    assert data["asset_name"] == "Dam Wall"
+
+
+# ═══════════════════════════════════════════════
+# Test 29: Get inspection - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_get_inspection_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/maintenance/inspections/{TEST_INSPECTION_ID}",
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
+
+
+# ═══════════════════════════════════════════════
+# Test 30: Update inspection - not found
+# ═══════════════════════════════════════════════
+
+
+@patch("src.middleware.auth.jwt")
+def test_update_inspection_not_found(mock_jwt, app):
+    mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(return_value=MockScalarResult([]))
+    db_mock.commit = AsyncMock()
+    db_mock.rollback = AsyncMock()
+    db_mock.close = AsyncMock()
+
+    async def get_mock_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = get_mock_db
+
+    client = TestClient(app)
+    response = client.put(
+        f"/api/v1/maintenance/inspections/{TEST_INSPECTION_ID}",
+        json={"status": "completed", "notes": "All checks passed"},
+        headers=_make_auth_header(),
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "NOT_FOUND"
