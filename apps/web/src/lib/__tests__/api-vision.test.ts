@@ -293,4 +293,177 @@ describe("indexDocuments", () => {
     );
     expect(result.indexed_count).toBe(2);
   });
+
+  it("includes documents array in request body", async () => {
+    mockFetch.mockReturnValueOnce(
+      mockResponse({ indexed_count: 1, total_vectors: 1, documents: [] }),
+    );
+    await indexDocuments({
+      index_id: "idx1",
+      documents: [{ source_id: "doc1", source_type: "document", content: "設計図" }],
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.documents).toHaveLength(1);
+    expect(body.index_id).toBe("idx1");
+  });
+});
+
+// ── 追加パラメータテスト ──
+
+describe("listOcrResults — additional params", () => {
+  it("appends document_id when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listOcrResults({ document_id: "doc-abc" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("document_id=doc-abc");
+  });
+
+  it("appends skip and limit when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listOcrResults({ skip: 10, limit: 5 });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("skip=10");
+    expect(url).toContain("limit=5");
+  });
+
+  it("returns array with correct shape", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([mockOcrResult]));
+    const results = await listOcrResults();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results[0].extracted_text).toBe("サンプルテキスト");
+    expect(results[0].status).toBe("completed");
+  });
+});
+
+describe("processOcr — optional fields", () => {
+  it("includes language and document_id when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse(mockOcrResult));
+    await processOcr({
+      organization_id: "org1",
+      file_key: "docs/report.pdf",
+      language: "en",
+      document_id: "doc-123",
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.language).toBe("en");
+    expect(body.document_id).toBe("doc-123");
+  });
+
+  it("returns OcrResult with an id", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse(mockOcrResult));
+    const result = await processOcr({ organization_id: "org1", file_key: "f.pdf" });
+    expect(result.id).toBe("ocr1");
+  });
+});
+
+describe("listImageAnalyses — additional params", () => {
+  it("appends organization_id when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listImageAnalyses({ organization_id: "org2" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("organization_id=org2");
+  });
+
+  it("appends skip and limit when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listImageAnalyses({ skip: 0, limit: 20 });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("skip=0");
+    expect(url).toContain("limit=20");
+  });
+
+  it("returns ImageAnalysis with correct analysis_type", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([mockAnalysis]));
+    const results = await listImageAnalyses();
+    expect(results[0].analysis_type).toBe("defect_detection");
+    expect(results[0].status).toBe("completed");
+  });
+});
+
+describe("listVectorIndices — additional params", () => {
+  it("appends organization_id when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listVectorIndices({ organization_id: "org3" });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("organization_id=org3");
+  });
+
+  it("appends is_active=false when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listVectorIndices({ is_active: false });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("is_active=false");
+  });
+
+  it("appends skip and limit when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    await listVectorIndices({ skip: 5, limit: 10 });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("skip=5");
+    expect(url).toContain("limit=10");
+  });
+
+  it("returns VectorIndex with correct shape", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([mockIndex]));
+    const results = await listVectorIndices();
+    expect(results[0].collection_name).toBe("documents");
+    expect(results[0].is_active).toBe(true);
+    expect(results[0].dimension).toBe(1536);
+  });
+});
+
+describe("createVectorIndex — optional fields", () => {
+  it("includes index_type and metric in body when provided", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse(mockIndex));
+    await createVectorIndex({
+      organization_id: "org1",
+      collection_name: "blueprints",
+      dimension: 768,
+      index_type: "flat",
+      metric: "l2",
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.index_type).toBe("flat");
+    expect(body.metric).toBe("l2");
+  });
+
+  it("returns VectorIndex with is_active true by default", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse(mockIndex));
+    const result = await createVectorIndex({
+      organization_id: "org1",
+      collection_name: "docs",
+      dimension: 1536,
+    });
+    expect(result.is_active).toBe(true);
+  });
+});
+
+describe("vectorSearch — edge cases", () => {
+  it("returns empty array when no results found", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse([]));
+    const results = await vectorSearch({
+      index_id: "idx1",
+      query_text: "存在しないクエリ",
+    });
+    expect(results).toHaveLength(0);
+  });
+});
+
+// ── エラーケーステスト ──
+
+describe("API error handling", () => {
+  it("getOcrResult throws ApiError on 404", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse({ detail: "Not found" }, 404));
+    await expect(getOcrResult("missing-id")).rejects.toThrow();
+  });
+
+  it("getImageAnalysis throws ApiError on 500", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse({ detail: "Server error" }, 500));
+    await expect(getImageAnalysis("broken-id")).rejects.toThrow();
+  });
+
+  it("getVectorIndex throws ApiError on 404", async () => {
+    mockFetch.mockReturnValueOnce(mockResponse({ detail: "Not found" }, 404));
+    await expect(getVectorIndex("no-such-index")).rejects.toThrow();
+  });
 });
