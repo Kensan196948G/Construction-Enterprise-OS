@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "CI lint/type/test エラー修正完了（field-dx/advanced/bim 3サービス）。全22サービスmypy 0エラー確認。PR#10 作成（31コミット積み上げ含む）。次: CI全GREEN確認後 Build フェーズ継続（AI LLMサービス / IoT / BIMバックエンド）。",
+    "phase_detail": "PR#10 マージ完了 (2026-06-08)。CI 25/25 GREEN。OCR/BIM/Vision実装・認証バイパス統合・Dockerfile node:20-slim修正完了。次: Build フェーズ継続 — BIM/データレイク/自律制御/IoT拡充。",
     "stability": "stable"
   },
   "current_session": {
@@ -57,7 +57,8 @@
       "GIS: Leaflet.js 実地図統合（OpenStreetMap + カスタムピン）",
       "ワークフロー: 承認・差戻しボタン実装（actionLoading で二重押し防止）",
       "安全管理ページ実装（ヒヤリハット・インシデント・点検記録 + API統合 + ナビ追加）",
-      "gateway safety ルーティング追加 (^/api/v1/safety → :8007)"
+      "gateway safety ルーティング追加 (^/api/v1/safety → :8007)",
+      "PR#10: OCR/BIM/Vision実装・CI全修正・ログインバイパス統合 (34コミット) — CI 25/25 GREEN"
     ],
     "in_progress": [],
     "next": [
@@ -79,7 +80,8 @@
     "branch": "main",
     "merged_prs": [
       "#1 CI修正",
-      "#2 WebUI全ページ実装"
+      "#2 WebUI全ページ実装",
+      "#10 OCR/BIM/Vision・CI全修正・ログインバイパス"
     ],
     "note": "created 2026-05-24"
   },
