@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "OCR vision.ts接続 + BIM CRUDサービス実装 + BIMページ新規作成完了（195テスト全通過）。次フェーズ: バックエンドBIM API/AI LLMサービス実装 + フロントエンドAI画像解析・ベクターDBページ。",
+    "phase_detail": "Vision サービス層分離（ocr_service/image_analysis_service/vector_service）完了。pytestサービス層 17件全通過。OCRページUIフィルタ機能追加。vitest 195件維持・tscエラー0。次フェーズ: AI LLMサービス実装 + BIMバックエンドAPI + 残テスト整備。",
     "stability": "stable"
   },
   "current_session": {
@@ -77,19 +77,16 @@
     "enabled": true,
     "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
     "branch": "main",
-    "merged_prs": [
-      "#1 CI修正",
-      "#2 WebUI全ページ実装"
-    ],
+    "merged_prs": ["#1 CI修正", "#2 WebUI全ページ実装"],
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-06-08T02:43:01.779Z"
+    "last_pre_compact_at": "2026-06-08T02:57:54.525Z"
   },
   "execution": {
-    "current_session_start_at": "2026-06-08T02:44:40.388Z",
+    "current_session_start_at": "2026-06-08T02:59:15.800Z",
     "last_trigger": "cron",
-    "last_stop_at": "2026-06-08T02:35:44.258Z",
+    "last_stop_at": "2026-06-08T02:56:03.149Z",
     "last_cron_session_id": "20260608-082758-Construction-Enterprise-OS"
   },
   "dreaming": {
@@ -524,6 +521,66 @@
         "services/auth/src/api/clients.py",
         "services/bim/src/services/bim_service.py",
         "services/platform/src/api/integrations.py"
+      ],
+      "truncated": false
+    },
+    {
+      "at": "2026-06-08T02:46:57.583Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 10 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vector/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vision/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/lib/api/vision.ts",
+        "apps/web/vitest.config.ts",
+        "services/auth/src/api/clients.py",
+        "services/bim/src/api/models.py",
+        "services/bim/src/services/bim_service.py",
+        "services/platform/src/api/integrations.py"
+      ],
+      "truncated": false
+    },
+    {
+      "at": "2026-06-08T02:51:07.620Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 10 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vector/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vision/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/lib/api/vision.ts",
+        "apps/web/vitest.config.ts",
+        "services/auth/src/api/clients.py",
+        "services/bim/src/api/models.py",
+        "services/bim/src/services/bim_service.py",
+        "services/platform/src/api/integrations.py"
+      ],
+      "truncated": false
+    },
+    {
+      "at": "2026-06-08T02:56:04.252Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 16 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vector/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vision/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/lib/api/vision.ts",
+        "services/auth/src/api/clients.py",
+        "services/bim/src/api/models.py",
+        "services/bim/src/services/bim_service.py",
+        "services/platform/src/api/integrations.py",
+        "services/vision/src/api/ocr.py",
+        "services/vision/src/api/vectors.py",
+        "services/vision/src/services/__init__.py",
+        "services/vision/src/services/image_analysis_service.py",
+        "services/vision/src/services/ocr_service.py",
+        "services/vision/src/services/vector_service.py",
+        "services/vision/src/services/vision_service.py"
       ],
       "truncated": false
     }

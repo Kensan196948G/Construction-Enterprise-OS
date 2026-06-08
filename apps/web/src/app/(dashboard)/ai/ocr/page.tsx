@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Upload,
   Clock,
+  Filter,
 } from "lucide-react";
 import { listOcrResults, type OcrResult } from "../../../../lib/api/vision";
 
@@ -142,6 +143,8 @@ function toOcrItem(r: OcrResult, idx: number): OcrItem {
 export default function AIOcrPage() {
   const [ocrItems, setOcrItems] = useState<OcrItem[]>(MOCK_ITEMS);
   const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [docTypeFilter, setDocTypeFilter] = useState<string>("all");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -172,6 +175,14 @@ export default function AIOcrPage() {
             timeSamples.length,
         )
       : 0;
+
+  const filteredItems = ocrItems.filter((i) => {
+    const matchStatus = statusFilter === "all" || i.status === statusFilter;
+    const matchType = docTypeFilter === "all" || i.docType === docTypeFilter;
+    return matchStatus && matchType;
+  });
+
+  const docTypes = Array.from(new Set(ocrItems.map((i) => i.docType)));
 
   return (
     <div className="p-6 space-y-6">
@@ -279,8 +290,34 @@ export default function AIOcrPage() {
 
       {/* 処理キューテーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">処理キュー</h2>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="all">全ステータス</option>
+              <option value="queued">待機中</option>
+              <option value="processing">処理中</option>
+              <option value="completed">完了</option>
+              <option value="failed">失敗</option>
+            </select>
+            <select
+              value={docTypeFilter}
+              onChange={(e) => setDocTypeFilter(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="all">全書類種別</option>
+              {docTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -307,7 +344,7 @@ export default function AIOcrPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {ocrItems.map((item) => (
+              {filteredItems.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -353,7 +390,10 @@ export default function AIOcrPage() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-          {ocrItems.length}件
+          {filteredItems.length}件
+          {filteredItems.length !== ocrItems.length && (
+            <span className="ml-1 text-gray-400">（全{ocrItems.length}件中）</span>
+          )}
         </div>
       </div>
     </div>
