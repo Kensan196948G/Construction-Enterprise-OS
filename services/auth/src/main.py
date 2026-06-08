@@ -102,7 +102,7 @@ def create_app() -> FastAPI:
 
     # ヘルスチェック
     @app.get("/health")
-    async def health():
+    async def health_check():
         return {"status": "healthy", "service": "auth-service"}
 
     # グローバルエラーハンドラ

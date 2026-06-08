@@ -9,6 +9,7 @@ import {
   Upload,
   Clock,
 } from "lucide-react";
+import { listOcrResults, type OcrResult } from "../../../../lib/api/vision";
 
 interface OcrItem {
   id: string;
@@ -18,23 +19,6 @@ interface OcrItem {
   status: "queued" | "processing" | "completed" | "failed";
   charCount: number;
   processingTime: number | null;
-}
-
-// API response shape from /api/v1/vision/ocr/tasks or /api/v1/ai/ocr
-interface OcrTask {
-  id: string | number;
-  filename?: string;
-  file_name?: string;
-  status?: string;
-  confidence?: number;
-  extracted_text_preview?: string;
-  processed_at?: string;
-  // optional extra fields
-  doc_type?: string;
-  docType?: string;
-  uploaded_at?: string;
-  char_count?: number;
-  processing_time?: number | null;
 }
 
 const MOCK_ITEMS: OcrItem[] = [
@@ -127,33 +111,31 @@ const DOC_TYPE_COLORS: Record<string, string> = {
   検査記録: "bg-orange-100 text-orange-700",
 };
 
-/** Map API status string to OcrItem status */
-function toOcrStatus(s?: string): OcrItem["status"] {
-  if (!s) return "queued";
-  const lower = s.toLowerCase();
-  if (lower === "completed" || lower.includes("完了")) return "completed";
-  if (lower === "processing" || lower === "running" || lower.includes("処理中"))
-    return "processing";
-  if (lower === "failed" || lower === "error" || lower.includes("失敗"))
-    return "failed";
-  return "queued";
+/** Map OcrResult.status → OcrItem.status ("pending" becomes "queued") */
+function toOcrStatus(s: OcrResult["status"]): OcrItem["status"] {
+  if (s === "completed") return "completed";
+  if (s === "processing") return "processing";
+  if (s === "failed") return "failed";
+  return "queued"; // covers "pending"
 }
 
-/** Map OcrTask → OcrItem for display */
-function toOcrItem(t: OcrTask, idx: number): OcrItem {
-  const fileName = t.filename ?? t.file_name ?? `document_${idx + 1}.pdf`;
-  const charCount =
-    t.char_count ??
-    (t.extracted_text_preview ? t.extracted_text_preview.length : 0);
+/** Map OcrResult → OcrItem for display */
+function toOcrItem(r: OcrResult, idx: number): OcrItem {
+  const fileName = r.file_key?.split("/").pop() ?? `document_${idx + 1}.pdf`;
+  const charCount = r.extracted_text?.length ?? 0;
+  const processingTime =
+    r.processing_time_ms != null
+      ? Math.round(r.processing_time_ms / 1000)
+      : null;
 
   return {
-    id: String(t.id ?? `O-${String(idx + 1).padStart(3, "0")}`),
+    id: r.id,
     fileName,
-    docType: t.doc_type ?? t.docType ?? "その他",
-    uploadedAt: t.uploaded_at ?? t.processed_at ?? "—",
-    status: toOcrStatus(t.status),
+    docType: "その他",
+    uploadedAt: r.created_at ?? "—",
+    status: toOcrStatus(r.status),
     charCount,
-    processingTime: t.processing_time ?? null,
+    processingTime,
   };
 }
 
@@ -164,30 +146,9 @@ export default function AIOcrPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Try primary endpoint first, fall back to secondary
-      const [primaryRes, secondaryRes] = await Promise.allSettled([
-        fetch("/api/v1/vision/ocr/tasks?per_page=20"),
-        fetch("/api/v1/ai/ocr?per_page=20"),
-      ]);
-
-      let apiItems: OcrTask[] = [];
-
-      if (primaryRes.status === "fulfilled" && primaryRes.value.ok) {
-        const json: { items: OcrTask[] } | OcrTask[] =
-          await primaryRes.value.json();
-        apiItems = Array.isArray(json)
-          ? json
-          : ((json as { items: OcrTask[] }).items ?? []);
-      } else if (secondaryRes.status === "fulfilled" && secondaryRes.value.ok) {
-        const json: { items: OcrTask[] } | OcrTask[] =
-          await secondaryRes.value.json();
-        apiItems = Array.isArray(json)
-          ? json
-          : ((json as { items: OcrTask[] }).items ?? []);
-      }
-
-      if (apiItems.length > 0) {
-        setOcrItems(apiItems.map((t, i) => toOcrItem(t, i)));
+      const results = await listOcrResults({ limit: 20 });
+      if (results.length > 0) {
+        setOcrItems(results.map((r, i) => toOcrItem(r, i)));
       }
     } catch {
       // fallback to mock data — already set as default state

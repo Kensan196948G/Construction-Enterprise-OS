@@ -1,6 +1,5 @@
 """APIクライアント管理エンドポイント（M2M認証用）"""
 
-from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -13,7 +12,6 @@ from ..schemas import (
     APIResponse,
     ApiClientCreateRequest,
     ApiClientCreateResponse,
-    ApiClientResponse,
     TokenData,
 )
 from ..services.client_service import (
@@ -144,7 +142,6 @@ async def list_clients(
         return APIResponse(data=_STUB_CLIENTS[:per_page])
 
     # Authenticated path requires permission
-    from ..middleware.auth_middleware import get_current_user
 
     clients_list = await get_api_clients(db, org_id)
     return APIResponse(
