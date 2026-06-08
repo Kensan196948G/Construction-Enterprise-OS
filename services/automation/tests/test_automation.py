@@ -469,3 +469,400 @@ def test_rule_test_execution(client, auth_headers):
     data = response.json()
     assert data["success"] is True
     assert data["data"]["matched"] is True
+
+
+# ============================================
+# Test 13: Rule list with pagination
+# ============================================
+def test_list_rules(client, auth_headers):
+    mock_rule = _make_mock_rule()
+
+    import src.api.rules as rules_module
+    rules_module.get_rules_paginated = AsyncMock(return_value=([mock_rule], 1))
+
+    response = client.get(
+        "/api/v1/automation/rules?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+    assert len(data["data"]["rules"]) == 1
+
+
+# ============================================
+# Test 14: Rule list with filter params
+# ============================================
+def test_list_rules_filter(client, auth_headers):
+    mock_rule = _make_mock_rule()
+
+    import src.api.rules as rules_module
+    rules_module.get_rules_paginated = AsyncMock(return_value=([mock_rule], 1))
+
+    response = client.get(
+        "/api/v1/automation/rules?trigger_type=schedule&is_active=true",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    rules_module.get_rules_paginated.assert_called_once()
+    call_kwargs = rules_module.get_rules_paginated.call_args.kwargs
+    assert call_kwargs["trigger_type"] == "schedule"
+    assert call_kwargs["is_active"] is True
+
+
+# ============================================
+# Test 15: Rule not found - GET
+# ============================================
+def test_get_rule_not_found(client, auth_headers):
+    rule_id = uuid4()
+
+    import src.api.rules as rules_module
+    rules_module.get_rule_by_id = AsyncMock(return_value=None)
+
+    response = client.get(
+        f"/api/v1/automation/rules/{rule_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "RULE_NOT_FOUND"
+
+
+# ============================================
+# Test 16: Rule not found - PUT
+# ============================================
+def test_update_rule_not_found(client, auth_headers):
+    rule_id = uuid4()
+
+    import src.api.rules as rules_module
+    rules_module.update_rule = AsyncMock(return_value=None)
+
+    response = client.put(
+        f"/api/v1/automation/rules/{rule_id}",
+        json={"name": "New Name"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "RULE_NOT_FOUND"
+
+
+# ============================================
+# Test 17: Rule not found - DELETE
+# ============================================
+def test_delete_rule_not_found(client, auth_headers):
+    rule_id = uuid4()
+
+    import src.api.rules as rules_module
+    rules_module.delete_rule = AsyncMock(return_value=False)
+
+    response = client.delete(
+        f"/api/v1/automation/rules/{rule_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "RULE_NOT_FOUND"
+
+
+# ============================================
+# Test 18: Rule enable not found
+# ============================================
+def test_enable_rule_not_found(client, auth_headers):
+    rule_id = uuid4()
+
+    import src.api.rules as rules_module
+    rules_module.enable_rule = AsyncMock(return_value=None)
+
+    response = client.post(
+        f"/api/v1/automation/rules/{rule_id}/enable",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "RULE_NOT_FOUND"
+
+
+# ============================================
+# Test 19: Task list with pagination
+# ============================================
+def test_list_tasks(client, auth_headers):
+    mock_task = _make_mock_task()
+
+    import src.api.tasks as tasks_module
+    tasks_module.get_tasks_paginated = AsyncMock(return_value=([mock_task], 1))
+
+    response = client.get(
+        "/api/v1/automation/tasks?page=1&per_page=10",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["total"] == 1
+    assert len(data["data"]["tasks"]) == 1
+
+
+# ============================================
+# Test 20: Task individual GET
+# ============================================
+def test_get_task(client, auth_headers):
+    task_id = uuid4()
+    mock_task = _make_mock_task(task_id=task_id)
+
+    import src.api.tasks as tasks_module
+    tasks_module.get_task_by_id = AsyncMock(return_value=mock_task)
+
+    response = client.get(
+        f"/api/v1/automation/tasks/{task_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["id"] == str(task_id)
+
+
+# ============================================
+# Test 21: Task update
+# ============================================
+def test_update_task(client, auth_headers):
+    task_id = uuid4()
+    mock_task = _make_mock_task(task_id=task_id)
+
+    import src.api.tasks as tasks_module
+    tasks_module.update_task = AsyncMock(return_value=mock_task)
+
+    response = client.put(
+        f"/api/v1/automation/tasks/{task_id}",
+        json={"name": "Updated Task", "cron_expression": "0 3 * * *"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 22: Task delete
+# ============================================
+def test_delete_task(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.delete_task = AsyncMock(return_value=True)
+
+    response = client.delete(
+        f"/api/v1/automation/tasks/{task_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 23: Task not found - GET
+# ============================================
+def test_get_task_not_found(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.get_task_by_id = AsyncMock(return_value=None)
+
+    response = client.get(
+        f"/api/v1/automation/tasks/{task_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================
+# Test 24: Task not found - PUT
+# ============================================
+def test_update_task_not_found(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.update_task = AsyncMock(return_value=None)
+
+    response = client.put(
+        f"/api/v1/automation/tasks/{task_id}",
+        json={"name": "X"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================
+# Test 25: Task not found - DELETE
+# ============================================
+def test_delete_task_not_found(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.delete_task = AsyncMock(return_value=False)
+
+    response = client.delete(
+        f"/api/v1/automation/tasks/{task_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================
+# Test 26: Trigger task not found
+# ============================================
+def test_trigger_task_not_found(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.trigger_task_now = AsyncMock(return_value=None)
+
+    response = client.post(
+        f"/api/v1/automation/tasks/{task_id}/trigger",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================
+# Test 27: Task history not found
+# ============================================
+def test_task_history_not_found(client, auth_headers):
+    task_id = uuid4()
+
+    import src.api.tasks as tasks_module
+    tasks_module.get_task_by_id = AsyncMock(return_value=None)
+
+    response = client.get(
+        f"/api/v1/automation/tasks/{task_id}/history",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TASK_NOT_FOUND"
+
+
+# ============================================
+# Test 28: Trigger individual GET
+# ============================================
+def test_get_trigger(client, auth_headers):
+    trigger_id = uuid4()
+    mock_trigger = _make_mock_trigger(trigger_id=trigger_id)
+
+    import src.api.triggers as triggers_module
+    triggers_module.get_trigger_by_id = AsyncMock(return_value=mock_trigger)
+
+    response = client.get(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["id"] == str(trigger_id)
+
+
+# ============================================
+# Test 29: Trigger update
+# ============================================
+def test_update_trigger(client, auth_headers):
+    trigger_id = uuid4()
+    mock_trigger = _make_mock_trigger(trigger_id=trigger_id)
+
+    import src.api.triggers as triggers_module
+    triggers_module.update_trigger = AsyncMock(return_value=mock_trigger)
+
+    response = client.put(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        json={"name": "Updated Trigger"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 30: Trigger delete
+# ============================================
+def test_delete_trigger(client, auth_headers):
+    trigger_id = uuid4()
+
+    import src.api.triggers as triggers_module
+    triggers_module.delete_trigger = AsyncMock(return_value=True)
+
+    response = client.delete(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+# ============================================
+# Test 31: Trigger not found - GET
+# ============================================
+def test_get_trigger_not_found(client, auth_headers):
+    trigger_id = uuid4()
+
+    import src.api.triggers as triggers_module
+    triggers_module.get_trigger_by_id = AsyncMock(return_value=None)
+
+    response = client.get(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TRIGGER_NOT_FOUND"
+
+
+# ============================================
+# Test 32: Trigger not found - PUT
+# ============================================
+def test_update_trigger_not_found(client, auth_headers):
+    trigger_id = uuid4()
+
+    import src.api.triggers as triggers_module
+    triggers_module.update_trigger = AsyncMock(return_value=None)
+
+    response = client.put(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        json={"name": "X"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TRIGGER_NOT_FOUND"
+
+
+# ============================================
+# Test 33: Trigger not found - DELETE
+# ============================================
+def test_delete_trigger_not_found(client, auth_headers):
+    trigger_id = uuid4()
+
+    import src.api.triggers as triggers_module
+    triggers_module.delete_trigger = AsyncMock(return_value=False)
+
+    response = client.delete(
+        f"/api/v1/automation/triggers/{trigger_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"]["code"] == "TRIGGER_NOT_FOUND"
