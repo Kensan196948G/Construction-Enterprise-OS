@@ -1,6 +1,5 @@
 """BIMサービス — CRUD operations and spatial utilities"""
 
-from math import ceil
 from uuid import UUID
 
 from geoalchemy2 import WKTElement

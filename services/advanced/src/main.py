@@ -68,8 +68,8 @@ def create_app() -> FastAPI:
     app.include_router(marine.router, prefix="/api/v1/advanced/marine", tags=["marine"])
     app.include_router(
         inspections_ai.router,
-        prefix="/api/v1/advanced/inspections-ai",
-        tags=["inspections-ai"],
+        prefix="/api/v1/advanced/inspections",
+        tags=["inspections"],
     )
     app.include_router(
         design_review.router,

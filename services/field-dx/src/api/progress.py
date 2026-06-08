@@ -160,10 +160,10 @@ async def list_progress(
         per_page=per_page,
     )
     return ProgressListResponse(
-        items=items,
+        items=[ProgressResponse.model_validate(item) for item in items],
         total=total,
         page=page,
-        per_page=per_page,  # type: ignore[arg-type]
+        per_page=per_page,
     )
 
 

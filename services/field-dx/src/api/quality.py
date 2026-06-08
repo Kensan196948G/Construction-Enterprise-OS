@@ -143,10 +143,10 @@ async def list_quality_checks(
         per_page=per_page,
     )
     return QualityCheckListResponse(
-        items=items,
+        items=[QualityCheckResponse.model_validate(item) for item in items],
         total=total,
         page=page,
-        per_page=per_page,  # type: ignore[arg-type]
+        per_page=per_page,
     )
 
 
