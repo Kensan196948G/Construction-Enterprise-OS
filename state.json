@@ -77,16 +77,19 @@
     "enabled": true,
     "repository_url": "https://github.com/Kensan196948G/Construction-Enterprise-OS",
     "branch": "main",
-    "merged_prs": ["#1 CI修正", "#2 WebUI全ページ実装"],
+    "merged_prs": [
+      "#1 CI修正",
+      "#2 WebUI全ページ実装"
+    ],
     "note": "created 2026-05-24"
   },
   "compact": {
-    "last_pre_compact_at": "2026-06-08T02:32:06.989Z"
+    "last_pre_compact_at": "2026-06-08T02:43:01.779Z"
   },
   "execution": {
-    "current_session_start_at": "2026-06-08T02:33:40.527Z",
+    "current_session_start_at": "2026-06-08T02:44:40.388Z",
     "last_trigger": "cron",
-    "last_stop_at": "2026-06-07T23:59:57.187Z",
+    "last_stop_at": "2026-06-08T02:35:44.258Z",
     "last_cron_session_id": "20260608-082758-Construction-Enterprise-OS"
   },
   "dreaming": {
@@ -504,6 +507,23 @@
         "services/iot/src/api/machines.py",
         "services/iot/src/api/sensors_standalone.py",
         "services/vision/src/api/ocr.py"
+      ],
+      "truncated": false
+    },
+    {
+      "at": "2026-06-08T02:35:46.833Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 9 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/app/(dashboard)/layout.tsx",
+        "apps/web/src/app/page.tsx",
+        "apps/web/src/lib/api/vision.ts",
+        "apps/web/vitest.config.ts",
+        "services/auth/src/api/clients.py",
+        "services/bim/src/services/bim_service.py",
+        "services/platform/src/api/integrations.py"
       ],
       "truncated": false
     }
