@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド2完了(2026-08-18): PR#1・PR#2 ともに main へ Squash Merge 済み(aa40d58 / 8622647)。Cloudflare Preview(construction-os-mvp)と本番(construction-os)両ドメインで OpenDesign WebUI 稼働。E2E 18/18 PASS をローカル・プレビューCI・本番で実証(main 上の E2E workflow も success)。auth API+Neon DB 統合検証: ログイン→JWT→認証付きAPI を実証(admin@mirai-dx-platform.com)。seed の .local メール不具合を修正。API トンネル(api.construction-os.mirai-dx-platform.com)構築中(HTTP 200、HTTPS 証明書伝播待ち)。次: API トンネル HTTPS 確認・WebUI の実データ接続・本番認証ゲート。",
+    "phase_detail": "ラウンド2完了(2026-08-18): PR#1/#2/#3 mainマージ済み。E2E 18/18 PASS(プレビューCI・本番とも)。HTTPS API プロキシ(Pages Function)を本番・プレビュー両環境にデプロイ。https://construction-os.mirai-dx-platform.com/api/v1/* 経由で ログイン→JWT→users/roles を Neon DB から実証。Cloudflare Tunnel construction-os-api(api.construction-os.mirai-dx-platform.com)を構築(HTTP 200)。トンネルHTTPS証明書は advanced 証明書パック追加が必要(ssl write権限のトークンが未設定)。次: PR#4マージ・トンネルのHTTPS化(権限トークン)・WebUIの実API接続・本番認証ゲート(Access)。",
     "stability": "stable"
   },
   "current_session": {
