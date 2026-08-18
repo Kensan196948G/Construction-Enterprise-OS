@@ -37,3 +37,20 @@
   `api.construction-os.mirai-dx-platform.com` 等を公開し、Preview 配下で API 確認
 - WebUI のダミーデータ → auth API 実データへの接続
 - 本番用 JWT 鍵・MFA・Secrets 管理の整備
+
+## HTTPS 経由の検証(本番ドメイン、Pages Function プロキシ)
+
+`https://construction-os.mirai-dx-platform.com/api/v1/*` を Pages Function
+(`webui/functions/api/[[path]].ts`)が Cloudflare Tunnel
+(`api.construction-os.mirai-dx-platform.com`、HTTP)へ転送する構成。
+
+| 確認項目 | 結果 |
+|---|---|
+| `GET /api/v1/health/services`(HTTPS) | ✅ 全サービス healthy |
+| `POST /api/v1/auth/login`(HTTPS) | ✅ JWT 発行(roles: admin) |
+| `GET /api/v1/users`(Bearer・HTTPS) | ✅ シード済みユーザーを Neon から返却 |
+| `GET /api/v1/roles`(Bearer・HTTPS) | ✅ 7ロール返却 |
+
+※ トンネルホスト名(api.construction-os...)自体の HTTPS 証明書は
+ゾーンの advanced 証明書パック追加が必要(ssl write 権限がトークンに無いため未実施)。
+Pages Function 経由で本番ドメインの HTTPS から API を利用可能。

@@ -38,6 +38,7 @@ jobs:
           cp "webui/Construction-Enterprise-OS---Standalone-_1_.html" ".deploy-webui/Construction-Enterprise-OS---Standalone-_1_.html"
           cp webui/brand-spec.md webui/DESIGN-HANDOFF.md webui/DESIGN-MANIFEST.json .deploy-webui/
           cp webui/index.html .deploy-webui/management-review-deck.html
+          cp -r webui/functions .deploy-webui/functions
           ls -la .deploy-webui/
 
       - name: Deploy to Cloudflare Pages (${{ matrix.project }})
