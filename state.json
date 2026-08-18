@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド2完了(2026-08-18): PR#1〜#4 mainマージ済み、PR#5(Pages Functions修正)CI中。E2E 18/18 PASS(ローカル・main上のCI E2E workflow×2・本番)。本番/プレビュー両環境で HTTPS WebUI + HTTPS API(ログイン→JWT→users/roles、Neon DB)稼働。Pages Function プロキシ+Cloudflare Tunnel(construction-os-api)でAPI配信。wranglerのディレクトリ引数問題(functions未検出)を発見・PR#5で修正済み。残: トンネルHTTPS証明書(advanced pack、ssl write権限トークン要)、WebUI実データ接続、本番Access認証、README深掘り更新。",
+    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#5 全て main へ Squash Merge(aa40d58/8622647/3d9b1ed/f34f754/9fd3c26)。Pages Functions プロキシ(wrangler CWD 検出問題 PF-001 修正)を本番・MVP 両ドメインへデプロイ。HTTPS 検証: /api/v1/health/services 全healthy・ログイン→JWT・users/roles(Neon)・認証なし401・誤パスワード401・WebUI 200。E2E 18/18 PASS(プレビューCI×2・最新構成で再実行)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性(org1/users1/roles7/perms43)を実証。残リスク: トンネルHTTPS証明書(advanced pack/ssl write権限要)、WebUI 実データ接続、本番 Access 認証、Next.js 化。",
     "stability": "stable"
   },
   "current_session": {
@@ -81,7 +81,12 @@
     "merged_prs": [
       "#1 CI修正",
       "#2 WebUI全ページ実装",
-      "#10 OCR/BIM/Vision・CI全修正・ログインバイパス"
+      "#10 OCR/BIM/Vision・CI全修正・ログインバイパス",
+      "#1 認証ガードfail-closed+OpenDesign設計仕様",
+      "#2 Neon Migration/Seed再実行可能化",
+      "#3 Pages自動デプロイMVP+本番",
+      "#4 ラウンド2完了記録+APIトンネル",
+      "#5 Pages Functions修正"
     ],
     "note": "created 2026-05-24"
   },
@@ -89,7 +94,7 @@
     "last_pre_compact_at": "2026-06-08T04:45:02.743Z"
   },
   "execution": {
-    "current_session_start_at": "2026-08-18T13:00:00.000Z",
+    "current_session_start_at": "2026-08-18T15:20:00.000Z",
     "last_trigger": "goal",
     "last_stop_at": "2026-06-09T12:40:56.764Z",
     "last_cron_session_id": "20260612-172518-Construction-Enterprise-OS"
