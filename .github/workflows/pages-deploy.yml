@@ -15,6 +15,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # MVP プレビュー / 本番 の両 Pages プロジェクトへ同一内容をデプロイ
+        project: [construction-os-mvp, construction-os-web]
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +40,8 @@ jobs:
           cp webui/index.html .deploy-webui/management-review-deck.html
           ls -la .deploy-webui/
 
-      - name: Deploy to Cloudflare Pages (construction-os-mvp)
+      - name: Deploy to Cloudflare Pages (${{ matrix.project }})
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: wrangler pages deploy .deploy-webui --project-name construction-os-mvp --branch main
+        run: wrangler pages deploy .deploy-webui --project-name ${{ matrix.project }} --branch main

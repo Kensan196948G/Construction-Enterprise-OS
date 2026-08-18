@@ -29,10 +29,19 @@
 | MVP カスタムドメイン | `construction-os-mvp.mirai-dx-platform.com` → CNAME `construction-os-mvp.pages.dev` |
 | 本番カスタムドメイン | `construction-os.mirai-dx-platform.com` → CNAME `construction-os-web.pages.dev` |
 | MVP コンテンツ | `webui/`(OpenDesign ハンドオフ)を `index.html` としてデプロイ |
-| 自動デプロイ | `.github/workflows/pages-deploy.yml`(main への `webui/**` push で Pages へ deploy) |
+| 自動デプロイ | `.github/workflows/pages-deploy.yml`(main への `webui/**` push で MVP と本番の両 Pages へ deploy) |
 | GitHub Secrets | `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` |
 
-## 4. 手動デプロイ(MVP WebUI)
+## 4. デプロイ対象プロジェクト(2026-08-18 拡張)
+
+`pages-deploy.yml` は matrix(`construction-os-mvp` / `construction-os-web`)で
+**MVP と本番の両プロジェクトへ同一内容を自動デプロイ**する。
+
+- 本番(`construction-os-web`)は MVP フェーズではプロトタイプ(webui)を配信。
+- 本番検証: `https://construction-os.mirai-dx-platform.com` で
+  ヘルスチェック(HTTP 200)・主要画面・E2E を確認済み。
+
+## 5. 手動デプロイ(MVP WebUI)
 
 ```bash
 CLOUDFLARE_API_TOKEN=*** CLOUDFLARE_ACCOUNT_ID=4f1e888469df7e0b896bb4e211b12633 \
@@ -40,16 +49,17 @@ CLOUDFLARE_API_TOKEN=*** CLOUDFLARE_ACCOUNT_ID=4f1e888469df7e0b896bb4e211b12633 
 ```
 
 ※ `.deploy-webui` の準備は `.github/workflows/pages-deploy.yml` の
-「Prepare deploy directory」ステップと同一手順。
+「Prepare deploy directory」ステップと同一手順。本番へは
+`--project-name construction-os-web` で同一内容をデプロイする。
 
-## 5. ロールバック方針
+## 6. ロールバック方針
 
 - Pages: 直前の正常デプロイメントへ Rollback(Cloudflare API `POST /deployments/{id}/rollback` 対応済み)
 - Tunnel: コンテナのタグ指定による再起動
 - DB: Neon の Point-in-Time 復元 / ブランチ切り替え
 
-## 6. 未実施(次フェーズ)
+## 7. 未実施(次フェーズ)
 
-- [ ] 本番(`construction-os-web`)への Next.js ビルドデプロイ
+- [ ] 本番(`construction-os-web`)への Next.js ビルドデプロイ(現状は MVP プロトタイプを配信)
 - [ ] Tunnel 用 cloudflared 設定(API 公開)
 - [ ] Cloudflare Access による認証ゲート(MVP は公開、本番は Access 適用)
