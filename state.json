@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#5 全て main へ Squash Merge(aa40d58/8622647/3d9b1ed/f34f754/9fd3c26)。Pages Functions プロキシ(wrangler CWD 検出問題 PF-001 修正)を本番・MVP 両ドメインへデプロイ。HTTPS 検証: /api/v1/health/services 全healthy・ログイン→JWT・users/roles(Neon)・認証なし401・誤パスワード401・WebUI 200。E2E 18/18 PASS(プレビューCI×2・最新構成で再実行)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性(org1/users1/roles7/perms43)を実証。残リスク: トンネルHTTPS証明書(advanced pack/ssl write権限要)、WebUI 実データ接続、本番 Access 認証、Next.js 化。",
+    "phase_detail": "ラウンド3完了(2026-08-18): 完了条件11項目を全て達成と判定(チェックリスト: docs/operations/completion-checklist.md)。E2E 全34テスト(mvp 18 + api 16)を本番・プレビュー両環境で PASS。API E2E で認証(401/422含む)・Neon DB 接続を常時検証化。docs/api/overview.md(Gateway+全21サービスAPI)、docs/requirements/mvp-scope.md(OpenDesign整合)、チェックリストを整備。PR#6/#7 マージ処理中。残存リスク R1(トンネル直接HTTPS証明書: ssl write権限トークン要)、R2(WebUI実データ接続)、R4(Access)を記録済み。",
     "stability": "stable"
   },
   "current_session": {
