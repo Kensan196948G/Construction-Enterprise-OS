@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#5 全て main へ Squash Merge(aa40d58/8622647/3d9b1ed/f34f754/9fd3c26)。Pages Functions プロキシ(wrangler CWD 検出問題 PF-001 修正)を本番・MVP 両ドメインへデプロイ。HTTPS 検証: /api/v1/health/services 全healthy・ログイン→JWT・users/roles(Neon)・認証なし401・誤パスワード401・WebUI 200。E2E 18/18 PASS(プレビューCI×2・最新構成で再実行)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性(org1/users1/roles7/perms43)を実証。残リスク: トンネルHTTPS証明書(advanced pack/ssl write権限要)、WebUI 実データ接続、本番 Access 認証、Next.js 化。",
+    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#7 全て main へ Squash Merge。完了条件11項目を全て達成(チェックリスト: docs/operations/completion-checklist.md)。本番(construction-os)・MVP(construction-os-mvp)両ドメインで OpenDesign WebUI + HTTPS API(Pages Function プロキシ→Cloudflare Tunnel→auth→Neon)稼働。E2E: mvp 18/18 + API 16/16(CI 34テスト中33 passed/1 flaky-リトライ成功)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性を実証。CI 全ジョブ GREEN(型検査/Lint/テスト/security-scan/docker-build)。残存リスク R1〜R5 記録済み(トンネル直接HTTPS証明書・WebUI実データ接続・Access適用・Next.js化等)。",
     "stability": "stable"
   },
   "current_session": {
@@ -96,7 +96,7 @@
   "execution": {
     "current_session_start_at": "2026-08-18T15:20:00.000Z",
     "last_trigger": "goal",
-    "last_stop_at": "2026-06-09T12:40:56.764Z",
+    "last_stop_at": "2026-08-18T15:45:00.000Z",
     "last_cron_session_id": "20260612-172518-Construction-Enterprise-OS"
   },
   "dreaming": {
