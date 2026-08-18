@@ -6,7 +6,7 @@ Create Date: 2026-05-24
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY, INET
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY, INET, ENUM
 
 revision = '001'
 down_revision = None
@@ -49,17 +49,17 @@ def upgrade() -> None:
         sa.Column('name_kana', sa.String(255)),
         sa.Column(
             'type',
-            sa.Enum(
+            ENUM(
                 'company', 'department', 'site', 'partner',
-                name='org_type', schema='auth'
+                name='org_type', schema='auth', create_type=False
             ),
             nullable=False,
         ),
         sa.Column(
             'status',
-            sa.Enum(
+            ENUM(
                 'active', 'inactive',
-                name='org_status', schema='auth'
+                name='org_status', schema='auth', create_type=False
             ),
             server_default='active',
         ),
@@ -102,9 +102,9 @@ def upgrade() -> None:
         sa.Column('locale', sa.String(10), server_default='ja'),
         sa.Column(
             'status',
-            sa.Enum(
+            ENUM(
                 'pending', 'active', 'suspended', 'deactivated',
-                name='user_status', schema='auth'
+                name='user_status', schema='auth', create_type=False
             ),
             server_default='pending',
         ),
@@ -271,9 +271,9 @@ def upgrade() -> None:
         sa.Column('scopes', ARRAY(sa.String), nullable=False),
         sa.Column(
             'status',
-            sa.Enum(
+            ENUM(
                 'active', 'revoked',
-                name='api_client_status', schema='auth'
+                name='api_client_status', schema='auth', create_type=False
             ),
             server_default='active',
         ),
