@@ -84,3 +84,6 @@ apps/*/next-env.d.ts
 test-results/
 playwright-report/
 blob-report/
+
+# wrangler pages deploy のローカル準備ディレクトリ
+.deploy-webui/
