@@ -42,7 +42,12 @@ jobs:
           ls -la .deploy-webui/
 
       - name: Deploy to Cloudflare Pages (${{ matrix.project }})
+        # wrangler は functions/ をカレントディレクトリ基準で検出するため、
+        # デプロイ対象ディレクトリを作業ディレクトリとして "." を指定する
+        # (親ディレクトリから ".deploy-webui" を引数にすると Functions が
+        #  ビルドされず、/api/* が SPA フォールバックになる問題を回避)
+        working-directory: .deploy-webui
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: wrangler pages deploy .deploy-webui --project-name ${{ matrix.project }} --branch main
+        run: wrangler pages deploy . --project-name ${{ matrix.project }} --branch main
