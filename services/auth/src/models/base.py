@@ -13,6 +13,13 @@ engine = create_async_engine(
     echo=settings.DEBUG,
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    # R6対策: Neon のアイドル停止や長時間放置でプールに残った失効コネクションを
+    # 払い出す前に ping で検出・破棄する。ログインが稀に INTERNAL_ERROR になる
+    # 過渡障害(1回目失敗→再試行で即成功)の根本原因を排除する。
+    pool_pre_ping=True,
+    # 接続確立のタイムアウト(秒)。停止中の Neon 計算機の起動待ちで
+    # 無期限にハングしないようにする。
+    connect_args={"timeout": 10},
 )
 
 

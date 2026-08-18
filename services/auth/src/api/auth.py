@@ -1,5 +1,6 @@
 """認証エンドポイント（ログイン/ログアウト/リフレッシュ/MFA）"""
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from ..db_retry import is_transient_db_error, rollback_safely
 from ..models import RefreshToken, User, UserRole, Role
-from ..models.base import get_db
+from ..models.base import async_session, get_db
 from ..schemas import (
     APIResponse,
     ErrorDetail,
@@ -39,6 +41,8 @@ from ..services.token_service import create_access_token
 from ..middleware.auth_middleware import get_current_user
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 def _create_mfa_session_token(user_id: str, email: str) -> str:
@@ -96,7 +100,33 @@ async def login(
     body: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """ログイン"""
+    """ログイン(R6対策: 過渡的DBエラー時は新しいセッションで自動リトライ)"""
+    try:
+        return await _perform_login(request, body, db)
+    except Exception as exc:
+        if not is_transient_db_error(exc):
+            raise
+        logger.warning(
+            "auth.login: 過渡的DBエラーを検知、新しいセッションで再試行します: %s",
+            exc,
+        )
+        await rollback_safely(db)
+        async with async_session() as retry_db:
+            try:
+                result = await _perform_login(request, body, retry_db)
+                await retry_db.commit()
+                return result
+            except Exception:
+                await retry_db.rollback()
+                raise
+
+
+async def _perform_login(
+    request: Request,
+    body: LoginRequest,
+    db: AsyncSession,
+):
+    """ログインの実処理(セッションのコミットは呼び出し元が担う)"""
     user = await get_user_by_email(db, body.email)
 
     if not user:
@@ -206,7 +236,33 @@ async def refresh(
     body: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """トークンリフレッシュ"""
+    """トークンリフレッシュ(R6対策: 過渡的DBエラー時は新しいセッションで自動リトライ)"""
+    try:
+        return await _perform_refresh(request, body, db)
+    except Exception as exc:
+        if not is_transient_db_error(exc):
+            raise
+        logger.warning(
+            "auth.refresh: 過渡的DBエラーを検知、新しいセッションで再試行します: %s",
+            exc,
+        )
+        await rollback_safely(db)
+        async with async_session() as retry_db:
+            try:
+                result = await _perform_refresh(request, body, retry_db)
+                await retry_db.commit()
+                return result
+            except Exception:
+                await retry_db.rollback()
+                raise
+
+
+async def _perform_refresh(
+    request: Request,
+    body: RefreshRequest,
+    db: AsyncSession,
+):
+    """トークンリフレッシュの実処理(セッションのコミットは呼び出し元が担う)"""
     token_hash = hash_token(body.refresh_token)
 
     result = await db.execute(
