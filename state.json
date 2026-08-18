@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "DSH再開(2026-08-18): GitHubリポジトリ再作成(旧リポジトリ削除のため)・main/fix/auth-guard-fail-closed push済み。PR#1(認証ガードfail-closed+OpenDesign設計仕様)CI 26/26 GREEN。OpenDesign設計仕様をdocs/design/へ正本化(14カテゴリ/約90ルート/6ロール)。Neonプロジェクト construction-enterprise-os 作成・空検証ブランチ(verify-001)へのMigration/Seed再実行を実証(authスキーマ・2組織/1ユーザ/7ロール/43権限・冪等確認)。ドメイン確定: construction-os / construction-os-mvp (mirai-dx-platform.com)。次: PR#2(Neon Migration修正)・Cloudflare Pages/DNS・MVPプロトタイプ公開・WebUIルート整合。",
+    "phase_detail": "DSH再開(2026-08-18)ラウンド2完了: GitHubリポジトリ再作成+PR#1(認証ガードfail-closed+OpenDesign設計仕様+webui格納)CI 26/26 GREEN、PR#2(Neon Migration/Seed再実行可能化)26/26 GREEN。Neon: construction-enterprise-os 作成、空検証ブランチ(verify-001)で Migration+Seed 再実行・冪等性を実証。Cloudflare: Pages construction-os-mvp / construction-os-web 作成、カスタムドメイン construction-os-mvp.mirai-dx-platform.com で OpenDesign WebUI を100%稼働(HTTP200)、construction-os.mirai-dx-platform.com は本番用にCNAME設定済み。GitHub Secrets(CLOUDFLARE_API_TOKEN/ACCOUNT_ID)設定、pages-deploy.yml で自動デプロイ化。webui/ にOpenDesignハンドオフ一式を正本として格納。次: PRマージ基準(Preview E2E)整備 → マージ、本番Next.jsデプロイ、API Tunnel、Access認証。",
     "stability": "stable"
   },
   "current_session": {
