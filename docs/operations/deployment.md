@@ -63,3 +63,16 @@ CLOUDFLARE_API_TOKEN=*** CLOUDFLARE_ACCOUNT_ID=4f1e888469df7e0b896bb4e211b12633 
 - [ ] 本番(`construction-os-web`)への Next.js ビルドデプロイ(現状は MVP プロトタイプを配信)
 - [ ] Tunnel 用 cloudflared 設定(API 公開)
 - [ ] Cloudflare Access による認証ゲート(MVP は公開、本番は Access 適用)
+
+## 7. API トンネル(2026-08-18 構築)
+
+| 項目 | 値 |
+|---|---|
+| API 公開ホスト | `api.construction-os.mirai-dx-platform.com` |
+| トンネル名 | `construction-os-api`(ID: d844edf7-c62c-4098-b6d5-5ba58ea027a9) |
+| ローカル設定 | `~/.cloudflared/construction-os-api-config.yml`(認証情報はリポジトリ外) |
+| 転送先 | `http://127.0.0.1:18002`(auth サービス、Neon 接続) |
+| 起動方法 | `cloudflared tunnel --config ~/.cloudflared/construction-os-api-config.yml run construction-os-api` |
+| 状態 | HTTP 200 確認済み。HTTPS はエッジ証明書伝播後に確認 |
+
+※ 本番 API 化の際は、サービス群の docker-compose 稼働 + 複数ホストの ingress へ拡張する。
