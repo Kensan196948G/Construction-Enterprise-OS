@@ -29,6 +29,9 @@ env/
 .env.*.local
 *.env
 
+# Claude / agent local config
+.claude/
+
 # IDE
 .vscode/
 .idea/
@@ -76,3 +79,8 @@ Desktop.ini
 
 # Next.js auto-generated
 apps/*/next-env.d.ts
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

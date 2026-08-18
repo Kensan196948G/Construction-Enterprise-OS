@@ -28,6 +28,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth";
+import { isAuthBypassEnabled } from "@/lib/auth-config";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -433,15 +434,18 @@ export default function DashboardLayout({
     restoreSession();
   }, [restoreSession]);
 
-  // Auth check disabled — direct dashboard access without login
-  // useEffect(() => {
-  //   if (token === null && typeof window !== "undefined") {
-  //     const stored = localStorage.getItem("auth_token");
-  //     if (!stored) {
-  //       router.replace("/login");
-  //     }
-  //   }
-  // }, [token, router]);
+  // Auth guard: redirect unauthenticated users to /login.
+  // Bypassed only when NEXT_PUBLIC_AUTH_BYPASS=true (local dev demo). The guard
+  // is enforced by default so production / staging stay secure (fail closed).
+  useEffect(() => {
+    if (isAuthBypassEnabled()) return;
+    if (token === null && typeof window !== "undefined") {
+      const stored = localStorage.getItem("auth_token");
+      if (!stored) {
+        router.replace("/login");
+      }
+    }
+  }, [token, router]);
 
   // Auto-expand the category + section containing the current route
   useEffect(() => {
