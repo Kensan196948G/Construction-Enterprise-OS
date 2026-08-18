@@ -190,7 +190,8 @@ ROLE_PERMISSION_MAP = {
 }
 
 # ── 管理ユーザ ──────────────────────────────────────────────────────
-ADMIN_EMAIL = "admin@construction-enterprise-os.local"
+# 注: EmailStr 検証は特殊用途TLD(.local 等)を拒否するため、実在ドメイン形式を使用する
+ADMIN_EMAIL = "admin@mirai-dx-platform.com"
 ADMIN_PASSWORD = "AdminPass123!"
 ADMIN_DISPLAY_NAME = "システム管理者"
 

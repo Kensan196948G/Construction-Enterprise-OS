@@ -4,7 +4,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -23,7 +23,13 @@ target_metadata = Base.metadata
 
 # 環境変数からDB設定を上書き
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+url = settings.DATABASE_URL
+# CREATE TYPE AS ENUM は拡張クエリプロトコル(Parse)で型を生成してしまうため、
+# マイグレーション実行時は asyncpg の prepared statement を無効化する
+# (PostgreSQL 既知の挙動: パース時に型が作られ Execute で "already exists" になる)
+if "prepared_statement_cache_size" not in url:
+    url += ("&" if "?" in url else "?") + "prepared_statement_cache_size=0"
+config.set_main_option("sqlalchemy.url", url)
 
 
 def include_name(name, type_, parent_names):
@@ -72,6 +78,10 @@ async def run_async_migrations() -> None:
     )
 
     async with connectable.connect() as connection:
+        # 空の検証DBでも再実行可能にするため、
+        # バージョンテーブル格納先スキーマ(auth)を事前作成する
+        await connection.execute(text("CREATE SCHEMA IF NOT EXISTS auth"))
+        await connection.commit()
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()

@@ -16,6 +16,18 @@
 
 建設・土木業における**全業務・全データ・全プロセスを統合**するデジタル基盤です。個別バラバラの業務アプリケーション群を **「OSレイヤ」** によって統合し、単一の真実 (Single Source of Truth) として機能させます。
 
+### 🚀 MVP 稼働状況(2026-08-18)
+
+| 環境 | URL | 内容 | 状態 |
+|---|---|---|---|
+| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | OpenDesign WebUI(単一HTML) | ✅ 稼働・E2E 18/18 PASS |
+| 本番 | https://construction-os.mirai-dx-platform.com | OpenDesign WebUI(単一HTML) | ✅ 稼働・E2E 18/18 PASS |
+| DB | Neon `construction-enterprise-os` | auth スキーマ(Migration+Seed 適用) | ✅ 空DB再実行可能 |
+
+- 設計正本: `webui/`(OpenDesign ハンドオフ)+ `docs/design/opendesign-spec.md`(画面構成 14 カテゴリ/約 90 ルート/6 ロール)
+- 検証: `e2e/mvp.spec.ts`(Playwright、Cloudflare Preview/本番 双方で 18/18 PASS)
+- 運用: `docs/operations/deployment.md`・`docs/operations/neon-database.md`・`docs/operations/production-deploy-record.md`
+
 ```mermaid
 graph TB
     subgraph "🏛️ Construction Enterprise OS"
