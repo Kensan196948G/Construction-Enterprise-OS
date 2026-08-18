@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド2完了(2026-08-18): PR#1/#2/#3 mainマージ済み。E2E 18/18 PASS(プレビューCI・本番とも)。HTTPS API プロキシ(Pages Function)を本番・プレビュー両環境にデプロイ。https://construction-os.mirai-dx-platform.com/api/v1/* 経由で ログイン→JWT→users/roles を Neon DB から実証。Cloudflare Tunnel construction-os-api(api.construction-os.mirai-dx-platform.com)を構築(HTTP 200)。トンネルHTTPS証明書は advanced 証明書パック追加が必要(ssl write権限のトークンが未設定)。次: PR#4マージ・トンネルのHTTPS化(権限トークン)・WebUIの実API接続・本番認証ゲート(Access)。",
+    "phase_detail": "ラウンド2完了(2026-08-18): PR#1〜#4 mainマージ済み、PR#5(Pages Functions修正)CI中。E2E 18/18 PASS(ローカル・main上のCI E2E workflow×2・本番)。本番/プレビュー両環境で HTTPS WebUI + HTTPS API(ログイン→JWT→users/roles、Neon DB)稼働。Pages Function プロキシ+Cloudflare Tunnel(construction-os-api)でAPI配信。wranglerのディレクトリ引数問題(functions未検出)を発見・PR#5で修正済み。残: トンネルHTTPS証明書(advanced pack、ssl write権限トークン要)、WebUI実データ接続、本番Access認証、README深掘り更新。",
     "stability": "stable"
   },
   "current_session": {
