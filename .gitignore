@@ -29,6 +29,9 @@ env/
 .env.*.local
 *.env
 
+# Claude / agent local config
+.claude/
+
 # IDE
 .vscode/
 .idea/

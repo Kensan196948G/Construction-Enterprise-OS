@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "PR#10 マージ完了 (2026-06-08)。CI 25/25 GREEN。OCR/BIM/Vision実装・認証バイパス統合・Dockerfile node:20-slim修正完了。次: Build フェーズ継続 — BIM/データレイク/自律制御/IoT拡充。",
+    "phase_detail": "PR#15 作成・CI 26/26 GREEN (2026-06-09)。main 上の fail-open 認証ガード(1425742)を fail-closed 設計(NEXT_PUBLIC_AUTH_BYPASS 完全一致のみ有効)で是正、ユニットテスト5件追加。移植性バグ(@next/swc-linux-x64-gnu 明示依存)を Issue#16 化。次: PR#15 人間レビュー/merge → Build 継続 (BIM/データレイク/自律制御/IoT拡充)。",
     "stability": "stable"
   },
   "current_session": {
@@ -89,10 +89,10 @@
     "last_pre_compact_at": "2026-06-08T04:45:02.743Z"
   },
   "execution": {
-    "current_session_start_at": "2026-06-08T04:46:28.087Z",
+    "current_session_start_at": "2026-06-12T08:29:55.982Z",
     "last_trigger": "cron",
-    "last_stop_at": "2026-06-08T04:02:11.963Z",
-    "last_cron_session_id": "20260608-132833-Construction-Enterprise-OS"
+    "last_stop_at": "2026-06-09T12:40:56.764Z",
+    "last_cron_session_id": "20260612-172518-Construction-Enterprise-OS"
   },
   "dreaming": {
     "patterns": [],
@@ -630,6 +630,316 @@
         "services/vision/src/services/vision_service.py"
       ],
       "truncated": false
+    },
+    {
+      "at": "2026-06-09T12:39:36.740Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 140 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/next.config.js",
+        "apps/web/src/app/(dashboard)/_components/UnderDevelopment.tsx",
+        "apps/web/src/app/(dashboard)/ai/construction/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/inspection/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/predictive/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vector/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vision/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/clients/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/webhooks/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/ad/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/entra/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/mfa/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/sso/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/materials/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/prices/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/work-types/page.tsx",
+        "apps/web/src/app/(dashboard)/common/org/page.tsx",
+        "apps/web/src/app/(dashboard)/common/page.tsx",
+        "apps/web/src/app/(dashboard)/common/roles/page.tsx",
+        "apps/web/src/app/(dashboard)/common/users/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/ai/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/exec/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/field/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/kpi/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/approval/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/bim/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/drawings/page.tsx"
+      ],
+      "truncated": true
+    },
+    {
+      "at": "2026-06-09T12:40:56.833Z",
+      "kind": "tdd_required",
+      "message": "テスト未整備の変更が 140 件あります。/tdd または tdd-guide agent で対応してください。",
+      "files": [
+        "apps/web/next.config.js",
+        "apps/web/src/app/(dashboard)/_components/UnderDevelopment.tsx",
+        "apps/web/src/app/(dashboard)/ai/construction/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/inspection/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/ocr/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/predictive/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vector/page.tsx",
+        "apps/web/src/app/(dashboard)/ai/vision/page.tsx",
+        "apps/web/src/app/(dashboard)/bim/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/clients/page.tsx",
+        "apps/web/src/app/(dashboard)/common/api/webhooks/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/ad/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/entra/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/mfa/page.tsx",
+        "apps/web/src/app/(dashboard)/common/auth/sso/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/materials/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/prices/page.tsx",
+        "apps/web/src/app/(dashboard)/common/master/work-types/page.tsx",
+        "apps/web/src/app/(dashboard)/common/org/page.tsx",
+        "apps/web/src/app/(dashboard)/common/page.tsx",
+        "apps/web/src/app/(dashboard)/common/roles/page.tsx",
+        "apps/web/src/app/(dashboard)/common/users/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/ai/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/exec/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/field/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/kpi/page.tsx",
+        "apps/web/src/app/(dashboard)/dashboard/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/approval/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/bim/page.tsx",
+        "apps/web/src/app/(dashboard)/documents/drawings/page.tsx"
+      ],
+      "truncated": true
+    },
+    {
+      "at": "2026-06-11T12:01:34.170Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T12:31:35.654Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T13:01:38.355Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T13:31:39.661Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-11T14:02:02.824Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T14:32:03.286Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T15:02:06.388Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T15:31:56.998Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-11T16:01:58.783Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T16:32:01.174Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T17:02:13.307Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T17:32:43.453Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-11T18:02:47.540Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T18:32:42.406Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T19:02:43.551Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T19:32:45.575Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-11T20:02:56.021Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T20:33:08.049Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T21:03:31.217Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T21:34:18.013Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-11T22:03:48.930Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-11T22:33:50.722Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-11T23:03:52.544Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-11T23:33:54.087Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-12T00:21:26.884Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-12T00:51:25.228Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-12T01:21:27.743Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-12T01:51:34.465Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-12T02:22:16.384Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-12T02:52:00.181Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-12T03:22:54.342Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-12T03:52:03.690Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-12T04:22:05.616Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-12T04:52:15.547Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-12T05:22:16.970Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
+    },
+    {
+      "at": "2026-06-12T05:52:58.175Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ improvement が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "improvement"
+    },
+    {
+      "at": "2026-06-12T06:30:06.365Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ monitor が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "monitor"
+    },
+    {
+      "at": "2026-06-12T07:56:41.377Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ development が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "development"
+    },
+    {
+      "at": "2026-06-12T08:34:22.007Z",
+      "kind": "goal_rotation_forced_advance",
+      "message": "フェーズ verify が Completion Criteria 未達のままリトライ上限 (2) を超過。次フェーズへ強制前進しました。未達項目は次周回で回収してください。",
+      "phase": "verify"
     }
   ],
   "learning": {
@@ -651,5 +961,167 @@
         }
       }
     }
+  },
+  "goal_rotation": {
+    "mode": "phase",
+    "current": "improvement",
+    "sequence": [
+      "monitor",
+      "development",
+      "verify",
+      "improvement"
+    ],
+    "phase_done": false,
+    "phase_done_at": null,
+    "retry_count": 0,
+    "max_retries": 2,
+    "on_retry_exhausted": "advance",
+    "blocked": false,
+    "cycle_count": 9,
+    "last_advanced_at": "2026-06-12T08:34:22.008Z",
+    "last_outcome": "forced-advance",
+    "last_finalized_session": "20260612-172518-Construction-Enterprise-OS",
+    "history": [
+      {
+        "at": "2026-06-12T08:34:22.008Z",
+        "from": "verify",
+        "to": "improvement",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T07:56:41.377Z",
+        "from": "development",
+        "to": "verify",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T06:30:06.366Z",
+        "from": "monitor",
+        "to": "development",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T05:52:58.176Z",
+        "from": "improvement",
+        "to": "monitor",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T05:22:16.971Z",
+        "from": "verify",
+        "to": "improvement",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T04:52:15.548Z",
+        "from": "development",
+        "to": "verify",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T04:22:05.617Z",
+        "from": "monitor",
+        "to": "development",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T03:52:03.691Z",
+        "from": "improvement",
+        "to": "monitor",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T03:22:54.343Z",
+        "from": "verify",
+        "to": "improvement",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T02:52:00.183Z",
+        "from": "development",
+        "to": "verify",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T02:22:16.385Z",
+        "from": "monitor",
+        "to": "development",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T01:51:34.466Z",
+        "from": "improvement",
+        "to": "monitor",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T01:21:27.744Z",
+        "from": "verify",
+        "to": "improvement",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T00:51:25.229Z",
+        "from": "development",
+        "to": "verify",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-12T00:21:26.885Z",
+        "from": "monitor",
+        "to": "development",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-11T23:33:54.088Z",
+        "from": "improvement",
+        "to": "monitor",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-11T23:03:52.545Z",
+        "from": "verify",
+        "to": "improvement",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-11T22:33:50.723Z",
+        "from": "development",
+        "to": "verify",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-11T22:03:48.931Z",
+        "from": "monitor",
+        "to": "development",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      },
+      {
+        "at": "2026-06-11T21:34:18.014Z",
+        "from": "improvement",
+        "to": "monitor",
+        "outcome": "forced-advance",
+        "via": "finalize"
+      }
+    ]
   }
 }
