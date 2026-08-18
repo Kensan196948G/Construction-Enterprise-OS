@@ -1,17 +1,18 @@
 # OpenDesign 設計仕様(画面構成・UI/UX 正本)
 
 > 本ドキュメントは OpenDesign が生成した画面設計プロトタイプ
-> (`docs/design/standalone/Construction Enterprise OS - Standalone (1).html`、
-> 単一ファイル React SPA)から抽出した、本プロジェクトの**画面構成・UI/UX・デザイン仕様の起点**です。
+> (`webui/Construction-Enterprise-OS---Standalone-_1_.html`、単一ファイル React SPA)から抽出した、本プロジェクトの**画面構成・UI/UX・デザイン仕様の起点**です。
 > 実装(MVP)は本仕様と整合することを完了条件とします。
 
 ## 1. 設計ソースの来歴
 
 | 項目 | 値 |
 |---|---|
-| 設計プロトタイプ | `Construction Enterprise OS - Standalone (1).html`(約 9MB 単一ファイル、React 18 + Babel + Leaflet 1.9 同梱) |
-| OpenDesign プロジェクト | `.od/projects/700407d7-5e4d-4746-a848-80404abfafa9`(brand-spec.md・経営向け戦略レビューデッキ含む) |
+| 設計プロトタイプ | `webui/Construction-Enterprise-OS---Standalone-_1_.html`(約 9MB 単一ファイル、React 18 + Babel + Leaflet 1.9 同梱) |
+| OpenDesign ハンドオフ | `webui/DESIGN-HANDOFF.md`・`webui/DESIGN-MANIFEST.json`・`webui/brand-spec.md`・`webui/index.html`(経営向け戦略レビューデッキ) |
+| OpenDesign プロジェクト | `.od/projects/700407d7-5e4d-4746-a848-80404abfafa9` |
 | 生成日 | 2026-08-18 |
+| MVP 公開先 | `https://construction-os-mvp.mirai-dx-platform.com`(Pages プロジェクト `construction-os-mvp`、CI 自動デプロイ) |
 | ブランド仕様 | OpenDesign がプロトタイプ CSS 変数から抽出(brand-spec.md) |
 
 ## 2. ブランドトークン

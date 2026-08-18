@@ -1,0 +1,817 @@
+<!doctype html>
+<!--
+  Construction Enterprise OS — 経営向け戦略レビュー
+  simple-deck seed + brand tokens from the product's own dashboard system.
+  Horizontal-swipe deck; ←/→ · Space · Home/End · N (speaker notes).
+-->
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Construction Enterprise OS · 経営向け戦略レビュー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        oklch(0.984 0.003 247.9);
+      --surface:   oklch(1.000 0.000 89.9);
+      --fg:        oklch(0.208 0.040 265.8);
+      --muted:     oklch(0.554 0.041 257.4);
+      --border:    oklch(0.929 0.013 255.5);
+      --accent:    oklch(0.505 0.212 262.9);
+
+      --ok:        oklch(0.627 0.170 149.2);
+      --warn:      oklch(0.646 0.194 41.1);
+      --danger:    oklch(0.577 0.215 27.3);
+
+      --ok-text:     oklch(0.448 0.108 151.3);
+      --warn-text:   oklch(0.473 0.125 46.2);
+      --danger-text: oklch(0.444 0.161 26.9);
+
+      --surface-dark: oklch(0.279 0.037 260.0);
+      --border-dark:  oklch(0.372 0.039 257.3);
+      --muted-dark:   oklch(0.711 0.035 256.8);
+      --accent-dark:  oklch(0.623 0.188 259.8);
+
+      --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+
+      --font-display: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+      --font-body:    'Noto Sans JP', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 18px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+    }
+    body::-webkit-scrollbar { display: none; }
+    p { text-wrap: pretty; }
+    h1, h2, h3 { text-wrap: balance; }
+
+    /* ─── slide surface ─────────────────────────────────────────────── */
+    .slide {
+      flex: 0 0 100vw;
+      width: 100vw;
+      height: 100vh;
+      scroll-snap-align: start;
+      padding: clamp(48px, 7vw, 96px) clamp(48px, 8vw, 112px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      justify-content: safe center;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide.light { background: var(--bg); color: var(--fg); }
+    .slide.dark  { background: var(--fg); color: var(--bg); }
+    .slide.dark .muted    { color: var(--muted-dark); }
+    .slide.dark .border   { border-color: var(--border-dark); }
+    .slide.hero { padding-block: clamp(64px, 9vw, 128px); }
+
+    .slide.center { align-items: center; text-align: center; justify-content: center; justify-content: safe center; }
+    .slide.center .body { margin-inline: auto; }
+
+    /* ─── eyebrow / kicker ──────────────────────────────────────────── */
+    .eyebrow {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+      margin: 0 0 28px;
+    }
+    .slide.dark .eyebrow { color: var(--accent-dark); }
+    .eyebrow .caps {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ─── type ──────────────────────────────────────────────────────── */
+    .h-hero {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(40px, 5.2vw, 76px);
+      line-height: 1.32;
+      letter-spacing: 0;
+      margin: 0 0 24px;
+      max-width: 22ch;
+    }
+    .h-xl {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(30px, 3.4vw, 48px);
+      line-height: 1.34;
+      letter-spacing: 0;
+      margin: 0 0 22px;
+      max-width: 26ch;
+    }
+    .h-md {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(22px, 2.4vw, 32px);
+      line-height: 1.38;
+      letter-spacing: 0;
+      margin: 0 0 16px;
+    }
+    .lead {
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.75;
+      color: var(--muted);
+      max-width: 56ch;
+      margin: 0;
+    }
+    .slide.dark .lead { color: var(--muted-dark); }
+    .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+    .slide.dark .meta { color: var(--muted-dark); }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    /* ─── big-stat layout ───────────────────────────────────────────── */
+    .stat-num {
+      font-family: var(--font-mono);
+      font-size: clamp(110px, 18vw, 240px);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+      font-weight: 700;
+      margin: 0 0 20px;
+      font-variant-numeric: tabular-nums;
+    }
+    .slide.dark .stat-num { color: var(--accent-dark); }
+    .stat-num .unit { font-size: 0.34em; opacity: 0.85; margin-left: 10px; letter-spacing: 0; font-family: var(--font-display); font-weight: 800; }
+    .stat-caption {
+      font-size: clamp(17px, 1.6vw, 22px);
+      color: var(--muted);
+      max-width: 30ch;
+      margin: 0;
+      line-height: 1.7;
+    }
+    .slide.dark .stat-caption { color: var(--muted-dark); }
+
+    /* ─── 3-column point layout ─────────────────────────────────────── */
+    .pt-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 40px;
+    }
+    .pt {
+      border-top: 2px solid var(--accent);
+      padding-top: 16px;
+    }
+    .slide.dark .pt { border-top-color: var(--accent-dark); }
+    .pt h3 { font-size: 19px; font-weight: 700; margin: 0 0 8px; letter-spacing: 0; }
+    .pt p  { color: var(--muted); margin: 0; font-size: 15px; line-height: 1.7; }
+    .slide.dark .pt p { color: var(--muted-dark); }
+
+    /* ─── pipeline (numbered steps) ─────────────────────────────────── */
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+    .step .nb { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: 0.06em; }
+    .slide.dark .step .nb { color: var(--accent-dark); }
+    .step h3 { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 8px 0 8px; line-height: 1.3; }
+    .step p  { color: var(--muted); margin: 0; font-size: 14px; line-height: 1.6; }
+    .slide.dark .step p { color: var(--muted-dark); }
+
+    /* ─── module map (13 modules) ───────────────────────────────────── */
+    .mod-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .mod {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      min-height: 74px;
+    }
+    .slide.dark .mod { background: var(--surface-dark); border-color: var(--border-dark); }
+    .mod .idx {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .slide.dark .mod .idx { color: var(--muted-dark); }
+    .mod .name { font-size: 14px; font-weight: 700; line-height: 1.35; }
+    .mod .sub  { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 3px; }
+    .slide.dark .mod .sub { color: var(--muted-dark); }
+
+    /* ─── KPI board ─────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 32px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .slide.dark .kpi-card { background: var(--surface-dark); border-color: var(--border-dark); }
+    .kpi-card .cat {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .slide.dark .kpi-card .cat { color: var(--muted-dark); }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: 10px 1fr auto auto;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .slide.dark .kpi-row { border-top-color: var(--border-dark); }
+    .kpi-row:first-of-type { border-top: none; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.ok { background: var(--ok); }
+    .dot.warn { background: var(--warn); }
+    .dot.danger { background: var(--danger); }
+    .kpi-row .n { font-weight: 500; }
+    .kpi-row .v { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .kpi-row .v.ok { color: var(--ok-text); }
+    .kpi-row .v.warn { color: var(--warn-text); }
+    .kpi-row .v.danger { color: var(--danger-text); }
+    .kpi-row .t { font-size: 11px; color: var(--muted); }
+    .slide.dark .kpi-row .t { color: var(--muted-dark); }
+
+    /* ─── roles strip ───────────────────────────────────────────────── */
+    .roles {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .slide.dark .roles { color: var(--muted-dark); }
+    .roles .r { font-weight: 500; color: var(--fg); }
+    .slide.dark .roles .r { color: var(--bg); }
+    .roles .sep { opacity: 0.4; }
+
+    /* ─── chrome (counter, hint, progress) — fixed, never scrolls ──── */
+    .deck-counter {
+      position: fixed;
+      bottom: 24px; right: 32px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--fg);
+      background: var(--surface);
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      letter-spacing: 0.04em;
+      z-index: 10;
+    }
+    .deck-hint {
+      position: fixed;
+      bottom: 24px; left: 32px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .deck-hint button {
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--fg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 44px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .deck-hint button:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .deck-hint button:active { background: color-mix(in oklch, var(--accent) 22%, var(--surface)); }
+    .deck-hint button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .deck-progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: var(--accent);
+      width: 0;
+      z-index: 10;
+      transition: width 0.18s ease;
+    }
+
+    /* ─── speaker notes panel ───────────────────────────────────────── */
+    .deck-notes {
+      position: fixed;
+      left: 50%;
+      bottom: 60px;
+      transform: translateX(-50%);
+      width: min(88vw, 820px);
+      background: var(--surface);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 13px;
+      line-height: 1.7;
+      z-index: 9;
+      display: none;
+      box-shadow: 0 12px 40px color-mix(in oklch, var(--fg) 18%, transparent);
+    }
+    .deck-notes .nt {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ─── responsive ─────────────────────────────────────────────────── */
+    @media (max-width: 1080px) {
+      .mod-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .slide { overflow-y: auto; padding: 44px 28px; }
+      .pt-grid { grid-template-columns: 1fr; gap: 22px; margin-top: 28px; }
+      .pipeline { grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px; }
+      .mod-grid { grid-template-columns: repeat(3, 1fr); }
+      .kpi-grid { grid-template-columns: 1fr; gap: 14px; }
+      .h-hero { font-size: 34px; }
+      .h-xl { font-size: 28px; }
+      .h-md { font-size: 24px; }
+      .stat-num { font-size: 96px; }
+    }
+    @media (max-width: 560px) {
+      .slide { padding: 32px 20px; }
+      .mod-grid { grid-template-columns: repeat(2, 1fr); }
+      .pipeline { grid-template-columns: 1fr; }
+      .deck-hint span { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      body { scroll-behavior: auto; }
+      .deck-progress { transition: none; }
+      .deck-hint button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="slide hero light center" data-screen-label="01 Cover" data-od-id="slide-cover">
+    <div class="eyebrow"><span class="caps">Construction Enterprise OS</span> · 経営向け戦略レビュー</div>
+    <h1 class="h-hero" data-od-id="cover-headline">建設の現場と経営を、<br>ひとつのOSへ。</h1>
+    <p class="lead">13モジュール・6つの役割ビューで、工事の「見える化」から経営判断までを統合する、建設業向けエンタープライズ基盤。</p>
+  </section>
+
+  <section class="slide light" data-screen-label="02 背景" data-od-id="slide-problem">
+    <p class="eyebrow">背景</p>
+    <h2 class="h-xl">現場と経営の「分断」が、原価と安全を蝕む。</h2>
+    <p class="lead">工事の進捗・安全・原価は現場ごとに散在し、経営は月末の紙ベース集計でしか全体像をつかめない。人手不足と資材高騰が、この分断のコストを年々押し上げている。</p>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>工程が目標に届かない</h3>
+        <p>全工事の工程遵守率は <span class="mono">84.2%</span>（目標 <span class="mono">90%</span>）。遅れは後続工程へ連鎖する。</p>
+      </div>
+      <div class="pt">
+        <h3>原価が静かに超過する</h3>
+        <p>原価差異率 <span class="mono">+2.1%</span>（許容 <span class="mono">±1%</span>）。超過は発覚時には戻せない。</p>
+      </div>
+      <div class="pt">
+        <h3>安全活動のムラ</h3>
+        <p>KY活動実施率は <span class="mono">92%</span>（目標 <span class="mono">100%</span>）。残り8%に事故の芽がある。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide hero dark center" data-screen-label="03 スケール" data-od-id="slide-scale">
+    <div class="stat-num">13<span class="unit">モジュール</span></div>
+    <p class="stat-caption">現場DXからERP・セキュリティまで、建設業の全業務を単一基盤に統合。<span class="mono">12</span>工事・<span class="mono">186</span>名の作業員・<span class="mono">42</span>台の重機が、いまこのOSの上で稼働している。</p>
+  </section>
+
+  <section class="slide light" data-screen-label="04 提供価値" data-od-id="slide-value">
+    <p class="eyebrow">提供価値</p>
+    <h2 class="h-xl">分断を終わらせる、3つの統合。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>現場の見える化</h3>
+        <p>写真・出来形・安全・KY・重機をリアルタイムに記録。現場監督と経営層が同じデータを共有する。</p>
+      </div>
+      <div class="pt">
+        <h3>経営の見える化</h3>
+        <p>年度売上 <span class="mono">¥18.2B</span>・粗利率 <span class="mono">14.8%</span>・受注残 <span class="mono">¥42.5B</span> を、工事別の原価・進捗と突き合わせて把握する。</p>
+      </div>
+      <div class="pt">
+        <h3>AI・データ基盤</h3>
+        <p><span class="mono">5</span>つの予測モデルが、工程遅延・原価超過・安全リスクを先回りで検知する。平均精度 <span class="mono">86.9%</span>。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide dark" data-screen-label="05 データの流れ" data-od-id="slide-pipeline">
+    <p class="eyebrow">データの流れ</p>
+    <h2 class="h-md">現場の事実が、経営判断になるまで。</h2>
+    <div class="pipeline">
+      <div class="step">
+        <span class="nb">01</span>
+        <h3>計測</h3>
+        <p>センサ・写真・作業員の入退場を、現場でそのまま記録する。</p>
+      </div>
+      <div class="step">
+        <span class="nb">02</span>
+        <h3>集約</h3>
+        <p>13モジュールが同じデータを共有。Edge からクラウドへ統合する。</p>
+      </div>
+      <div class="step">
+        <span class="nb">03</span>
+        <h3>分析</h3>
+        <p>5つのAIモデルが、遅延・原価・安全リスクを予測する。</p>
+      </div>
+      <div class="step">
+        <span class="nb">04</span>
+        <h3>判断</h3>
+        <p>KPIとアラートで、経営層が即時に意思決定する。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide light" data-screen-label="06 モジュール全体像" data-od-id="slide-modules">
+    <p class="eyebrow">プラットフォーム</p>
+    <h2 class="h-md">建設業の全業務を、13モジュールでカバー。</h2>
+    <div class="mod-grid">
+      <div class="mod" data-od-id="module-dashboard"><span class="idx">01</span><div class="name">ダッシュボード</div><div class="sub">全社・現場・経営・AI・KPI</div></div>
+      <div class="mod" data-od-id="module-field"><span class="idx">02</span><div class="name">現場DX</div><div class="sub">工事・写真・出来形・安全・重機</div></div>
+      <div class="mod" data-od-id="module-documents"><span class="idx">03</span><div class="name">文書・図面管理</div><div class="sub">PDF/CAD/BIM・OCR・電子納品</div></div>
+      <div class="mod" data-od-id="module-common"><span class="idx">04</span><div class="name">共通基盤</div><div class="sub">認証・ユーザー・API・マスタ</div></div>
+      <div class="mod" data-od-id="module-partner"><span class="idx">05</span><div class="name">協力会社連携</div><div class="sub">入退場・教育・契約・請求</div></div>
+      <div class="mod" data-od-id="module-gis"><span class="idx">06</span><div class="name">GIS / 地図</div><div class="sub">工事位置・海域・点群・ハザード</div></div>
+      <div class="mod" data-od-id="module-ai"><span class="idx">07</span><div class="name">AI・分析基盤</div><div class="sub">チャット・予測・異常検知・Agent</div></div>
+      <div class="mod" data-od-id="module-iot"><span class="idx">08</span><div class="name">IoT・リアルタイム監視</div><div class="sub">センサ・気象・波浪・水位</div></div>
+      <div class="mod" data-od-id="module-erp"><span class="idx">09</span><div class="name">ERP・経営管理</div><div class="sub">原価・予算・売上・BI</div></div>
+      <div class="mod" data-od-id="module-security"><span class="idx">10</span><div class="name">セキュリティ・監査</div><div class="sub">SIEM・SOC・EDR・OT</div></div>
+      <div class="mod" data-od-id="module-workflow"><span class="idx">11</span><div class="name">ワークフロー</div><div class="sub">承認・稟議・電子決裁</div></div>
+      <div class="mod" data-od-id="module-robotics"><span class="idx">12</span><div class="name">自動化・ロボティクス</div><div class="sub">自動施工・ドローン・ROV・ツイン</div></div>
+      <div class="mod" data-od-id="module-system"><span class="idx">13</span><div class="name">システム管理</div><div class="sub">サーバ・DB・バックアップ・CI/CD</div></div>
+    </div>
+    <div class="roles" data-od-id="role-strip">
+      <span class="r">6つの役割ビュー</span>
+      <span class="sep">/</span><span class="r">現場監督</span>
+      <span class="sep">/</span><span class="r">経営層</span>
+      <span class="sep">/</span><span class="r">IT管理者</span>
+      <span class="sep">/</span><span class="r">協力会社</span>
+      <span class="sep">/</span><span class="r">安全管理者</span>
+      <span class="sep">/</span><span class="r">維持管理</span>
+    </div>
+  </section>
+
+  <section class="slide dark" data-screen-label="07 現場DX" data-od-id="slide-field">
+    <p class="eyebrow">現場DX</p>
+    <h2 class="h-md">現場の「事実」を、その場で記録する。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>工程・出来形</h3>
+        <p>ガントチャートと出来形管理で、設計値と実測値を照合。検査合格率 <span class="mono">98.2%</span>。</p>
+      </div>
+      <div class="pt">
+        <h3>安全・KY</h3>
+        <p>パトロール・ヒヤリハット・是正を一元管理。KY活動完了率 <span class="mono">92%</span>、重大指摘を追跡。</p>
+      </div>
+      <div class="pt">
+        <h3>写真・重機・作業員</h3>
+        <p>工事写真のAI分類、重機<span class="mono">42</span>台の稼働・点検、作業員<span class="mono">186</span>名の入退場と資格を統合。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide light" data-screen-label="08 文書・図面" data-od-id="slide-documents">
+    <p class="eyebrow">文書・図面管理</p>
+    <h2 class="h-md">紙からデータへ。図面と書類のライフサイクルを一元化。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>ファイル管理</h3>
+        <p>PDF・CAD図面・BIM/CIM・写真・動画を、バージョン管理と差分比較つきで一元管理する。</p>
+      </div>
+      <div class="pt">
+        <h3>OCR・電子黒板</h3>
+        <p>紙文書をAIでデジタル化（認識精度 <span class="mono">97.8%</span>、処理済み <span class="mono">2,481</span> 件）。電子黒板で写真と合成。</p>
+      </div>
+      <div class="pt">
+        <h3>電子納品・AI検索</h3>
+        <p>CALS/EC準拠の電子納品データを作成。AI搭載の全文書横断・セマンティック検索で探す手間をなくす。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide dark" data-screen-label="09 GIS・AI・IoT" data-od-id="slide-gis-ai-iot">
+    <p class="eyebrow">空間・データ・リアルタイム</p>
+    <h2 class="h-md">地図とセンサとAIで、現場の外側まで捉える。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>GIS / 地図</h3>
+        <p>工事位置・海域・点群・ハザードマップを地図上に統合。重機と作業車の位置もリアルタイムに。</p>
+      </div>
+      <div class="pt">
+        <h3>IoT監視</h3>
+        <p>気象・波浪・水位・WBGTを常時監視。風速 <span class="mono">8.5m/s</span> で警報し、作業可否を判定。</p>
+      </div>
+      <div class="pt">
+        <h3>AI・分析基盤</h3>
+        <p>AIチャット・ナレッジAI・画像解析・異常検知・AI Agent。日報自動作成から原価着地予測まで。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide hero light center" data-screen-label="10 AI" data-od-id="slide-ai">
+    <div class="stat-num">5<span class="unit">モデル</span></div>
+    <p class="stat-caption">稼働中のAIモデル。工程遅延 <span class="mono">87.2%</span>・原価超過 <span class="mono">82.5%</span>・安全リスク <span class="mono">91.3%</span>・画像異常検知 <span class="mono">94.1%</span> の精度で、本日 <span class="mono">3,818</span> 件を予測した。</p>
+  </section>
+
+  <section class="slide light" data-screen-label="11 経営・承認・防御" data-od-id="slide-erp-sec">
+    <p class="eyebrow">経営・承認・防御</p>
+    <h2 class="h-md">経営数値から承認まで、統制を失わない。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>ERP・経営管理</h3>
+        <p>原価・予算・購買・売上・工事台帳・BI。原価差異 <span class="mono">-¥180M</span> を即座に可視化する。</p>
+      </div>
+      <div class="pt">
+        <h3>ワークフロー</h3>
+        <p>承認・稟議・作業許可・電子決裁・変更管理。SLA達成率 <span class="mono">94%</span>、承認を滞留させない。</p>
+      </div>
+      <div class="pt">
+        <h3>セキュリティ・監査</h3>
+        <p>SIEM・SOC・VPN・EDR・OT監視・監査レポート。EDRカバー <span class="mono">98.5%</span>、脅威 <span class="mono">2,481</span> 件をブロック。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide dark" data-screen-label="12 エコシステム・自動化" data-od-id="slide-partner-robotics">
+    <p class="eyebrow">エコシステム・自動化・運用</p>
+    <h2 class="h-md">外のパートナーも、先端技術も、同じ基盤へ。</h2>
+    <div class="pt-grid">
+      <div class="pt">
+        <h3>協力会社連携</h3>
+        <p>登録 <span class="mono">186</span> 社。入退場・安全教育・契約・請求を一元管理し、未払請求 <span class="mono">¥15.1M</span> を可視化。</p>
+      </div>
+      <div class="pt">
+        <h3>自動化・ロボティクス</h3>
+        <p>自動施工・ドローン・ROV・デジタルツイン。処理データ <span class="mono">12.4TB</span>、ドローン <span class="mono">2/4</span> 稼働。</p>
+      </div>
+      <div class="pt">
+        <h3>システム管理</h3>
+        <p>サーバ監視 <span class="mono">10/10</span>・DB接続 <span class="mono">210</span>・バックアップ正常・CI/CDテスト <span class="mono">451</span> 件 PASS。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide light" data-screen-label="13 KPI" data-od-id="slide-kpi">
+    <p class="eyebrow">オペレーティングレビュー</p>
+    <h2 class="h-md">数字で見る、いまの運営状態。</h2>
+    <div class="kpi-grid">
+      <div class="kpi-card" data-od-id="kpi-schedule">
+        <div class="cat">工程 KPI</div>
+        <div class="kpi-row"><span class="dot warn"></span><span class="n">全工事平均進捗率</span><span class="v warn">54.6%</span><span class="t">目標 58%</span></div>
+        <div class="kpi-row"><span class="dot danger"></span><span class="n">工程遵守率</span><span class="v danger">84.2%</span><span class="t">目標 90%</span></div>
+        <div class="kpi-row"><span class="dot warn"></span><span class="n">工期内完了率</span><span class="v warn">92.0%</span><span class="t">目標 95%</span></div>
+      </div>
+      <div class="kpi-card" data-od-id="kpi-safety">
+        <div class="cat">安全 KPI</div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">度数率</span><span class="v ok">0.42</span><span class="t">目標 &lt;1.0</span></div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">強度率</span><span class="v ok">0.08</span><span class="t">目標 &lt;0.1</span></div>
+        <div class="kpi-row"><span class="dot warn"></span><span class="n">KY実施率</span><span class="v warn">92%</span><span class="t">目標 100%</span></div>
+      </div>
+      <div class="kpi-card" data-od-id="kpi-cost">
+        <div class="cat">原価 KPI</div>
+        <div class="kpi-row"><span class="dot danger"></span><span class="n">原価差異率</span><span class="v danger">+2.1%</span><span class="t">許容 ±1%</span></div>
+        <div class="kpi-row"><span class="dot warn"></span><span class="n">購買効率</span><span class="v warn">88.5%</span><span class="t">目標 90%</span></div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">外注費比率</span><span class="v ok">62.3%</span><span class="t">目標 &lt;65%</span></div>
+      </div>
+      <div class="kpi-card" data-od-id="kpi-quality">
+        <div class="cat">品質 KPI</div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">手戻り率</span><span class="v ok">1.8%</span><span class="t">目標 &lt;2%</span></div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">検査合格率</span><span class="v ok">98.2%</span><span class="t">目標 &gt;97%</span></div>
+        <div class="kpi-row"><span class="dot ok"></span><span class="n">顧客満足度</span><span class="v ok">4.2/5.0</span><span class="t">目標 &gt;4.0</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide hero dark center" data-screen-label="14 次の一手" data-od-id="slide-ask">
+    <div class="eyebrow">次の一手</div>
+    <h2 class="h-hero">分断を終わらせ、<br>全員が同じOSの上へ。</h2>
+    <p class="lead">13モジュールを6つの役割で使い分け、同じデータで判断する。次に決めるのは、全社展開のスピードだけ。</p>
+  </section>
+
+  <!-- chrome -->
+  <div class="deck-progress" id="deck-progress" aria-hidden></div>
+  <div class="deck-counter"  id="deck-counter">1 / 14</div>
+  <div class="deck-hint"><span>← / → · スクロール</span><button id="notes-toggle" type="button" aria-expanded="false" aria-controls="deck-notes">N ノート</button></div>
+  <div class="deck-notes" id="deck-notes" role="status"><span class="nt">スピーカーノート</span><span id="deck-notes-text"></span></div>
+
+  <script>
+    /*
+      Five hard rules for deck nav inside an iframe (the OD preview is one).
+      The naive `document.body.scrollLeft` pattern silently fails: clicks
+      register, but keyboard does nothing, and the counter freezes at "1 / N"
+      while the user is on slide 6.
+
+      1. Detect the real scroller — body OR documentElement, depending.
+      2. Listen for scroll on BOTH window and document, capture phase.
+      3. Listen for keydown on BOTH window and document, capture phase.
+      4. Auto-focus body so arrow keys work without an upfront click.
+      5. Never use Element.scrollIntoView — it can yank the host page.
+    */
+    (function () {
+      var slides   = document.querySelectorAll('.slide');
+      var counter  = document.getElementById('deck-counter');
+      var progress = document.getElementById('deck-progress');
+      var KEY      = 'od-deck-pos';
+      var active   = 0;
+
+      function scrollContainers() {
+        return [document.scrollingElement, document.documentElement, document.body]
+          .filter(Boolean)
+          .filter(function (el, idx, arr) { return arr.indexOf(el) === idx; });
+      }
+      function overflowX(el) {
+        if (!el) return 0;
+        return Math.max(0, (el.scrollWidth || 0) - (el.clientWidth || 0));
+      }
+      function scrollLeftOf(el) {
+        if (!el) return 0;
+        try { return Number(el.scrollLeft) || 0; } catch (_) { return 0; }
+      }
+      function activeScrollLeft() {
+        var candidates = scrollContainers();
+        var best = 0;
+        for (var i = 0; i < candidates.length; i++) {
+          var left = scrollLeftOf(candidates[i]);
+          if (Math.abs(left) > Math.abs(best)) best = left;
+        }
+        return best;
+      }
+      function scroller() {
+        var candidates = scrollContainers();
+        var best = candidates[0] || document.documentElement;
+        var bestScore = -1;
+        for (var i = 0; i < candidates.length; i++) {
+          var el = candidates[i];
+          var score = overflowX(el) + Math.abs(scrollLeftOf(el)) * 2;
+          if (score > bestScore) {
+            best = el;
+            bestScore = score;
+          }
+        }
+        return best;
+      }
+      function scrollToLeft(left, behavior) {
+        var candidates = scrollContainers();
+        for (var i = 0; i < candidates.length; i++) {
+          try { candidates[i].scrollLeft = left; } catch (_) {}
+          try { candidates[i].scrollTo({ left: left, behavior: behavior || 'smooth' }); } catch (_) {}
+        }
+      }
+      function setActive(i) {
+        active = i;
+        if (counter)  counter.textContent  = (i + 1) + ' / ' + slides.length;
+        if (progress) progress.style.width = (((i + 1) / slides.length) * 100) + '%';
+        try { localStorage.setItem(KEY, String(i)); } catch (_) {}
+        if (window.__showNotesFor) window.__showNotesFor(i);
+      }
+      function go(i) {
+        var next = Math.max(0, Math.min(slides.length - 1, i));
+        setActive(next);
+        scrollToLeft(next * window.innerWidth, 'smooth');
+      }
+      function syncFromScroll() {
+        var i = Math.round(activeScrollLeft() / window.innerWidth);
+        if (i !== active && i >= 0 && i < slides.length) setActive(i);
+      }
+      function onKey(e) {
+        if (e.defaultPrevented) return;
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+        if      (e.key === 'ArrowRight' || e.key === ' '       || e.key === 'PageDown') { e.preventDefault(); go(active + 1); }
+        else if (e.key === 'ArrowLeft'  || e.key === 'PageUp')                            { e.preventDefault(); go(active - 1); }
+        else if (e.key === 'Home')                                                        { e.preventDefault(); go(0); }
+        else if (e.key === 'End')                                                         { e.preventDefault(); go(slides.length - 1); }
+      }
+
+      // listen on both surfaces, capture phase
+      window.addEventListener('keydown', onKey, true);
+      document.addEventListener('keydown', onKey, true);
+      document.addEventListener('scroll', syncFromScroll, { passive: true, capture: true });
+      window.addEventListener('scroll', syncFromScroll,   { passive: true });
+
+      // auto-focus
+      document.body.setAttribute('tabindex', '-1');
+      document.body.style.outline = 'none';
+      function focusDeck() { try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) {} }
+      document.addEventListener('mousedown', focusDeck);
+      window.addEventListener('load', focusDeck);
+      focusDeck();
+
+      // restore last-seen position
+      try {
+        var saved = parseInt(localStorage.getItem(KEY) || '0', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) {
+          setActive(saved);
+          scrollToLeft(saved * window.innerWidth, 'instant');
+        } else {
+          setActive(0);
+        }
+      } catch (_) { setActive(0); }
+    })();
+  </script>
+
+  <script>
+    /* Speaker notes — read-only overlay. Does not touch the nav script. */
+    (function () {
+      var NOTES = [
+        "このOSが解決するのは「現場と経営の分断」。13モジュール・6役割という全体像を最初に示し、以後はレイヤーごとに深掘りします。",
+        "経営層が最も痛がる数字を先に出す。工程遵守率84.2%・原価差異+2.1%・KY92%はすべて目標未達。その根本原因が「分断」だと結論づけます。",
+        "スケールを1つの数字で印象づける。13モジュール＝業務の広さ、12工事・186名・42台＝現場の規模です。",
+        "3つの価値は「現場の見える化→経営の見える化→AI」の順。データが現場から経営へ上がっていく構造を説明します。",
+        "データの流れを4段階で。計測→集約→分析→判断は、このOSのアーキテクチャそのものです。",
+        "13モジュールを俯瞰。建設業の全業務を漏れなくカバーしていることを、モジュール名で証明します。下部に6つの役割ビューを添え、権限分離も示します。",
+        "現場DXの実装例。検査合格率98.2%・KY92%など、実際の運用数字を添えて具体性を持たせます。",
+        "文書・図面は「紙→データ」の置き換え。OCR 97.8%と電子納品（CALS/EC準拠）が省力化の要です。",
+        "空間（GIS）・環境（IoT）・知能（AI）の3層。現場の外側のリスクまで監視対象であることを示します。",
+        "AIの精度を提示。単なる機能でなく、日次3,818件を実際に予測している点が説得力の源泉です。",
+        "経営数値（ERP）と統制（ワークフロー・セキュリティ）を並べ、ガバナンスが崩れない設計を強調します。",
+        "外のパートナー（186社）と先端技術（ロボティクス）を同じ基盤に乗せている点が差別化です。",
+        "オペレーティングレビュー。4領域12指標で、達成（緑）と未達（赤・黄）を正直に提示します。",
+        "結論＝全社展開の加速。意思決定は「どのモジュールを先に全社化するか」に絞る、と締めます。"
+      ];
+
+      var panel = document.getElementById('deck-notes');
+      var text  = document.getElementById('deck-notes-text');
+      var btn   = document.getElementById('notes-toggle');
+      var on    = false;
+
+      window.__showNotesFor = function (i) {
+        text.textContent = NOTES[i] || '';
+      };
+
+      // prime the current slide's note on load (nav may restore a saved position)
+      var counter = document.getElementById('deck-counter');
+      if (counter) {
+        var m = /^(\d+)\s*\/\s*\d+$/.exec(counter.textContent.trim());
+        if (m) window.__showNotesFor(parseInt(m[1], 10) - 1);
+      }
+
+      // expose each slide as a named landmark for screen readers
+      Array.prototype.forEach.call(document.querySelectorAll('.slide'), function (s) {
+        var lbl = s.getAttribute('data-screen-label');
+        if (lbl) s.setAttribute('aria-label', lbl);
+      });
+
+      function toggle() {
+        on = !on;
+        panel.style.display = on ? 'block' : 'none';
+        if (btn) {
+          btn.textContent = on ? 'N ノートを隠す' : 'N ノート';
+          btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+        }
+      }
+      if (btn) btn.addEventListener('click', toggle);
+      document.addEventListener('keydown', function (e) {
+        if (e.defaultPrevented) return;
+        if (e.key === 'n' || e.key === 'N') { e.preventDefault(); toggle(); }
+      }, true);
+    })();
+  </script>
+</body>
+</html>
