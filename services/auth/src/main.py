@@ -108,7 +108,15 @@ def create_app() -> FastAPI:
     # グローバルエラーハンドラ
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        logger.exception(f"Unhandled exception: {exc}")
+        # R6対策: どのエンドポイントで発生したかを特定できるよう
+        # リクエストのメソッド・パス・クライアントをログに含める
+        logger.exception(
+            "Unhandled exception: %s %s (client=%s): %s",
+            request.method,
+            request.url.path,
+            request.client.host if request.client else None,
+            exc,
+        )
         return JSONResponse(
             status_code=500,
             content={

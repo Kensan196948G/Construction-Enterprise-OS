@@ -7,7 +7,7 @@
     "note": "長期プロジェクト（1年以上）。AGENTS.md の6ヶ月制約からは除外。",
     "status": "active",
     "phase": "build",
-    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#7 全て main へ Squash Merge。完了条件11項目を全て達成(チェックリスト: docs/operations/completion-checklist.md)。本番(construction-os)・MVP(construction-os-mvp)両ドメインで OpenDesign WebUI + HTTPS API(Pages Function プロキシ→Cloudflare Tunnel→auth→Neon)稼働。E2E: mvp 18/18 + API 16/16(CI 34テスト中33 passed/1 flaky-リトライ成功)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性を実証。CI 全ジョブ GREEN(型検査/Lint/テスト/security-scan/docker-build)。残存リスク R1〜R5 記録済み(トンネル直接HTTPS証明書・WebUI実データ接続・Access適用・Next.js化等)。",
+    "phase_detail": "ラウンド3完了(2026-08-18): PR#1〜#7 全て main へ Squash Merge。完了条件11項目を全て達成(チェックリスト: docs/operations/completion-checklist.md)。本番(construction-os)・MVP(construction-os-mvp)両ドメインで OpenDesign WebUI + HTTPS API(Pages Function プロキシ→Cloudflare Tunnel→auth→Neon)稼働。E2E: mvp 18/18 + API 16/16(CI 34テスト中33 passed/1 flaky-リトライ成功)。Neon: 空検証ブランチ verify-rerun-20260818 で Migration+Seed 再実行・冪等性を実証。CI 全ジョブ GREEN(型検査/Lint/テスト/security-scan/docker-build)。残存リスク R1〜R5 記録済み(トンネル直接HTTPS証明書・WebUI実データ接続・Access適用・Next.js化等)。 ラウンド4(2026-08-19): R6(ログイン稀なINTERNAL_ERROR)を解消 — pool_pre_ping/リトライ/ログ強化 + テスト10件。",
     "stability": "stable"
   },
   "current_session": {
@@ -58,7 +58,8 @@
       "ワークフロー: 承認・差戻しボタン実装（actionLoading で二重押し防止）",
       "安全管理ページ実装（ヒヤリハット・インシデント・点検記録 + API統合 + ナビ追加）",
       "gateway safety ルーティング追加 (^/api/v1/safety → :8007)",
-      "PR#10: OCR/BIM/Vision実装・CI全修正・ログインバイパス統合 (34コミット) — CI 25/25 GREEN"
+      "PR#10: OCR/BIM/Vision実装・CI全修正・ログインバイパス統合 (34コミット) — CI 25/25 GREEN",
+      "R6対応: auth サービス — pool_pre_ping + 接続タイムアウト(10s) + login/refresh 過渡的DBエラー自動リトライ + 例外ログにメソッド/パス記録 (テスト10件追加・40 PASS・lint/mypy GREEN)"
     ],
     "in_progress": [],
     "next": [
@@ -96,7 +97,7 @@
   "execution": {
     "current_session_start_at": "2026-08-18T15:20:00.000Z",
     "last_trigger": "goal",
-    "last_stop_at": "2026-08-18T15:45:00.000Z",
+    "last_stop_at": "2026-08-19T00:00:00.000Z",
     "last_cron_session_id": "20260612-172518-Construction-Enterprise-OS"
   },
   "dreaming": {
