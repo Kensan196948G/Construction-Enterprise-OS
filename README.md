@@ -428,6 +428,12 @@ make test
 | [🗄️ 統合データ基盤 詳細設計](docs/architecture/02-data-platform.md)   | PostgreSQL+PostGIS+TimescaleDB/マルチスキーマ |
 | [🌐 API Gateway & イベント基盤](docs/architecture/03-api-gateway.md)  | Gateway+EventBus+Webhook設計                  |
 | [🎨 共通UI・通知・ログ基盤](docs/architecture/04-common-platforms.md) | Design System/通知/ログ/検索                  |
+| [🎨 OpenDesign 設計仕様](docs/design/opendesign-spec.md)               | 画面構成14カテゴリ/約90ルート/6ロール/ブランド |
+| [📋 要件と MVP スコープ](docs/requirements/mvp-scope.md)               | OpenDesign との整合・未実装・残存リスク        |
+| [🌐 API 概要・エンドポイント一覧](docs/api/overview.md)                | Gateway ルーティング/全サービスAPI            |
+| [🗄️ Neon データベース運用](docs/operations/neon-database.md)           | 空検証DBへの Migration/Seed 再実行手順        |
+| [🚀 デプロイ・ドメイン運用](docs/operations/deployment.md)             | Pages/Tunnel/DNS/ロールバック                 |
+| [✅ 完了条件チェックリスト](docs/operations/completion-checklist.md)   | Goal 完了条件と証拠の一覧                     |
 
 ---
 
