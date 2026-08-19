@@ -1,0 +1,1730 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Construction Enterprise OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== ブランドトークン(OpenDesign spec §2) ===== */
+:root{
+  --bg:#f8fafc; --bg-page:#f8fafc; --bg-card:#ffffff; --bg-card-hover:#f8fafc;
+  --bg-subtle:#f8fafc; --bg-input:#f8fafc;
+  --border:#e2e8f0; --border-light:#f1f5f9;
+  --text:#0f172a; --text-secondary:#374151; --text-muted:#64748b; --text-heading:#0f172a;
+  --accent:#1a56db; --accent-light:#eff6ff; --accent-soft:rgba(26,86,219,0.10);
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+  --sidebar-bg:#ffffff; --sidebar-border:#e2e8f0; --header-bg:#ffffff;
+  --ok:#16a34a; --ok-bg:#f0fdf4; --warn:#f97316; --warn-bg:#fff7ed; --danger:#dc2626; --danger-bg:#fef2f2;
+  --font-display:'Noto Sans JP','Hiragino Sans','Yu Gothic',system-ui,sans-serif;
+  --font-body:'Noto Sans JP',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:240px; --header-h:56px;
+}
+[data-theme="dark"]{
+  --bg:#0f172a; --bg-page:#0f172a; --bg-card:#1e293b; --bg-card-hover:#334155;
+  --bg-subtle:#1e293b; --bg-input:#334155;
+  --border:#334155; --border-light:#1e293b;
+  --text:#e2e8f0; --text-secondary:#94a3b8; --text-muted:#64748b; --text-heading:#f1f5f9;
+  --accent:#3b82f6; --accent-light:#1e3a8a; --accent-soft:rgba(59,130,246,0.14);
+  --shadow:0 1px 3px rgba(0,0,0,0.3);
+  --sidebar-bg:#020617; --sidebar-border:rgba(148,163,184,0.08); --header-bg:#1e293b;
+  --ok:#22c55e; --ok-bg:#052e16; --warn:#fb923c; --warn-bg:#431407; --danger:#f87171; --danger-bg:#450a0a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg-page);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:var(--font-body);cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input,select,textarea{font-family:var(--font-body);font-size:13px;color:var(--text)}
+.mono{font-family:var(--font-mono)}
+
+/* ===== レイアウト ===== */
+#app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:50}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.content{flex:1;padding:24px;background:var(--bg-page);overflow-x:hidden}
+@media (max-width:768px){
+  /* モバイルでもサイドバーを常時表示(既存プロトタイプの挙動に合わせる)。
+     ハンバーガーボタンは表示のまま(開く操作は no-op になるが有害ではない) */
+  .sidebar{position:static;transform:none;width:200px;min-width:200px}
+  .content{padding:16px}
+  .sidebar-backdrop{display:none}
+}
+
+/* ===== サイドバー ===== */
+.logo{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--sidebar-border)}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1a56db);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;flex-shrink:0}
+.logo-text{font-weight:800;font-size:15px;color:var(--text-heading);letter-spacing:.02em}
+.logo-sub{font-size:10px;color:var(--text-muted);font-weight:500}
+.role-banner{margin:10px 12px;padding:8px 12px;border-radius:8px;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;display:none}
+.role-banner.show{display:block}
+.nav{flex:1;padding:8px 0 20px;overflow-y:auto}
+.nav-cat{width:100%;display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:13px;font-weight:700;color:var(--text-secondary);text-align:left;border-radius:8px;margin:1px 6px;width:calc(100% - 12px)}
+.nav-cat:hover{background:var(--bg-card-hover)}
+.nav-cat.active{background:var(--accent-light);color:var(--accent)}
+.nav-cat .icon{width:18px;height:18px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.nav-cat .arrow{margin-left:auto;font-size:10px;color:var(--text-muted);transition:transform .15s}
+.nav-cat.open .arrow{transform:rotate(90deg)}
+.nav-sub{display:none;padding:2px 0 2px 10px}
+.nav-cat.open + .nav-sub,.nav-sub.open{display:block}
+.nav-sub-cat{width:calc(100% - 12px);display:flex;align-items:center;gap:8px;padding:7px 14px 7px 24px;font-size:12px;font-weight:700;color:var(--text-secondary);text-align:left;border-radius:6px;margin:0 6px}
+.nav-sub-cat:hover{background:var(--bg-card-hover)}
+.nav-sub-cat .arrow{margin-left:auto;font-size:9px;color:var(--text-muted);transition:transform .15s}
+.nav-sub-cat.open .arrow{transform:rotate(90deg)}
+.nav-page{width:calc(100% - 12px);display:flex;align-items:center;gap:8px;padding:6px 14px 6px 40px;font-size:12px;color:var(--text-secondary);text-align:left;border-radius:6px;margin:0 6px}
+.nav-page:hover{background:var(--bg-card-hover);color:var(--text)}
+.nav-page.active{background:var(--accent-light);color:var(--accent);font-weight:700}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-left:auto}
+.badge.warn{background:var(--warn)}
+.badge.danger{background:var(--danger)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--sidebar-border);font-size:10px;color:var(--text-muted)}
+
+/* ===== ヘッダー ===== */
+.header{height:var(--header-h);min-height:var(--header-h);background:var(--header-bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;position:sticky;top:0;z-index:30}
+.mobile-menu-btn{display:none;width:38px;height:38px;border-radius:8px;align-items:center;justify-content:center;font-size:18px}
+.mobile-menu-btn:hover{background:var(--bg-card-hover)}
+@media (max-width:768px){.mobile-menu-btn{display:inline-flex}}
+.breadcrumb{font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breadcrumb b{color:var(--text-heading);font-weight:700}
+.header-spacer{flex:1}
+.hdr-btn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-secondary);border:1px solid var(--border)}
+.hdr-btn:hover{background:var(--bg-card-hover);color:var(--text)}
+.hdr-btn .badge{position:static;margin-left:2px}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;color:var(--text-secondary)}
+.icon-btn:hover{background:var(--bg-card-hover);color:var(--text)}
+.icon-btn .badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;font-size:9px;padding:0 4px}
+.dropdown{position:relative}
+.dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:190px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;z-index:100;display:none}
+.dropdown-menu.open{display:block}
+.dropdown-menu button{display:block;width:100%;text-align:left;padding:8px 12px;border-radius:7px;font-size:12px;color:var(--text)}
+.dropdown-menu button:hover{background:var(--bg-card-hover)}
+.dropdown-menu button.active{background:var(--accent-light);color:var(--accent);font-weight:700}
+.dropdown-menu .dd-title{font-size:10px;color:var(--text-muted);padding:6px 12px 4px;font-weight:700}
+.notif-panel{position:absolute;top:calc(100% + 6px);right:0;width:340px;max-width:calc(100vw - 24px);background:var(--bg-card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);z-index:100;display:none;overflow:hidden}
+.notif-panel.open{display:block}
+.notif-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-light);font-size:12px;font-weight:700}
+.notif-head button{font-size:11px;color:var(--accent);font-weight:600}
+.notif-item{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-light);font-size:12px;align-items:flex-start}
+.notif-item:last-child{border-bottom:none}
+.notif-item .n-type{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.notif-item .n-title{font-weight:600;color:var(--text)}
+.notif-item .n-meta{font-size:10px;color:var(--text-muted)}
+.notif-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
+
+/* ===== ページ共通 ===== */
+.page-head{display:flex;align-items:flex-end;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:800;color:var(--text-heading)}
+.page-desc{font-size:12px;color:var(--text-muted);margin-top:2px}
+.page-head .spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid transparent;transition:all .12s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text-secondary)}
+.btn-outline:hover{background:var(--bg-card-hover);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger-outline{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn-danger-outline:hover{background:var(--danger-bg)}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kpi-label{font-size:11px;color:var(--text-muted);font-weight:600}
+.kpi-value{font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--text-heading);line-height:1.3}
+.kpi-value .unit{font-size:12px;color:var(--text-muted);font-weight:500;margin-left:2px}
+.kpi-delta{font-size:11px;font-weight:600;margin-top:2px}
+.kpi-delta.up{color:var(--ok)} .kpi-delta.down{color:var(--danger)}
+.kpi-delta.neutral{color:var(--text-muted)}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border-light)}
+.card-head h3{font-size:13px;font-weight:700;color:var(--text-heading)}
+.card-head .spacer{flex:1}
+.card-body{padding:16px}
+.card-body.flush{padding:0}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+.tab{padding:9px 14px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px}
+.search-input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+
+table.grid{width:100%;border-collapse:collapse;font-size:12px}
+table.grid th{text-align:left;padding:9px 12px;background:var(--bg-subtle);color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+table.grid td{padding:9px 12px;border-bottom:1px solid var(--border-light);vertical-align:middle;color:var(--text)}
+table.grid tr:hover td{background:var(--bg-card-hover)}
+table.grid tr:last-child td{border-bottom:none}
+table.grid .row-actions{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
+table.grid td.num,table.grid th.num{font-family:var(--font-mono);text-align:right}
+.row-btn{padding:3px 8px;font-size:10px;border-radius:5px;border:1px solid var(--border);color:var(--text-secondary);background:var(--bg-card)}
+.row-btn:hover{background:var(--bg-card-hover);color:var(--text)}
+.row-btn.edit:hover{border-color:var(--accent);color:var(--accent)}
+.row-btn.del:hover{border-color:var(--danger);color:var(--danger)}
+
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.danger{background:var(--danger-bg);color:var(--danger)}
+.chip.accent{background:var(--accent-light);color:var(--accent)}
+.chip.muted{background:var(--bg-subtle);color:var(--text-muted)}
+
+.progress-bar{height:6px;border-radius:3px;background:var(--bg-subtle);overflow:hidden;min-width:70px}
+.progress-bar>div{height:100%;border-radius:3px;background:var(--accent)}
+.progress-bar>div.warn{background:var(--warn)}
+.progress-bar>div.ok{background:var(--ok)}
+
+/* ===== カード一覧(工事等) ===== */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.entity-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:box-shadow .12s}
+.entity-card:hover{box-shadow:var(--shadow)}
+.ec-title{font-size:13px;font-weight:700;color:var(--text-heading)}
+.ec-meta{font-size:11px;color:var(--text-muted)}
+.ec-body{display:flex;gap:14px;font-size:11px;color:var(--text-secondary);flex-wrap:wrap}
+.ec-actions{display:flex;gap:6px;margin-top:2px}
+
+/* ===== モーダル ===== */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.2);width:100%;max-width:560px;max-height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden}
+.modal-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border-light)}
+.modal-head h3{font-size:14px;font-weight:800;color:var(--text-heading)}
+.modal-head .spacer{flex:1}
+.modal-close{width:30px;height:30px;border-radius:7px;font-size:15px;color:var(--text-muted)}
+.modal-close:hover{background:var(--bg-card-hover);color:var(--text)}
+.modal-body{padding:16px 18px;overflow-y:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid var(--border-light)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.form-grid .full{grid-column:1/-1}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px}
+.field textarea{min-height:70px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.field .err{font-size:10px;color:var(--danger);margin-top:3px;display:none}
+.field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--danger)}
+.field.invalid .err{display:block}
+.form-error{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--danger-bg);color:var(--danger);font-size:11px;font-weight:600;display:none}
+.form-error.show{display:block}
+
+/* ===== 状態表示 ===== */
+.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 20px;color:var(--text-muted);text-align:center}
+.state-box .state-icon{font-size:32px;opacity:.6}
+.state-box .state-title{font-size:13px;font-weight:700;color:var(--text-secondary)}
+.state-box .state-desc{font-size:11px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--text-heading);color:var(--bg-card);padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;box-shadow:var(--shadow);animation:toast-in .2s ease}
+.toast.ok{background:var(--ok)} .toast.err{background:var(--danger)}
+@keyframes toast-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ===== ダッシュボード ===== */
+.hero{background:linear-gradient(135deg,var(--accent-light),transparent 60%);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.hero h2{font-size:18px;font-weight:800;color:var(--text-heading)}
+.hero p{font-size:12px;color:var(--text-muted);margin-top:2px}
+.dash-cols{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+@media (max-width:1100px){.dash-cols{grid-template-columns:1fr}}
+.list-item{display:flex;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border-light);font-size:12px;align-items:flex-start}
+.list-item:last-child{border-bottom:none}
+.list-item .li-title{font-weight:600;color:var(--text)}
+.list-item .li-meta{font-size:10px;color:var(--text-muted);margin-top:1px}
+.list-item .li-time{margin-left:auto;font-size:10px;color:var(--text-muted);white-space:nowrap;font-family:var(--font-mono)}
+.activity-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:6px;flex-shrink:0}
+.ai-card{border-left:3px solid var(--accent)}
+.ai-card.warn{border-left-color:var(--warn)}
+.ai-card .ai-tag{font-size:10px;font-weight:700;color:var(--accent)}
+.ai-card.warn .ai-tag{color:var(--warn)}
+
+/* 地図プレースホルダ(依存ゼロのためSVG風グリッド+マーカー) */
+.map-box{position:relative;height:260px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#e8eef7,#dbe6f5);border:1px solid var(--border)}
+[data-theme="dark"] .map-box{background:linear-gradient(180deg,#16233c,#101b30)}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(100,116,139,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(100,116,139,.14) 1px,transparent 1px);background-size:34px 34px}
+.map-marker{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;font-size:10px}
+.map-marker .pin{width:14px;height:14px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.map-marker .pin.ok{background:var(--ok)} .map-marker .pin.warn{background:var(--warn)} .map-marker .pin.accent{background:var(--accent)}
+.map-marker span{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;white-space:nowrap;margin-top:6px;box-shadow:var(--shadow)}
+.map-legend{position:absolute;bottom:10px;left:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:10px;color:var(--text-secondary);box-shadow:var(--shadow)}
+
+/* スライドパネル(タブ)共通 */
+.hide-mobile{display:inline}
+@media (max-width:768px){.hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+/* ================================================================
+ * Construction Enterprise OS — MVP WebUI(データ層 + CRUD)
+ * 依存ゼロ(素のJS)。データは localStorage 永続化ストア、
+ * auth API のみ実接続(/api/v1/auth/*)。他サービス API 未稼働のため
+ * 同一インターフェースのローカルストアで代替(将来 API へ差し替え可)。
+ * ================================================================ */
+
+/* ---------- ユーティリティ ---------- */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const today = () => new Date().toISOString().slice(0, 10);
+const fmtDate = (s) => (s ? String(s).slice(0, 10) : "");
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+const hashId = (route) => route.replace(/[^a-z0-9]+/g, "-");
+
+/* ---------- トースト ---------- */
+function toast(msg, kind = "ok") {
+  let wrap = $(".toast-wrap");
+  if (!wrap) { wrap = document.createElement("div"); wrap.className = "toast-wrap"; document.body.appendChild(wrap); }
+  const t = document.createElement("div");
+  t.className = `toast ${kind}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+/* ================================================================
+ * データストア(localStorage 永続化)
+ * ================================================================ */
+const DB_KEY = "ceos.mvp.db.v1";
+const Store = {
+  db: null,
+  _seedLock: false,
+
+  load() {
+    try { this.db = JSON.parse(localStorage.getItem(DB_KEY)); } catch { this.db = null; }
+    if (!this.db || !this.db.seeded) { this.seed(); }
+    return this.db;
+  },
+  _save() {
+    try { localStorage.setItem(DB_KEY, JSON.stringify(this.db)); } catch (e) { console.warn("save failed", e); }
+  },
+  list(coll) { this.load(); return this.db[coll] || []; },
+  get(coll, id) { return this.list(coll).find((r) => r.id === id) || null; },
+  create(coll, data) {
+    this.load();
+    const row = Object.assign({ id: uid(), createdAt: new Date().toISOString() }, data);
+    this.db[coll] = this.db[coll] || [];
+    this.db[coll].unshift(row);
+    this._save();
+    return row;
+  },
+  update(coll, id, data) {
+    this.load();
+    const rows = this.db[coll] || [];
+    const i = rows.findIndex((r) => r.id === id);
+    if (i < 0) return null;
+    rows[i] = Object.assign({}, rows[i], data, { updatedAt: new Date().toISOString() });
+    this._save();
+    return rows[i];
+  },
+  remove(coll, id) {
+    this.load();
+    this.db[coll] = (this.db[coll] || []).filter((r) => r.id !== id);
+    this._save();
+  },
+  reset(coll) {
+    this.load();
+    this.db[coll] = [];
+    this._save();
+  },
+  clearAll() {
+    localStorage.removeItem(DB_KEY);
+    this.db = null;
+    this.seed();
+  },
+  /* 集計ヘルパー */
+  count(coll) { return this.list(coll).length; },
+  countBy(coll, field, value) { return this.list(coll).filter((r) => r[field] === value).length; },
+  sum(coll, field) { return this.list(coll).reduce((a, r) => a + (Number(r[field]) || 0), 0); },
+};
+
+/* ================================================================
+ * シードデータ(既存プロトタイプの実ダミーデータを引き継ぎ)
+ * ================================================================ */
+function buildSeed() {
+  const now = new Date().toISOString();
+  const d = (offset) => new Date(Date.now() + offset * 86400000).toISOString();
+  return {
+    seeded: true,
+    projects: [
+      { id: "p1", name: "品川タワー新築工事", client: "品川都市開発(株)", progress: 68, stage: "施工中", workers: 45, equipment: 8, location: "品川", startDate: "2025-11-01", endDate: "2027-03-31", budget: 8200000, status: "active", lat: 35.628, lng: 139.738 },
+      { id: "p2", name: "横浜分譲マンション", client: "横浜住宅(株)", progress: 42, stage: "施工中", workers: 32, equipment: 5, location: "横浜", startDate: "2026-01-15", endDate: "2027-06-30", budget: 3400000, status: "active", lat: 35.443, lng: 139.638 },
+      { id: "p3", name: "大田区土木工事", client: "大田区役所", progress: 85, stage: "仕上げ", workers: 18, equipment: 4, location: "大田区", startDate: "2025-08-01", endDate: "2026-09-30", budget: 1200000, status: "active", lat: 35.561, lng: 139.716 },
+      { id: "p4", name: "新宿再開発ビル", client: "新宿都市開発(株)", progress: 23, stage: "基礎", workers: 28, equipment: 6, location: "新宿", startDate: "2026-04-01", endDate: "2028-09-30", budget: 9800000, status: "active", lat: 35.690, lng: 139.700 },
+      { id: "p5", name: "川崎物流センター", client: "川崎ロジスティクス(株)", progress: 55, stage: "躯体", workers: 38, equipment: 7, location: "川崎", startDate: "2025-12-01", endDate: "2026-12-31", budget: 4600000, status: "active", lat: 35.531, lng: 139.703 },
+      { id: "p6", name: "千葉港湾整備", client: "千葉県港湾局", progress: 31, stage: "準備", workers: 12, equipment: 3, location: "千葉", startDate: "2026-06-01", endDate: "2028-03-31", budget: 2100000, status: "active", lat: 35.607, lng: 140.106 },
+    ],
+    workflows: [
+      { id: "wf1", code: "WF-2026-128", title: "施工計画書（躯体工事）承認依頼", type: "稟議", applicant: "田中 健一", project: "品川タワー新築工事", priority: "高", status: "承認待ち", requestedAt: d(-1), dueDate: d(1) },
+      { id: "wf2", code: "WF-2026-127", title: "資材発注書（鉄筋 SD345）", type: "稟議", applicant: "渡辺 誠", project: "横浜分譲マンション", priority: "中", status: "承認待ち", requestedAt: d(-2), dueDate: d(2) },
+      { id: "wf3", code: "WF-2026-126", title: "クレーン作業許可申請", type: "作業許可", applicant: "佐藤 太郎", project: "品川タワー新築工事", priority: "高", status: "承認待ち", requestedAt: d(-2), dueDate: d(0) },
+      { id: "wf4", code: "WF-2026-125", title: "設計変更申請（基礎構造）", type: "変更管理", applicant: "山田 花子", project: "新宿再開発ビル", priority: "中", status: "承認待ち", requestedAt: d(-3), dueDate: d(3) },
+      { id: "wf5", code: "WF-2026-124", title: "協力会社 新規登録申請", type: "稟議", applicant: "伊藤 裕子", project: "全社", priority: "低", status: "承認待ち", requestedAt: d(-3), dueDate: d(4) },
+      { id: "wf6", code: "WF-P-001", title: "高所作業許可（8F以上）", type: "作業許可", applicant: "木村 大輔", project: "品川タワー新築工事", priority: "高", status: "承認待ち", requestedAt: d(-1), dueDate: d(0) },
+      { id: "wf7", code: "WF-E-001", title: "施工計画書（躯体工事）電子署名", type: "電子決裁", applicant: "田中 健一", project: "品川タワー新築工事", priority: "高", status: "承認待ち", requestedAt: d(-1), dueDate: d(1) },
+    ],
+    documents: [
+      { id: "doc1", title: "安全パトロール報告書", type: "PDF", project: "品川タワー新築工事", author: "高橋 誠", version: "v1.2", updatedAt: d(0), status: "公開" },
+      { id: "doc2", title: "コンクリート強度試験結果", type: "PDF", project: "横浜分譲マンション", author: "佐々木 美咲", version: "v1.0", updatedAt: d(-1), status: "公開" },
+      { id: "doc3", title: "構造図（S-101〜S-110）", type: "CAD", project: "品川タワー新築工事", author: "設計課", version: "v2.1", updatedAt: d(-2), status: "承認待ち" },
+      { id: "doc4", title: "施工計画書（仮設）", type: "PDF", project: "川崎物流センター", author: "工事部", version: "v1.0", updatedAt: d(-3), status: "公開" },
+      { id: "doc5", title: "写真管理台帳（7月分）", type: "写真", project: "大田区土木工事", author: "現場監督", version: "v1.0", updatedAt: d(-4), status: "公開" },
+      { id: "doc6", title: "BIMモデル（構造・設備統合）", type: "BIM/CIM", project: "新宿再開発ビル", author: "BIMチーム", version: "v0.9", updatedAt: d(-5), status: "作成中" },
+    ],
+    sensors: [
+      { id: "s1", name: "クレーン風速計 A-1", type: "風速", project: "品川タワー新築工事", value: 6.2, unit: "m/s", status: "正常", updatedAt: d(0) },
+      { id: "s2", name: "足場荷重計 B-2", type: "荷重", project: "品川タワー新築工事", value: 38, unit: "%", status: "正常", updatedAt: d(0) },
+      { id: "s3", name: "地下水位計 C-1", type: "水位", project: "横浜分譲マンション", value: 2.1, unit: "m", status: "警戒", updatedAt: d(0) },
+      { id: "s4", name: "温度センサ D-3", type: "温度", project: "川崎物流センター", value: 32.4, unit: "℃", status: "正常", updatedAt: d(0) },
+      { id: "s5", name: "振動計 E-1", type: "振動", project: "新宿再開発ビル", value: 0.8, unit: "mm/s", status: "正常", updatedAt: d(0) },
+      { id: "s6", name: "ガス検知器 F-2", type: "ガス", project: "大田区土木工事", value: 0, unit: "ppm", status: "正常", updatedAt: d(0) },
+    ],
+    alerts: [
+      { id: "a1", title: "地下水位が警戒レベルを超過", severity: "警戒", source: "IoTセンサ", project: "横浜分譲マンション", status: "未対応", createdAt: d(0) },
+      { id: "a2", title: "重機稼働データの異常を検知", severity: "注意", source: "重機IoT", project: "川崎物流センター", status: "未対応", createdAt: d(0) },
+      { id: "a3", title: "強風予報（12m/s）— クレーン作業の中断検討", severity: "注意", source: "気象API", project: "品川タワー新築工事", status: "確認中", createdAt: d(0) },
+      { id: "a4", title: "作業員の入退場記録が未完了", severity: "注意", source: "入退場管理", project: "大田区土木工事", status: "確認中", createdAt: d(-1) },
+    ],
+    costs: [
+      { id: "c1", project: "品川タワー新築工事", item: "鉄骨工事", category: "材料費", budget: 1850000, actual: 1720000, updatedAt: d(0) },
+      { id: "c2", project: "品川タワー新築工事", item: "コンクリート工事", category: "材料費", budget: 960000, actual: 1010000, updatedAt: d(0) },
+      { id: "c3", project: "川崎物流センター", item: "資材調達（鉄筋）", category: "材料費", budget: 520000, actual: 553000, updatedAt: d(0) },
+      { id: "c4", project: "横浜分譲マンション", item: "型枠工事", category: "労務費", budget: 410000, actual: 398000, updatedAt: d(-1) },
+      { id: "c5", project: "新宿再開発ビル", item: "山留め工事", category: "仮設費", budget: 680000, actual: 655000, updatedAt: d(-2) },
+    ],
+    safetyEvents: [
+      { id: "sf1", title: "週間安全サイクル完了", type: "パトロール", project: "新宿再開発ビル", reporter: "安全課", severity: "良好", status: "完了", date: d(-1) },
+      { id: "sf2", title: "足場手すり未設置を指摘", type: "ヒヤリハット", project: "川崎物流センター", reporter: "安全パトロール", severity: "要注意", status: "対応中", date: d(-2) },
+      { id: "sf3", title: "KY活動記録（7F鉄骨建方）", type: "KY活動", project: "品川タワー新築工事", reporter: "現場監督", severity: "良好", status: "完了", date: d(0) },
+      { id: "sf4", title: "コンクリート打設作業の点検", type: "点検記録", project: "品川タワー新築工事", reporter: "安全管理者", severity: "良好", status: "完了", date: d(-1) },
+    ],
+    partners: [
+      { id: "pt1", name: "大和建設工業(株)", type: "躯体工事", contract: "請負契約", contact: "山本 一郎", status: "契約中" },
+      { id: "pt2", name: "湘南電気設備(株)", type: "電気設備", contract: "請負契約", contact: "小林 恵", status: "契約中" },
+      { id: "pt3", name: "東京管工事(株)", type: "管工事", contract: "請負契約", contact: "加藤 大輔", status: "契約中" },
+      { id: "pt4", name: "関東クレーン(株)", type: "重機リース", contract: "リース契約", contact: "中島 徹", status: "契約中" },
+      { id: "pt5", name: "富士測量(株)", type: "測量", contract: "業務委託", contact: "森 陽子", status: "契約中" },
+    ],
+    users: [
+      { id: "u1", name: "田中 健一", email: "tanaka@construction-os.local", role: "現場監督", department: "工事部", status: "有効" },
+      { id: "u2", name: "山田 花子", email: "yamada@construction-os.local", role: "設計部", department: "技術部", status: "有効" },
+      { id: "u3", name: "佐藤 太郎", email: "sato@construction-os.local", role: "安全管理者", department: "安全部", status: "有効" },
+      { id: "u4", name: "伊藤 裕子", email: "ito@construction-os.local", role: "経理", department: "管理部", status: "有効" },
+      { id: "u5", name: "鈴木 一郎", email: "suzuki@construction-os.local", role: "役員", department: "経営企画", status: "有効" },
+    ],
+    equipment: [
+      { id: "eq1", name: "クローラークレーン 150t", type: "クレーン", project: "品川タワー新築工事", operator: "関東クレーン(株)", status: "稼働中", updatedAt: d(0) },
+      { id: "eq2", name: "移動式クレーン 25t", type: "クレーン", project: "川崎物流センター", operator: "関東クレーン(株)", status: "稼働中", updatedAt: d(0) },
+      { id: "eq3", name: "バックホウ 0.8m3", type: "建設機械", project: "大田区土木工事", operator: "自社", status: "稼働中", updatedAt: d(0) },
+      { id: "eq4", name: "ミキサー車", type: "車両", project: "品川タワー新築工事", operator: "生コン業者", status: "待機中", updatedAt: d(-1) },
+      { id: "eq5", name: "高所作業車", type: "建設機械", project: "新宿再開発ビル", operator: "レンタル", status: "点検中", updatedAt: d(-1) },
+    ],
+    workers: [
+      { id: "w1", name: "高橋 誠", company: "大和建設工業(株)", role: "鉄筋工", project: "品川タワー新築工事", status: "現場入場中", joinedAt: d(0) },
+      { id: "w2", name: "佐々木 美咲", company: "湘南電気設備(株)", role: "電気工", project: "横浜分譲マンション", status: "現場入場中", joinedAt: d(0) },
+      { id: "w3", name: "木村 大輔", company: "東京管工事(株)", role: "配管工", project: "品川タワー新築工事", status: "現場入場中", joinedAt: d(0) },
+      { id: "w4", name: "中村 太郎", company: "大和建設工業(株)", role: "型枠工", project: "横浜分譲マンション", status: "退場済み", joinedAt: d(-1) },
+      { id: "w5", name: "小林 恵", company: "湘南電気設備(株)", role: "電気工", project: "川崎物流センター", status: "現場入場中", joinedAt: d(0) },
+    ],
+    contracts: [
+      { id: "ct1", name: "躯体工事請負契約", partner: "大和建設工業(株)", amount: 1850000, startDate: "2025-11-01", endDate: "2026-09-30", status: "締結済" },
+      { id: "ct2", name: "電気設備工事請負契約", partner: "湘南電気設備(株)", amount: 620000, startDate: "2026-02-01", endDate: "2027-03-31", status: "締結済" },
+      { id: "ct3", name: "クレーンリース契約", partner: "関東クレーン(株)", amount: 180000, startDate: "2025-12-01", endDate: "2026-12-31", status: "締結済" },
+      { id: "ct4", name: "測量業務委託契約", partner: "富士測量(株)", amount: 45000, startDate: "2026-04-01", endDate: "2027-03-31", status: "交渉中" },
+    ],
+    invoices: [
+      { id: "iv1", partner: "大和建設工業(株)", project: "品川タワー新築工事", amount: 425000, dueDate: d(10), status: "未払" },
+      { id: "iv2", partner: "湘南電気設備(株)", project: "横浜分譲マンション", amount: 98000, dueDate: d(5), status: "未払" },
+      { id: "iv3", partner: "関東クレーン(株)", project: "品川タワー新築工事", amount: 32000, dueDate: d(-2), status: "支払済" },
+      { id: "iv4", partner: "大和建設工業(株)", project: "川崎物流センター", amount: 210000, dueDate: d(15), status: "未払" },
+    ],
+    education: [
+      { id: "ed1", title: "新規入場者教育（7月）", partner: "全協力会社", date: d(-10), attendees: 26, status: "実施済" },
+      { id: "ed2", title: "クレーン運転士 特別教育", partner: "関東クレーン(株)", date: d(-3), attendees: 8, status: "実施済" },
+      { id: "ed3", title: "夏季安全教育（熱中症対策）", partner: "全協力会社", date: d(5), attendees: 0, status: "予定" },
+      { id: "ed4", title: "足場組立等作業主任者講習", partner: "大和建設工業(株)", date: d(12), attendees: 0, status: "予定" },
+    ],
+    entries: [
+      { id: "en1", name: "高橋 誠", company: "大和建設工業(株)", project: "品川タワー新築工事", time: "07:55", direction: "入場" },
+      { id: "en2", name: "佐々木 美咲", company: "湘南電気設備(株)", project: "横浜分譲マンション", time: "08:02", direction: "入場" },
+      { id: "en3", name: "木村 大輔", company: "東京管工事(株)", project: "品川タワー新築工事", time: "08:10", direction: "入場" },
+      { id: "en4", name: "中村 太郎", company: "大和建設工業(株)", project: "横浜分譲マンション", time: "17:20", direction: "退場" },
+      { id: "en5", name: "小林 恵", company: "湘南電気設備(株)", project: "川崎物流センター", time: "08:05", direction: "入場" },
+    ],
+    aiAnalyses: [
+      { id: "ai1", title: "工程遅延リスク", type: "予測AI", project: "品川タワー新築工事", summary: "鉄骨建方が2日遅延。天候影響による後続工程への波及を予測", status: "推奨あり", createdAt: d(0) },
+      { id: "ai2", title: "原価超過予測", type: "予測AI", project: "川崎物流センター", summary: "資材高騰により予算比+3.2%の超過見込み", status: "注意", createdAt: d(0) },
+      { id: "ai3", title: "安全改善提案", type: "画像解析AI", project: "横浜分譲マンション", summary: "足場設置状況について改善推奨", status: "推奨あり", createdAt: d(-1) },
+      { id: "ai4", title: "OCR文書化（工事日報）", type: "OCR AI", project: "全社", summary: "7月分の手書き日報を電子化（86件）", status: "完了", createdAt: d(-2) },
+    ],
+    gisMarkers: [
+      { id: "g1", project: "品川タワー新築工事", location: "品川", lat: 35.628, lng: 139.738, type: "工事中" },
+      { id: "g2", project: "横浜分譲マンション", location: "横浜", lat: 35.443, lng: 139.638, type: "工事中" },
+      { id: "g3", project: "大田区土木工事", location: "大田区", lat: 35.561, lng: 139.716, type: "工事中" },
+      { id: "g4", project: "新宿再開発ビル", location: "新宿", lat: 35.690, lng: 139.700, type: "工事中" },
+      { id: "g5", project: "川崎物流センター", location: "川崎", lat: 35.531, lng: 139.703, type: "工事中" },
+      { id: "g6", project: "千葉港湾整備", location: "千葉", lat: 35.607, lng: 140.106, type: "準備中" },
+    ],
+    weather: [
+      { id: "wx1", location: "品川", condition: "晴れ", temp: 32, wind: 6, humidity: 55, updatedAt: d(0) },
+      { id: "wx2", location: "横浜", condition: "晴れ", temp: 31, wind: 8, humidity: 60, updatedAt: d(0) },
+      { id: "wx3", location: "川崎", condition: "曇り", temp: 30, wind: 10, humidity: 62, updatedAt: d(0) },
+      { id: "wx4", location: "千葉", condition: "晴れ", temp: 29, wind: 12, humidity: 58, updatedAt: d(0) },
+    ],
+    notifications: [
+      { id: "n1", title: "承認依頼が届きました（躯体工事）", type: "承認依頼", read: false, createdAt: d(0) },
+      { id: "n2", title: "承認依頼が届きました（鉄筋 SD345）", type: "承認依頼", read: false, createdAt: d(0) },
+      { id: "n3", title: "IoTアラート: 地下水位が警戒レベルを超過", type: "IoTアラート", read: true, createdAt: d(-1) },
+      { id: "n4", title: "文書更新: 構造図（S-101〜S-110）v2.1", type: "文書更新", read: true, createdAt: d(-2) },
+    ],
+    activities: [
+      { id: "ac1", title: "安全パトロール報告書が提出されました", project: "品川タワー新築工事", time: "10分前", createdAt: d(0) },
+      { id: "ac2", title: "工程会議議事録の承認依頼", project: "横浜分譲マンション", time: "32分前", createdAt: d(0) },
+      { id: "ac3", title: "コンクリート強度試験結果がアップロード", project: "大田区土木工事", time: "1時間前", createdAt: d(0) },
+      { id: "ac4", title: "週間安全サイクルが完了しました", project: "新宿再開発ビル", time: "2時間前", createdAt: d(0) },
+      { id: "ac5", title: "重機稼働データの異常を検知", project: "川崎物流センター", time: "3時間前", createdAt: d(0) },
+      { id: "ac6", title: "ドローン測量データが処理完了", project: "千葉港湾整備", time: "4時間前", createdAt: d(0) },
+    ],
+    apiLogs: [
+        { id: "al1", method: "POST", path: "/api/v1/auth/login", status: 200, latency: 184, at: d(0) },
+        { id: "al2", method: "GET", path: "/api/v1/projects", status: 200, latency: 42, at: d(0) },
+        { id: "al3", method: "GET", path: "/api/v1/health/services", status: 200, latency: 18, at: d(0) },
+        { id: "al4", method: "POST", path: "/api/v1/auth/login", status: 401, latency: 96, at: d(-1) },
+      ],
+      masterData: [
+        { id: "md1", key: "工事種別", value: "新築/改修/土木/港湾", group: "マスタ" },
+        { id: "md2", key: "工程区分", value: "準備/基礎/躯体/仕上げ/引渡", group: "マスタ" },
+        { id: "md3", key: "安全パトロール項目", value: "足場/クレーン/電気/火気/整理整頓", group: "安全" },
+        { id: "md4", key: "承認ルート", value: "現場監督→課長→部長", group: "ワークフロー" },
+      ],
+      configs: [
+        { id: "cfg1", key: "会社名", value: "株式会社 Mirai 建設", group: "基本" },
+        { id: "cfg2", key: "標準労働時間", value: "08:00-17:00", group: "勤怠" },
+        { id: "cfg3", key: "SLA目標", value: "承認 24h / 稟議 48h", group: "ワークフロー" },
+      ],
+      roles: [
+        { id: "r1", name: "システム管理者", code: "admin", description: "全機能へのアクセス権限", permissions: "全機能" },
+        { id: "r2", name: "現場監督", code: "field", description: "現場DX・文書・協力会社連携", permissions: "現場DX/文書/協力会社" },
+        { id: "r3", name: "経営層", code: "exec", description: "ダッシュボード・ERP・BI", permissions: "ダッシュボード/ERP/BI" },
+        { id: "r4", name: "協力会社", code: "partner", description: "協力会社ポータル", permissions: "協力会社連携" },
+        { id: "r5", name: "安全管理者", code: "safety", description: "現場DX・IoT監視", permissions: "現場DX/IoT/安全" },
+        { id: "r6", name: "維持管理", code: "maintain", description: "IoT・GIS・文書", permissions: "IoT/GIS/文書" },
+        { id: "r7", name: "設計技術者", code: "design", description: "BIM/CIM・図面・技術", permissions: "文書/BIM/GIS" },
+      ],
+      authMethods: [
+        { id: "am1", name: "Entra ID", provider: "Microsoft", status: "接続済" },
+        { id: "am2", name: "AD連携", provider: "Active Directory", status: "接続済" },
+        { id: "am3", name: "MFA", provider: "TOTP", status: "有効" },
+        { id: "am4", name: "SSO", provider: "SAML 2.0", status: "設定中" },
+      ],
+      securityEvents: [
+        { id: "se1", title: "不正ログイン試行を検知", type: "SIEM", severity: "警戒", source: "auth-service", status: "調査中", createdAt: d(0) },
+        { id: "se2", title: "VPN接続の異常終了", type: "VPN", severity: "注意", source: "gateway", status: "対応済", createdAt: d(-1) },
+        { id: "se3", title: "監査ログの定期レビュー完了", type: "監査", severity: "情報", source: "audit", status: "完了", createdAt: d(-2) },
+      ],
+      robotics: [
+        { id: "rb1", name: "自動施工ロボット #1", type: "自動施工", project: "新宿再開発ビル", status: "運用中", updatedAt: d(0) },
+        { id: "rb2", name: "測量ドローン DJI-M3", type: "ドローン", project: "千葉港湾整備", status: "待機中", updatedAt: d(0) },
+        { id: "rb3", name: "水中ROV #2", type: "ROV", project: "千葉港湾整備", status: "点検中", updatedAt: d(-1) },
+        { id: "rb4", name: "デジタルツイン（品川）", type: "デジタルツイン", project: "品川タワー新築工事", status: "運用中", updatedAt: d(0) },
+      ],
+      systemItems: [
+        { id: "sy1", name: "Webサーバ #1", type: "サーバ", status: "稼働中", cpu: 23, memory: 41, updatedAt: d(0) },
+        { id: "sy2", name: "DBサーバ（Neon）", type: "DB", status: "稼働中", cpu: 12, memory: 35, updatedAt: d(0) },
+        { id: "sy3", name: "夜間バックアップ", type: "バックアップ", status: "成功", cpu: 0, memory: 0, updatedAt: d(0) },
+        { id: "sy4", name: "API Gateway", type: "API状態", status: "稼働中", cpu: 8, memory: 22, updatedAt: d(0) },
+        { id: "sy5", name: "CI/CD Pipeline", type: "DevOps", status: "成功", cpu: 0, memory: 0, updatedAt: d(0) },
+      ],
+      aiChats: [
+        { id: "ch1", question: "品川タワーの工程遅延リスクを教えて", answer: "鉄骨建方が2日遅延しています。天候の影響で後続工程に波及する可能性があります。", createdAt: d(0) },
+        { id: "ch2", question: "今月の安全パトロール結果", answer: "4件の指摘があり、全て対応中です。", createdAt: d(-1) },
+      ],
+  };
+}
+
+Store.seed = function () {
+  if (this._seedLock) return;
+  this._seedLock = true;
+  const seeded = buildSeed();
+  this.db = seeded;
+  this._save();
+  this._seedLock = false;
+};
+
+
+/* ================================================================
+ * フィールド・ページ定義(スキーマ駆動 CRUD)
+ * ================================================================ */
+const F = {
+  text: (key, label, o = {}) => ({ key, label, type: "text", ...o }),
+  num: (key, label, o = {}) => ({ key, label, type: "number", ...o }),
+  sel: (key, label, options, o = {}) => ({ key, label, type: "select", options, ...o }),
+  date: (key, label, o = {}) => ({ key, label, type: "date", ...o }),
+  area: (key, label, o = {}) => ({ key, label, type: "textarea", ...o }),
+};
+
+/* 工事・申請・文書などの共通フィールドセット */
+const PROJ_FIELDS = [
+  F.text("name", "工事名", { req: true }), F.text("client", "発注者"),
+  F.num("progress", "進捗率(%)"), F.sel("stage", "工程", ["準備", "基礎", "躯体", "仕上げ", "施工中", "完了"]),
+  F.num("workers", "作業員数"), F.num("equipment", "重機台数"),
+  F.text("location", "所在地"), F.date("startDate", "開始日"), F.date("endDate", "完了予定日"),
+  F.num("budget", "予算(千円)"), F.sel("status", "状態", ["active", "一時中断", "完了"]),
+];
+const WF_FIELDS = [
+  F.text("title", "申請件名", { req: true }), F.text("code", "申請番号"),
+  F.sel("type", "種別", ["稟議", "作業許可", "電子決裁", "変更管理"]),
+  F.text("applicant", "申請者"), F.text("project", "対象工事"),
+  F.sel("priority", "優先度", ["高", "中", "低"]),
+  F.sel("status", "状態", ["承認待ち", "承認済", "差戻し", "却下"]),
+  F.date("requestedAt", "申請日"), F.date("dueDate", "期限"),
+];
+const DOC_FIELDS = [
+  F.text("title", "文書名", { req: true }),
+  F.sel("type", "種別", ["PDF", "CAD", "BIM/CIM", "写真", "動画", "OCR", "電子納品"]),
+  F.text("project", "対象工事"), F.text("author", "作成者"),
+  F.text("version", "バージョン"), F.date("updatedAt", "更新日"),
+  F.sel("status", "状態", ["公開", "承認待ち", "作成中"]),
+];
+const SENSOR_FIELDS = [
+  F.text("name", "センサー名", { req: true }),
+  F.sel("type", "種別", ["風速", "荷重", "水位", "温度", "振動", "ガス", "傾斜"]),
+  F.text("project", "対象工事"), F.num("value", "現在値"),
+  F.text("unit", "単位"), F.sel("status", "状態", ["正常", "警戒", "異常"]),
+  F.date("updatedAt", "更新日"),
+];
+const ALERT_FIELDS = [
+  F.text("title", "アラート内容", { req: true }),
+  F.sel("severity", "重要度", ["危険", "警戒", "注意"]),
+  F.text("source", "発生源"), F.text("project", "対象工事"),
+  F.sel("status", "状態", ["未対応", "確認中", "対応済"]), F.date("createdAt", "発生日時"),
+];
+const COST_FIELDS = [
+  F.text("project", "工事名"), F.text("item", "項目", { req: true }),
+  F.sel("category", "区分", ["材料費", "労務費", "仮設費", "その他"]),
+  F.num("budget", "予算(千円)"), F.num("actual", "実績(千円)"), F.date("updatedAt", "更新日"),
+];
+const SAFETY_FIELDS = [
+  F.text("title", "記録名", { req: true }),
+  F.sel("type", "種別", ["パトロール", "ヒヤリハット", "KY活動", "点検記録", "インシデント"]),
+  F.text("project", "対象工事"), F.text("reporter", "記録者"),
+  F.sel("severity", "評価", ["良好", "要注意", "危険"]),
+  F.sel("status", "状態", ["対応中", "完了"]), F.date("date", "発生日"),
+];
+const PARTNER_FIELDS = [
+  F.text("name", "会社名", { req: true }), F.text("type", "業種"),
+  F.text("contract", "契約種別"), F.text("contact", "担当者"),
+  F.sel("status", "状態", ["契約中", "交渉中", "契約終了"]),
+];
+const USER_FIELDS = [
+  F.text("name", "氏名", { req: true }), F.text("email", "メール"),
+  F.text("role", "役割"), F.text("department", "所属"),
+  F.sel("status", "状態", ["有効", "無効"]),
+];
+const EQ_FIELDS = [
+  F.text("name", "重機名", { req: true }), F.text("type", "種別"),
+  F.text("project", "配属工事"), F.text("operator", "運行会社"),
+  F.sel("status", "状態", ["稼働中", "待機中", "点検中", "故障"]), F.date("updatedAt", "更新日"),
+];
+const WORKER_FIELDS = [
+  F.text("name", "氏名", { req: true }), F.text("company", "所属会社"),
+  F.text("role", "職種"), F.text("project", "従事工事"),
+  F.sel("status", "状態", ["現場入場中", "退場済み"]), F.date("joinedAt", "入場日"),
+];
+const CONTRACT_FIELDS = [
+  F.text("name", "契約名", { req: true }), F.text("partner", "契約先"),
+  F.num("amount", "契約金額(千円)"), F.date("startDate", "開始日"),
+  F.date("endDate", "終了日"), F.sel("status", "状態", ["締結済", "交渉中", "終了"]),
+];
+const INVOICE_FIELDS = [
+  F.text("partner", "請求先"), F.text("project", "対象工事"),
+  F.num("amount", "金額(千円)"), F.date("dueDate", "支払期限"),
+  F.sel("status", "状態", ["未払", "支払済", "延滞"]),
+];
+const EDU_FIELDS = [
+  F.text("title", "教育名", { req: true }), F.text("partner", "対象会社"),
+  F.date("date", "実施日"), F.num("attendees", "参加者数"),
+  F.sel("status", "状態", ["予定", "実施済", "中止"]),
+];
+const ENTRY_FIELDS = [
+  F.text("name", "氏名", { req: true }), F.text("company", "会社"),
+  F.text("project", "工事"), F.text("time", "時刻"),
+  F.sel("direction", "種別", ["入場", "退場"]),
+];
+const AI_FIELDS = [
+  F.text("title", "分析名", { req: true }), F.text("type", "種別"),
+  F.text("project", "対象工事"), F.area("summary", "概要"),
+  F.text("status", "状態"), F.date("createdAt", "作成日"),
+];
+const GIS_FIELDS = [
+  F.text("project", "工事名"), F.text("location", "場所"),
+  F.num("lat", "緯度"), F.num("lng", "経度"),
+  F.sel("type", "種別", ["工事中", "災害", "ドローン", "点群", "ハザード", "リアルタイム"]),
+];
+const WEATHER_FIELDS = [
+  F.text("location", "地点", { req: true }), F.text("condition", "天候"),
+  F.num("temp", "気温(℃)"), F.num("wind", "風速(m/s)"),
+  F.num("humidity", "湿度(%)"), F.date("updatedAt", "更新日"),
+];
+const NOTIF_FIELDS = [
+  F.text("title", "通知内容", { req: true }), F.text("type", "種別"),
+  F.sel("read", "状態", ["未読", "既読"]), F.date("createdAt", "日時"),
+];
+const ACTIVITY_FIELDS = [
+  F.text("title", "活動内容", { req: true }), F.text("project", "対象工事"),
+  F.text("time", "表示時間"), F.date("createdAt", "日時"),
+];
+const APILOG_FIELDS = [
+  F.sel("method", "メソッド", ["GET", "POST", "PUT", "DELETE"]),
+  F.text("path", "パス", { req: true }), F.num("status", "ステータス"),
+  F.num("latency", "応答(ms)"), F.date("at", "日時"),
+];
+const MASTER_FIELDS = [
+  F.text("key", "キー", { req: true }), F.text("value", "値"),
+  F.text("group", "グループ"),
+];
+const CONFIG_FIELDS = [
+  F.text("key", "設定キー", { req: true }), F.text("value", "値"),
+  F.text("group", "グループ"),
+];
+const ROLE_FIELDS = [
+  F.text("name", "ロール名", { req: true }), F.text("code", "コード"),
+  F.area("description", "説明"), F.text("permissions", "権限"),
+];
+const AUTHMETHOD_FIELDS = [
+  F.text("name", "方式名", { req: true }), F.text("provider", "プロバイダ"),
+  F.sel("status", "状態", ["接続済", "有効", "設定中", "停止"]),
+];
+const SECURITY_FIELDS = [
+  F.text("title", "イベント名", { req: true }),
+  F.sel("type", "種別", ["SIEM", "SOC", "VPN", "EDR", "OT", "インシデント", "監査"]),
+  F.sel("severity", "重要度", ["危険", "警戒", "注意", "情報"]),
+  F.text("source", "発生源"), F.sel("status", "状態", ["調査中", "対応済", "完了"]),
+  F.date("createdAt", "発生日時"),
+];
+const ROBOT_FIELDS = [
+  F.text("name", "名称", { req: true }),
+  F.sel("type", "種別", ["自動施工", "ドローン", "ROV", "デジタルツイン"]),
+  F.text("project", "適用工事"), F.sel("status", "状態", ["運用中", "待機中", "点検中", "停止"]),
+  F.date("updatedAt", "更新日"),
+];
+const SYSTEM_FIELDS = [
+  F.text("name", "項目名", { req: true }),
+  F.sel("type", "種別", ["サーバ", "DB", "バックアップ", "API状態", "DevOps"]),
+  F.sel("status", "状態", ["稼働中", "停止", "成功", "失敗", "警告"]),
+  F.num("cpu", "CPU(%)"), F.num("memory", "メモリ(%)"), F.date("updatedAt", "更新日"),
+];
+const CHAT_FIELDS = [
+  F.text("question", "質問", { req: true }), F.area("answer", "回答"),
+  F.date("createdAt", "日時"),
+];
+
+/* ================================================================
+ * カテゴリ・ページ定義(OpenDesign 仕様 §4 の全ルート)
+ * view: "crud"=汎用CRUD / "workflow" / "field" / "docs" / "dashboard"
+ * ================================================================ */
+const NAV = [
+  { id: "dashboard", label: "ダッシュボード", icon: "▦", open: true, pages: [
+    { id: "dashboard", title: "全社統合", view: "dashboard", route: "dashboard" },
+    { id: "dashboard/field", title: "現場ダッシュボード", view: "dash-field", route: "dashboard/field" },
+    { id: "dashboard/exec", title: "経営ダッシュボード", view: "dash-exec", route: "dashboard/exec" },
+    { id: "dashboard/ai", title: "AI分析", view: "dash-ai", route: "dashboard/ai" },
+    { id: "dashboard/kpi", title: "KPI/アラート", view: "dash-kpi", route: "dashboard/kpi", badge: 3 },
+  ]},
+  { id: "common", label: "共通基盤", icon: "⚙", roles: ["admin"], subs: [
+    { label: "認証管理", pages: [
+      { id: "common/auth/entra", title: "Entra ID", coll: "authMethods", fields: AUTHMETHOD_FIELDS, filter: { provider: "Microsoft" } },
+      { id: "common/auth/ad", title: "AD連携", coll: "authMethods", fields: AUTHMETHOD_FIELDS, filter: { provider: "Active Directory" } },
+      { id: "common/auth/mfa", title: "MFA", coll: "authMethods", fields: AUTHMETHOD_FIELDS, filter: { name: "MFA" } },
+      { id: "common/auth/sso", title: "SSO", coll: "authMethods", fields: AUTHMETHOD_FIELDS, filter: { name: "SSO" } },
+    ]},
+    { label: "ユーザー管理", pages: [
+      { id: "common/users", title: "ユーザー一覧", coll: "users", fields: USER_FIELDS },
+      { id: "common/roles", title: "権限管理", coll: "roles", fields: ROLE_FIELDS },
+    ]},
+    { label: "API管理", pages: [
+      { id: "common/api", title: "API一覧", view: "api-list", route: "common/api" },
+      { id: "common/api/logs", title: "APIログ", coll: "apiLogs", fields: APILOG_FIELDS, view: "crud" },
+    ]},
+    { label: "マスタ管理", pages: [
+      { id: "common/master", title: "マスタデータ", coll: "masterData", fields: MASTER_FIELDS },
+      { id: "common/config", title: "システム設定", coll: "configs", fields: CONFIG_FIELDS },
+    ]},
+  ]},
+  { id: "documents", label: "文書・図面管理", icon: "▤", subs: [
+    { label: "ファイル管理", pages: [
+      { id: "documents/pdf", title: "PDF管理", coll: "documents", fields: DOC_FIELDS, filter: { type: "PDF" } },
+      { id: "documents/cad", title: "CAD図面", coll: "documents", fields: DOC_FIELDS, filter: { type: "CAD" } },
+      { id: "documents/bim", title: "BIM/CIM", coll: "documents", fields: DOC_FIELDS, filter: { type: "BIM/CIM" } },
+      { id: "documents/photo", title: "写真管理", coll: "documents", fields: DOC_FIELDS, filter: { type: "写真" } },
+      { id: "documents/video", title: "動画管理", coll: "documents", fields: DOC_FIELDS, filter: { type: "動画" } },
+    ]},
+    { label: "ツール", pages: [
+      { id: "documents/ocr", title: "OCR", coll: "documents", fields: DOC_FIELDS, filter: { type: "OCR" } },
+      { id: "documents/board", title: "電子黒板", coll: "documents", fields: DOC_FIELDS, filter: { type: "電子納品" } },
+      { id: "documents/deliver", title: "電子納品", coll: "documents", fields: DOC_FIELDS, filter: { type: "電子納品" }, badge: 2 },
+      { id: "documents/version", title: "バージョン管理", coll: "documents", fields: DOC_FIELDS },
+      { id: "documents/ai-search", title: "AI文書検索", coll: "documents", fields: DOC_FIELDS },
+    ]},
+  ]},
+  { id: "field", label: "現場DX", icon: "▣", roles: ["field", "exec", "safety"], subs: [
+    { label: "工事管理", pages: [
+      { id: "field/projects", title: "工事一覧", coll: "projects", fields: PROJ_FIELDS, view: "field-projects" },
+      { id: "field/progress", title: "現場進捗", coll: "projects", fields: PROJ_FIELDS, view: "field-progress" },
+      { id: "field/schedule", title: "工程管理", coll: "projects", fields: PROJ_FIELDS, view: "field-schedule" },
+      { id: "field/daily", title: "作業日報", coll: "activities", fields: ACTIVITY_FIELDS, badge: 5 },
+    ]},
+    { label: "現場作業", pages: [
+      { id: "field/photos", title: "現場写真", coll: "documents", fields: DOC_FIELDS, filter: { type: "写真" } },
+      { id: "field/measure", title: "出来形管理", coll: "projects", fields: PROJ_FIELDS },
+      { id: "field/safety", title: "安全管理", coll: "safetyEvents", fields: SAFETY_FIELDS, view: "safety", tab: "安全管理", badge: "!" },
+      { id: "field/ky", title: "KY活動", coll: "safetyEvents", fields: SAFETY_FIELDS, filter: { type: "KY活動" } },
+    ]},
+    { label: "リソース管理", pages: [
+      { id: "field/equipment", title: "重機管理", coll: "equipment", fields: EQ_FIELDS },
+      { id: "field/workers", title: "作業員管理", coll: "workers", fields: WORKER_FIELDS },
+      { id: "field/live", title: "現場ライブビュー", view: "live", route: "field/live" },
+    ]},
+  ]},
+  { id: "partner", label: "協力会社連携", icon: "⧉", roles: ["field", "partner"], subs: [
+    { label: "協力会社管理", pages: [
+      { id: "partner/list", title: "協力会社一覧", coll: "partners", fields: PARTNER_FIELDS },
+      { id: "partner/entry", title: "入退場管理", coll: "entries", fields: ENTRY_FIELDS },
+      { id: "partner/docs", title: "提出書類", coll: "documents", fields: DOC_FIELDS, badge: 4 },
+    ]},
+    { label: "契約・請求", pages: [
+      { id: "partner/education", title: "安全教育", coll: "education", fields: EDU_FIELDS },
+      { id: "partner/contract", title: "契約管理", coll: "contracts", fields: CONTRACT_FIELDS },
+      { id: "partner/invoice", title: "請求管理", coll: "invoices", fields: INVOICE_FIELDS },
+    ]},
+  ]},
+  { id: "gis", label: "GIS / 地図", icon: "⌖", roles: ["maintain"], subs: [
+    { label: "地図情報", pages: [
+      { id: "gis/projects", title: "工事位置", coll: "gisMarkers", fields: GIS_FIELDS, view: "gis-map" },
+      { id: "gis/ocean", title: "海域マップ", coll: "gisMarkers", fields: GIS_FIELDS },
+      { id: "gis/disaster", title: "災害情報", coll: "gisMarkers", fields: GIS_FIELDS, filter: { type: "災害" } },
+      { id: "gis/drone", title: "ドローン地図", coll: "gisMarkers", fields: GIS_FIELDS, filter: { type: "ドローン" } },
+      { id: "gis/pointcloud", title: "点群データ", coll: "gisMarkers", fields: GIS_FIELDS, filter: { type: "点群" } },
+      { id: "gis/hazard", title: "ハザードマップ", coll: "gisMarkers", fields: GIS_FIELDS, filter: { type: "ハザード" } },
+      { id: "gis/realtime", title: "リアルタイム位置", coll: "gisMarkers", fields: GIS_FIELDS, filter: { type: "リアルタイム" } },
+    ]},
+  ]},
+  { id: "ai", label: "AI・分析基盤", icon: "✦", subs: [
+    { label: "AIツール", pages: [
+      { id: "ai/chat", title: "AIチャット", coll: "aiChats", fields: CHAT_FIELDS },
+      { id: "ai/knowledge", title: "ナレッジAI", coll: "aiAnalyses", fields: AI_FIELDS },
+      { id: "ai/ocr", title: "OCR AI", coll: "aiAnalyses", fields: AI_FIELDS, filter: { type: "OCR AI" } },
+      { id: "ai/vision", title: "画像解析AI", coll: "aiAnalyses", fields: AI_FIELDS, filter: { type: "画像解析AI" } },
+      { id: "ai/predict", title: "予測AI", coll: "aiAnalyses", fields: AI_FIELDS, filter: { type: "予測AI" } },
+      { id: "ai/anomaly", title: "異常検知AI", coll: "aiAnalyses", fields: AI_FIELDS },
+      { id: "ai/agent", title: "AI Agent", coll: "aiAnalyses", fields: AI_FIELDS },
+    ]},
+  ]},
+  { id: "iot", label: "IoT・リアルタイム監視", icon: "◉", roles: ["safety", "maintain"], subs: [
+    { label: "監視", pages: [
+      { id: "iot/sensors", title: "センサ一覧", coll: "sensors", fields: SENSOR_FIELDS, view: "iot" },
+      { id: "iot/weather", title: "気象情報", coll: "weather", fields: WEATHER_FIELDS },
+      { id: "iot/wave", title: "波浪監視", coll: "sensors", fields: SENSOR_FIELDS },
+      { id: "iot/water", title: "水位監視", coll: "sensors", fields: SENSOR_FIELDS, filter: { type: "水位" } },
+      { id: "iot/gateway", title: "IoT Gateway", coll: "sensors", fields: SENSOR_FIELDS },
+      { id: "iot/edge", title: "Edge AI", coll: "sensors", fields: SENSOR_FIELDS },
+    ]},
+    { label: "アラート", pages: [
+      { id: "iot/alerts", title: "アラート管理", coll: "alerts", fields: ALERT_FIELDS, badge: 3 },
+      { id: "iot/realtime", title: "リアルタイム監視", view: "iot-realtime", route: "iot/realtime" },
+    ]},
+  ]},
+  { id: "erp", label: "ERP・経営管理", icon: "▤", roles: ["exec"], subs: [
+    { label: "財務管理", pages: [
+      { id: "erp/cost", title: "原価管理", coll: "costs", fields: COST_FIELDS, view: "cost" },
+      { id: "erp/budget", title: "予算管理", coll: "costs", fields: COST_FIELDS },
+      { id: "erp/contract", title: "契約管理", coll: "contracts", fields: CONTRACT_FIELDS },
+      { id: "erp/purchase", title: "購買管理", coll: "invoices", fields: INVOICE_FIELDS },
+      { id: "erp/sales", title: "売上管理", coll: "invoices", fields: INVOICE_FIELDS },
+    ]},
+    { label: "業務管理", pages: [
+      { id: "erp/labor", title: "労務管理", coll: "workers", fields: WORKER_FIELDS },
+      { id: "erp/stock", title: "在庫管理", coll: "masterData", fields: MASTER_FIELDS },
+      { id: "erp/ledger", title: "工事台帳", coll: "projects", fields: PROJ_FIELDS },
+      { id: "erp/bi", title: "BIレポート", view: "bi", route: "erp/bi" },
+    ]},
+  ]},
+  { id: "security", label: "セキュリティ・監査", icon: "⬢", roles: ["admin"], subs: [
+    { label: "監視", pages: [
+      { id: "security/siem", title: "SIEM", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "SIEM" } },
+      { id: "security/soc", title: "SOC", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "SOC" } },
+      { id: "security/vpn", title: "VPN監視", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "VPN" } },
+      { id: "security/edr", title: "EDR", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "EDR" } },
+      { id: "security/ot", title: "OT監視", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "OT" } },
+    ]},
+    { label: "インシデント・監査", pages: [
+      { id: "security/incident", title: "インシデント", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "インシデント" } },
+      { id: "security/audit", title: "監査レポート", coll: "securityEvents", fields: SECURITY_FIELDS, filter: { type: "監査" } },
+    ]},
+  ]},
+  { id: "workflow", label: "ワークフロー", icon: "⇄", open: true, subs: [
+    { label: "承認プロセス", pages: [
+      { id: "workflow/approval", title: "承認一覧", coll: "workflows", fields: WF_FIELDS, view: "workflow", badge: 5 },
+      { id: "workflow/ringi", title: "稟議", coll: "workflows", fields: WF_FIELDS, view: "workflow", tab: "稟議" },
+      { id: "workflow/permit", title: "作業許可", coll: "workflows", fields: WF_FIELDS, view: "workflow", tab: "作業許可" },
+      { id: "workflow/esign", title: "電子決裁", coll: "workflows", fields: WF_FIELDS, view: "workflow", tab: "電子決裁" },
+      { id: "workflow/change", title: "変更管理", coll: "workflows", fields: WF_FIELDS, view: "workflow", tab: "変更管理" },
+    ]},
+  ]},
+  { id: "robotics", label: "自動化・ロボティクス", icon: "◈", subs: [
+    { label: "ロボティクス", pages: [
+      { id: "robotics/auto", title: "自動施工", coll: "robotics", fields: ROBOT_FIELDS, filter: { type: "自動施工" } },
+      { id: "robotics/drone", title: "ドローン", coll: "robotics", fields: ROBOT_FIELDS, filter: { type: "ドローン" } },
+      { id: "robotics/rov", title: "ROV", coll: "robotics", fields: ROBOT_FIELDS, filter: { type: "ROV" } },
+      { id: "robotics/twin", title: "デジタルツイン", coll: "robotics", fields: ROBOT_FIELDS, filter: { type: "デジタルツイン" } },
+    ]},
+  ]},
+  { id: "system", label: "システム管理", icon: "⬡", roles: ["admin"], subs: [
+    { label: "システム", pages: [
+      { id: "system/server", title: "サーバ監視", coll: "systemItems", fields: SYSTEM_FIELDS, filter: { type: "サーバ" } },
+      { id: "system/db", title: "DB管理", coll: "systemItems", fields: SYSTEM_FIELDS, filter: { type: "DB" } },
+      { id: "system/backup", title: "バックアップ", coll: "systemItems", fields: SYSTEM_FIELDS, filter: { type: "バックアップ" } },
+      { id: "system/api-status", title: "API状態", coll: "systemItems", fields: SYSTEM_FIELDS, filter: { type: "API状態" } },
+      { id: "system/devops", title: "DevOps/CI-CD", coll: "systemItems", fields: SYSTEM_FIELDS, filter: { type: "DevOps" } },
+    ]},
+  ]},
+];
+
+function findPage(route) {
+  for (const cat of NAV) {
+    for (const sub of cat.subs || []) {
+      for (const p of sub.pages) if (p.id === route) return p;
+    }
+    for (const p of cat.pages || []) if (p.id === route) return p;
+  }
+  return NAV[0].pages[0];
+}
+
+/* ================================================================
+ * 状態・ルーター
+ * ================================================================ */
+const state = {
+  route: "dashboard",
+  tab: null,
+  role: "",
+  dark: false,
+  notifOpen: false,
+  roleOpen: false,
+  modal: null,          // { mode:"create"|"edit", coll, id, fields }
+  confirm: null,        // { message, onOk }
+  search: {},
+  toast: null,
+  apiStatus: "checking", // checking | online | offline
+  authUser: null,
+};
+
+const ROLE_LABELS = { "": "全表示", field: "現場監督", exec: "経営層", admin: "IT管理者", partner: "協力会社", safety: "安全管理者", maintain: "維持管理" };
+
+function navigate(route) {
+  state.route = route;
+  state.tab = null;
+  state.notifOpen = false;
+  state.roleOpen = false;
+  state.modal = null;
+  state.confirm = null;
+  render();
+}
+
+function pageTitle(page) { return page ? page.title : ""; }
+function pageCrumb(page) {
+  for (const cat of NAV) {
+    if (cat.pages && cat.pages.some((p) => p.id === (page && page.id))) return [cat.label, page.title];
+    for (const sub of cat.subs || []) if (sub.pages.some((p) => p.id === (page && page.id))) return [cat.label, sub.label, page.title];
+  }
+  return [page ? page.title : ""];
+}
+
+
+/* ================================================================
+ * API 層(auth API 実接続 / 他はローカルストア)
+ * ================================================================ */
+const Api = {
+  base: "/api/v1",
+  async login(email, password) {
+    const res = await fetch(`${this.base}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.success) {
+      const code = (body.error && body.error.code) || "LOGIN_FAILED";
+      throw new Error(code === "INTERNAL_ERROR" ? "一時的なエラーが発生しました。もう一度お試しください。" : "メールアドレスまたはパスワードが正しくありません。");
+    }
+    return body.data;
+  },
+  async checkHealth() {
+    try {
+      const res = await fetch(`${this.base}/health/services`, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error("health failed");
+      const body = await res.json();
+      return (body.services || []).length > 0;
+    } catch { return false; }
+  },
+};
+
+/* ================================================================
+ * シェル描画
+ * ================================================================ */
+function icon(name) {
+  const paths = {
+    "▦": '<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>',
+    "▣": '<path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18" opacity=".4"/>',
+    "▤": '<path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 8h10M7 12h10M7 16h6" opacity=".5"/>',
+    "⚙": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    "⧉": '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9" opacity=".5"/>',
+    "⌖": '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" opacity=".5"/>',
+    "✦": '<path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/>',
+    "◉": '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+    "⇄": '<path d="M4 7h13M14 3l4 4-4 4M20 17H7M10 13l-4 4 4 4"/>',
+    "◈": '<path d="M12 2l10 10-10 10L2 12z"/><path d="M12 7l5 5-5 5-5-5z" opacity=".5"/>',
+    "⬢": '<path d="M12 2l9 5v10l-9 5-9-5V7z"/><circle cx="12" cy="12" r="3" opacity=".5"/>',
+    "⬡": '<path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><circle cx="12" cy="12" r="3" opacity=".5"/>',
+    "bell": '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    "moon": '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
+    "plus": '<path d="M12 5v14M5 12h14"/>',
+    "x": '<path d="M18 6L6 18M6 6l12 12"/>',
+    "menu": '<path d="M3 6h18M3 12h18M3 18h18"/>',
+  };
+  const d = paths[name] || paths["▦"];
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+}
+
+function badgeHtml(text, kind = "") {
+  return `<span class="badge ${kind}" aria-hidden="true">${esc(text)}</span>`;
+}
+
+function renderSidebar() {
+  const page = findPage(state.route);
+  const isCatOpen = (cat) => cat.open || (cat.pages || []).some((p) => p.id === page.id) || (cat.subs || []).some((s) => s.pages.some((p) => p.id === page.id));
+  const isSubOpen = (sub) => sub.pages.some((p) => p.id === page.id);
+
+  let navHtml = "";
+  for (const cat of NAV) {
+    if (state.role && cat.roles && !cat.roles.includes(state.role)) continue;
+    const catOpen = isCatOpen(cat);
+    const catActive = (cat.pages || []).some((p) => p.id === page.id);
+    navHtml += `<button class="nav-cat ${catOpen ? "open" : ""} ${catActive ? "active" : ""}" data-nav-cat="${cat.id}" role="button">${icon(cat.icon)}<span>${esc(cat.label)}</span>${cat.badge ? badgeHtml(cat.badge, cat.badge === "!" ? "danger" : "") : ""}<span class="arrow" aria-hidden="true">▶</span></button>`;
+    if (cat.pages) {
+      navHtml += `<div class="nav-sub ${catOpen ? "open" : ""}">`;
+      for (const p of cat.pages) {
+        const active = p.id === page.id;
+        navHtml += `<button class="nav-page ${active ? "active" : ""}" data-route="${p.id}" role="button">${icon("▦")}<span>${esc(p.title)}</span>${p.badge ? badgeHtml(p.badge) : ""}</button>`;
+      }
+      navHtml += `</div>`;
+    }
+    if (cat.subs) {
+      navHtml += `<div class="nav-sub ${catOpen ? "open" : ""}">`;
+      for (const sub of cat.subs) {
+        const subOpen = isSubOpen(sub);
+        navHtml += `<button class="nav-sub-cat ${subOpen ? "open" : ""}" data-nav-sub="${cat.id}:${sub.label}" role="button"><span>${esc(sub.label)}</span><span class="arrow" aria-hidden="true">▶</span></button>`;
+        navHtml += `<div class="nav-sub ${subOpen ? "open" : ""}" data-sub-body="${cat.id}:${sub.label}">`;
+        for (const p of sub.pages) {
+          const active = p.id === page.id;
+          navHtml += `<button class="nav-page ${active ? "active" : ""}" data-route="${p.id}" role="button">${icon("▦")}<span>${esc(p.title)}</span>${p.badge ? badgeHtml(p.badge) : ""}</button>`;
+        }
+        navHtml += `</div>`;
+      }
+      navHtml += `</div>`;
+    }
+  }
+
+  const roleLabel = ROLE_LABELS[state.role] || "全表示";
+  const unread = Store.list("notifications").filter((n) => n.read === false || n.read === "未読").length;
+
+  return `
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">OS</div>
+      <div>
+        <div class="logo-text">Enterprise OS</div>
+        <div class="logo-sub">Construction Platform</div>
+      </div>
+    </div>
+    <div class="role-banner ${state.role ? "show" : ""}">${esc(roleLabel)}ビュー</div>
+    <nav class="nav" aria-label="メインナビゲーション">${navHtml}</nav>
+    <div class="sidebar-footer">MVP v1.0 · データはブラウザ内ストア<br>${state.apiStatus === "online" ? "API: 接続中" : state.apiStatus === "offline" ? "API: ローカルモード" : "API: 確認中…"}</div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>`;
+}
+
+function renderHeader() {
+  const page = findPage(state.route);
+  const crumbs = pageCrumb(page);
+  const unread = Store.list("notifications").filter((n) => n.read === false || n.read === "未読").length;
+  const roleLabel = ROLE_LABELS[state.role] || "全表示";
+  const notifItems = Store.list("notifications");
+  const notifHtml = notifItems.length
+    ? notifItems.slice(0, 8).map((n) => {
+        const isUnread = n.read === false || n.read === "未読";
+        const color = n.type === "IoTアラート" ? "warn" : n.type === "文書更新" ? "accent" : "ok";
+        return `<div class="notif-item"><span class="n-type" style="background:var(--${color})" aria-hidden="true"></span><div><div class="n-title">${esc(n.title)}</div><div class="n-meta">${esc(n.type)} · ${esc(fmtDate(n.createdAt))}</div></div>${isUnread ? badgeHtml("NEW", "accent") : ""}</div>`;
+      }).join("")
+    : `<div class="notif-empty">通知はありません</div>`;
+
+  return `
+  <header class="header">
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="メニューを開く" role="button">${icon("menu")}</button>
+    <div class="breadcrumb">${crumbs.map((c, i) => i === crumbs.length - 1 ? `<b>${esc(c)}</b>` : `${esc(c)} / `).join("")}</div>
+    <div class="header-spacer"></div>
+    <div class="dropdown" id="notif-drop">
+      <button class="icon-btn" id="notif-btn" aria-label="${unread}" role="button">${icon("bell")}${unread > 0 ? badgeHtml(unread) : ""}</button>
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-head"><span>通知</span><button id="notif-readall" role="button">すべて既読</button></div>
+        ${notifHtml}
+      </div>
+    </div>
+    <button class="icon-btn" id="theme-btn" aria-label="テーマ切替" role="button">${icon(state.dark ? "sun" : "moon")}</button>
+    <div class="dropdown" id="role-drop">
+      <button class="hdr-btn" id="role-btn" role="button">${esc(roleLabel)} <span style="font-size:9px;margin-left:2px">▼</span></button>
+      <div class="dropdown-menu" id="role-menu">
+        <div class="dd-title">ロール切替</div>
+        ${Object.entries(ROLE_LABELS).map(([k, v]) => `<button data-role="${k}" class="${state.role === k ? "active" : ""}" role="button">${esc(v)}</button>`).join("")}
+      </div>
+    </div>
+  </header>`;
+}
+
+/* イベントデリゲーション(シェル) */
+function bindShell(root) {
+  // onclick プロパティで登録(render 再構築時に addEventListener が重複して
+  // トグルが相殺される問題を回避。上書きなので常に1つのハンドラ)
+  root.onclick = (e) => {
+    const catBtn = e.target.closest("[data-nav-cat]");
+    if (catBtn) {
+      e.preventDefault();
+      // クリックで必ず展開する(トグルで閉じない — 既存プロトタイプの挙動に合わせる)
+      const el = catBtn;
+      el.classList.add("open");
+      const sub = el.nextElementSibling;
+      if (sub) {
+        sub.classList.add("open");
+        // 配下のサブカテゴリ・ページを全て展開(全階層アクセス可能に)
+        sub.querySelectorAll("[data-sub-body]").forEach((b) => b.classList.add("open"));
+        sub.querySelectorAll("[data-nav-sub]").forEach((b) => b.classList.add("open"));
+      }
+      return;
+    }
+    const subBtn = e.target.closest("[data-nav-sub]");
+    if (subBtn) {
+      e.preventDefault();
+      subBtn.classList.add("open");
+      const body = root.querySelector(`[data-sub-body="${subBtn.dataset.navSub}"]`);
+      if (body) body.classList.add("open");
+      return;
+    }
+    const pageBtn = e.target.closest("[data-route]");
+    if (pageBtn) { navigate(pageBtn.dataset.route); return; }
+
+    const roleBtn = e.target.closest("[data-role]");
+    if (roleBtn) {
+      state.role = roleBtn.dataset.role;
+      state.roleOpen = false;
+      render();
+      return;
+    }
+    const roleBtn2 = e.target.closest("#role-btn");
+    if (roleBtn2) {
+      // DOM 直接トグル(render 再構築と競合しない)
+      $("#role-menu").classList.toggle("open");
+      $("#notif-panel").classList.remove("open");
+      return;
+    }
+
+    const notifBtn = e.target.closest("#notif-btn");
+    if (notifBtn) {
+      $("#notif-panel").classList.toggle("open");
+      $("#role-menu").classList.remove("open");
+      return;
+    }
+
+    const readAll = e.target.closest("#notif-readall");
+    if (readAll) {
+      for (const n of Store.list("notifications")) Store.update("notifications", n.id, { read: "既読" });
+      toast("すべて既読にしました");
+      render();
+      return;
+    }
+    const themeBtn = e.target.closest("#theme-btn");
+    if (themeBtn) {
+      state.dark = !state.dark;
+      document.documentElement.setAttribute("data-theme", state.dark ? "dark" : "light");
+      render();
+      return;
+    }
+    const menuBtn = e.target.closest("#mobile-menu-btn");
+    if (menuBtn) {
+      $("#sidebar").classList.add("open");
+      $("#sidebar-backdrop").classList.add("show");
+      return;
+    }
+    const backdrop = e.target.closest("#sidebar-backdrop");
+    if (backdrop) {
+      $("#sidebar").classList.remove("open");
+      $("#sidebar-backdrop").classList.remove("show");
+      return;
+    }
+    // モーダル操作
+    if (e.target.closest("[data-modal-close]") || e.target.classList.contains("modal-backdrop")) { closeModal(); return; }
+    const okBtn = e.target.closest("[data-modal-ok]");
+    if (okBtn) { submitModal(); return; }
+    const delOk = e.target.closest("[data-confirm-ok]");
+    if (delOk) { const c = state.confirm; state.confirm = null; render(); if (c) c.onOk(); return; }
+    const delCancel = e.target.closest("[data-confirm-cancel]");
+    if (delCancel) { state.confirm = null; render(); return; }
+    const editBtn = e.target.closest("[data-edit]");
+    if (editBtn) { openModal("edit", editBtn.dataset.edit, editBtn.dataset.id); return; }
+    const delBtn = e.target.closest("[data-del]");
+    if (delBtn) { confirmDelete(delBtn.dataset.del, delBtn.dataset.id); return; }
+    const createBtn = e.target.closest("[data-create]");
+    if (createBtn) { openModal("create", createBtn.dataset.coll); return; }
+    const tabBtn = e.target.closest("[data-tab]");
+    if (tabBtn) { state.tab = tabBtn.dataset.tab; render(); return; }
+  };
+  root.onsubmit = (e) => { e.preventDefault(); };
+}
+
+
+/* ================================================================
+ * CRUD 共通コンポーネント
+ * ================================================================ */
+function fmtVal(row, f) {
+  const v = row[f.key];
+  if (v === undefined || v === null || v === "") return '<span style="color:var(--text-muted)">—</span>';
+  if (f.type === "number") {
+    const n = Number(v);
+    return `<span class="mono">${isNaN(n) ? esc(v) : n.toLocaleString("ja-JP")}</span>`;
+  }
+  if (f.key === "status" || f.key === "severity" || f.key === "direction" || f.key === "read") {
+    const chip = (t) => {
+      const map = { "稼働中": "ok", "正常": "ok", "有効": "ok", "実施済": "ok", "支払済": "ok", "完了": "ok", "公開": "ok", "承認済": "ok", "締結済": "ok", "接続済": "ok", "成功": "ok", "入場": "ok", "良好": "ok", "対応済": "ok", "運用中": "ok", "既読": "muted",
+        "警戒": "warn", "要注意": "warn", "確認中": "warn", "警告": "warn", "交渉中": "warn", "予定": "warn", "未対応": "warn", "未払": "warn", "点検中": "warn", "調査中": "warn", "設定中": "warn", "作成中": "warn", "待機中": "warn",
+        "危険": "danger", "異常": "danger", "故障": "danger", "却下": "danger", "差戻し": "danger", "無効": "danger", "停止": "danger", "失敗": "danger", "中断": "danger", "延滞": "danger" };
+      const kind = map[t] || "accent";
+      return `<span class="chip ${kind}">${esc(t)}</span>`;
+    };
+    return chip(String(v));
+  }
+  if (f.key === "progress") {
+    const n = Number(v) || 0;
+    const kind = n >= 80 ? "ok" : n >= 50 ? "" : "warn";
+    return `<div style="display:flex;align-items:center;gap:8px"><div class="progress-bar" style="width:80px"><div class="${kind}" style="width:${Math.min(100, n)}%"></div></div><span class="mono" style="font-size:11px">${n}%</span></div>`;
+  }
+  return esc(String(v));
+}
+
+function renderTable(rows, fields, coll) {
+  if (!rows.length) {
+    return `<div class="state-box"><div class="state-icon" aria-hidden="true">🗂️</div><div class="state-title">データがありません</div><div class="state-desc">「新規作成」からデータを登録すると、ここに表示されます。</div></div>`;
+  }
+  const ths = fields.map((f) => `<th class="${f.type === "number" ? "num" : ""}">${esc(f.label)}</th>`).join("");
+  const trs = rows.map((r) => `
+    <tr>
+      ${fields.map((f) => `<td class="${f.type === "number" ? "num" : ""}">${fmtVal(r, f)}</td>`).join("")}
+      <td><div class="row-actions">
+        <button class="row-btn edit" data-edit="${coll}" data-id="${r.id}" role="button">編集</button>
+        <button class="row-btn del" data-del="${coll}" data-id="${r.id}" role="button">削除</button>
+      </div></td>
+    </tr>`).join("");
+  return `<div style="overflow-x:auto"><table class="grid"><thead><tr><th>#</th>${ths}<th style="text-align:right">操作</th></tr></thead><tbody>${trs}</tbody></table></div>`;
+}
+
+function renderCards(rows, fields, coll, titleKey = "name") {
+  if (!rows.length) {
+    return `<div class="state-box"><div class="state-icon" aria-hidden="true">🗂️</div><div class="state-title">データがありません</div><div class="state-desc">「新規作成」からデータを登録すると、ここに表示されます。</div></div>`;
+  }
+  return `<div class="cards-grid">${rows.map((r) => {
+    const meta = fields.filter((f) => f.key !== titleKey && f.key !== "progress").slice(0, 4);
+    return `<div class="entity-card">
+      <div class="ec-title">${esc(String(r[titleKey] || ""))}</div>
+      <div class="ec-meta">${esc(String(r.code || r.client || r.location || ""))}</div>
+      ${r.progress !== undefined ? `<div>${fmtVal(r, { key: "progress", type: "number" })}</div>` : ""}
+      <div class="ec-body">${meta.map((f) => `<span><b>${esc(f.label)}</b>: ${fmtVal(r, f)}</span>`).join("")}</div>
+      <div class="ec-actions">
+        <button class="btn btn-outline btn-sm" data-edit="${coll}" data-id="${r.id}" role="button">編集</button>
+        <button class="btn btn-danger-outline btn-sm" data-del="${coll}" data-id="${r.id}" role="button">削除</button>
+      </div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+/* 汎用 CRUD ページ(一覧 + 検索 + 新規作成 + 編集 + 削除) */
+function renderCrudPage(page) {
+  const coll = page.coll;
+  const rows0 = Store.list(coll);
+  let rows = rows0;
+  if (page.filter) rows = rows.filter((r) => Object.entries(page.filter).every(([k, v]) => r[k] === v));
+  const q = (state.search[coll] || "").trim();
+  if (q) rows = rows.filter((r) => Object.values(r).join(" ").toLowerCase().includes(q.toLowerCase()));
+
+  const total = rows0.length;
+  const kpis = page.kpis ? page.kpis(rows0) : [{ label: "登録数", value: total, unit: "件" }];
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title">${esc(page.title)}</div>
+      <div class="page-desc">データの表示・新規登録・編集・削除ができます(${coll} ストア)</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" data-create="${coll}" role="button">${icon("plus")}<span>新規作成</span></button>
+  </div>
+  <div class="kpi-row">${kpis.map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit || "")}</span></div>${k.delta ? `<div class="kpi-delta ${k.deltaKind || "neutral"}">${esc(k.delta)}</div>` : ""}</div>`).join("")}</div>
+  <div class="card">
+    <div class="toolbar" style="padding:12px 14px 0">
+      <input class="search-input" data-search="${coll}" placeholder="検索(名称・キーワード)…" value="${esc(q)}" aria-label="検索" />
+      <span style="font-size:11px;color:var(--text-muted)" class="mono">${rows.length} / ${total} 件</span>
+    </div>
+    <div class="card-body flush" style="padding-top:12px">
+      ${page.view === "cards" || page.view === "field-projects" ? renderCards(rows, page.fields, coll) : renderTable(rows, page.fields, coll)}
+    </div>
+  </div>`;
+}
+
+/* ================================================================
+ * モーダル(新規作成/編集)・削除確認
+ * ================================================================ */
+function openModal(mode, coll, id) {
+  const page = findPage(state.route);
+  const fields = page.fields || [];
+  if (!coll) coll = page.coll;
+  const row = mode === "edit" ? Store.get(coll, id) : null;
+  state.modal = { mode, coll, id, fields, row };
+  render();
+}
+
+function closeModal() { state.modal = null; render(); }
+
+function renderModal() {
+  const m = state.modal;
+  if (!m) return "";
+  const title = m.mode === "create" ? "新規作成" : "編集";
+  const fieldsHtml = m.fields.map((f) => {
+    const val = m.row ? m.row[f.key] : "";
+    let input = "";
+    if (f.type === "select") {
+      input = `<select data-field="${f.key}" ${f.req ? "required" : ""}>${f.options.map((o) => `<option value="${esc(o)}" ${String(val) === String(o) ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    } else if (f.type === "textarea") {
+      input = `<textarea data-field="${f.key}" ${f.req ? "required" : ""} placeholder="${esc(f.label)}">${esc(val)}</textarea>`;
+    } else if (f.type === "date") {
+      input = `<input type="date" data-field="${f.key}" value="${esc(fmtDate(val))}">`;
+    } else if (f.type === "number") {
+      input = `<input type="number" data-field="${f.key}" value="${esc(val)}" step="any" ${f.req ? "required" : ""}>`;
+    } else {
+      input = `<input type="text" data-field="${f.key}" value="${esc(val)}" ${f.req ? "required" : ""} placeholder="${esc(f.label)}">`;
+    }
+    return `<div class="field ${f.req ? "full" : ""}" ${!f.req ? "" : ""}><label>${esc(f.label)}${f.req ? " *" : ""}</label>${input}<div class="err">${esc(f.label)}を入力してください</div></div>`;
+  }).join("");
+
+  return `
+  <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${title}">
+    <div class="modal">
+      <div class="modal-head"><h3>${title} — ${esc(m.coll)}</h3><div class="spacer"></div><button class="modal-close" data-modal-close aria-label="閉じる" role="button">${icon("x")}</button></div>
+      <form id="modal-form" novalidate>
+        <div class="modal-body"><div class="form-grid">${fieldsHtml}</div>
+          <div class="form-error" id="form-error">入力内容に誤りがあります。必須項目を確認してください。</div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-outline" data-modal-close role="button">キャンセル</button>
+          <button type="submit" class="btn btn-primary" data-modal-ok role="button">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
+function submitModal() {
+  const m = state.modal;
+  if (!m) return;
+  const form = $("#modal-form");
+  if (!form) return;
+  const values = {};
+  let ok = true;
+  for (const f of m.fields) {
+    const el = form.querySelector(`[data-field="${f.key}"]`);
+    const v = el ? el.value.trim() : "";
+    const fieldWrap = el ? el.closest(".field") : null;
+    if (f.req && !v) { ok = false; if (fieldWrap) fieldWrap.classList.add("invalid"); continue; }
+    if (fieldWrap) fieldWrap.classList.remove("invalid");
+    values[f.key] = f.type === "number" ? (v === "" ? null : Number(v)) : v;
+  }
+  if (!ok) { $("#form-error").classList.add("show"); return; }
+  try {
+    if (m.mode === "create") {
+      Store.create(m.coll, values);
+      toast("登録しました");
+    } else {
+      Store.update(m.coll, m.id, values);
+      toast("更新しました");
+    }
+  } catch (e) {
+    toast("保存に失敗しました: " + e.message, "err");
+    return;
+  }
+  state.modal = null;
+  render();
+}
+
+function confirmDelete(coll, id) {
+  const row = Store.get(coll, id);
+  const label = row ? (row.name || row.title || row.key || row.id) : id;
+  state.confirm = {
+    message: `「${label}」を削除しますか?この操作は取り消せません。`,
+    onOk: () => {
+      Store.remove(coll, id);
+      toast("削除しました");
+      render();
+    },
+  };
+  render();
+}
+
+function renderConfirm() {
+  const c = state.confirm;
+  if (!c) return "";
+  return `
+  <div class="modal-backdrop" role="alertdialog" aria-modal="true" aria-label="削除確認">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-head"><h3>削除の確認</h3><div class="spacer"></div><button class="modal-close" data-confirm-cancel aria-label="閉じる" role="button">${icon("x")}</button></div>
+      <div class="modal-body" style="font-size:13px">${esc(c.message)}</div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" data-confirm-cancel role="button">キャンセル</button>
+        <button class="btn btn-danger" data-confirm-ok role="button">削除する</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+/* ================================================================
+ * 専用ページレンダラ
+ * ================================================================ */
+function renderMap() {
+  const markers = Store.list("gisMarkers");
+  const active = markers.filter((m) => m.type !== "準備中");
+  const pos = (m) => ({ left: `${18 + ((m.lng - 139.6) / 0.55) * 64}%`, top: `${22 + (35.7 - m.lat) / 0.4 * 46}%` });
+  return `
+  <div class="map-box">
+    <div class="map-grid" aria-hidden="true"></div>
+    ${active.map((m, i) => {
+      const p = pos(m);
+      const kind = i % 3 === 0 ? "warn" : i % 3 === 1 ? "ok" : "accent";
+      return `<div class="map-marker" style="left:${p.left};top:${p.top}"><div class="pin ${kind}" aria-hidden="true"></div><span>${esc(m.project)}</span></div>`;
+    }).join("")}
+    <div class="map-legend">■ 工事位置マップ(リアルタイム)<br><span class="mono">${active.length} 箇所を表示</span></div>
+  </div>`;
+}
+
+function renderDashboard(kind) {
+  const projects = Store.list("projects");
+  const workflows = Store.list("workflows");
+  const alerts = Store.list("alerts");
+  const activities = Store.list("activities").slice(0, 6);
+  const pendingWf = workflows.filter((w) => w.status === "承認待ち").length;
+  const activeProjects = projects.filter((p) => p.status === "active").length;
+  const overdueWf = workflows.filter((w) => w.dueDate && w.dueDate < today()).length;
+
+  const kpis = [
+    { label: "進行中工事", value: activeProjects, unit: "件", delta: "+2 今月", deltaKind: "up" },
+    { label: "要承認", value: pendingWf, unit: "件", delta: "期限切迫 " + overdueWf, deltaKind: overdueWf ? "down" : "neutral" },
+    { label: "IoTアラート", value: alerts.filter((a) => a.status === "未対応").length, unit: "件", delta: "要対応", deltaKind: "down" },
+    { label: "新着文書", value: Store.list("documents").length, unit: "件", delta: "+8 今週", deltaKind: "up" },
+  ];
+  const ai = Store.list("aiAnalyses").slice(0, 3);
+  const prog = projects.slice(0, 5);
+
+  return `
+  <div class="hero">
+    <h2>おかえりなさい、田中さん</h2>
+    <p>${new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" })} — 本日も安全第一で。</p>
+  </div>
+  <div class="kpi-row">${kpis.map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div><div class="kpi-delta ${k.deltaKind}">${esc(k.delta)}</div></div>`).join("")}</div>
+  <div class="dash-cols">
+    <div>
+      <div class="card">
+        <div class="card-head"><h3>品川・川崎 工事位置マップ</h3><div class="spacer"></div><span class="chip accent">リアルタイム</span></div>
+        <div class="card-body">${renderMap()}</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>AI分析・予測</h3><div class="spacer"></div><span class="chip accent">AI推奨アクション</span></div>
+        <div class="card-body flush">
+          ${ai.map((a, i) => `<div class="list-item ai-card ${i === 1 ? "warn" : ""}"><div><div class="ai-tag">${esc(a.type)}</div><div class="li-title">${esc(a.title)}</div><div class="li-meta">${esc(a.project)} · ${esc(a.summary)}</div></div></div>`).join("")}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-head"><h3>最近のアクティビティ</h3><div class="spacer"></div><button class="row-btn" data-route="dashboard" role="button">すべて表示</button></div>
+        <div class="card-body flush">
+          ${activities.map((a) => `<div class="list-item"><span class="activity-dot" aria-hidden="true"></span><div><div class="li-title">${esc(a.title)}</div><div class="li-meta">${esc(a.project)}</div></div><span class="li-time">${esc(a.time)}</span></div>`).join("")}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>工事進捗</h3><div class="spacer"></div><button class="row-btn" data-route="field/projects" role="button">すべて表示</button></div>
+        <div class="card-body flush">
+          ${prog.map((p) => `<div class="list-item"><div style="flex:1"><div class="li-title">${esc(p.name)}</div><div class="li-meta">${esc(p.stage)} · ${esc(p.workers)}名</div></div><div style="width:120px">${fmtVal(p, { key: "progress", type: "number" })}</div></div>`).join("")}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderWorkflow(page) {
+  const activeTab = state.tab || page.tab || "承認一覧";
+  const tabs = ["承認一覧", "稟議", "作業許可", "電子決裁", "変更管理"];
+  const rows0 = Store.list("workflows");
+  const rows = activeTab === "承認一覧" ? rows0 : rows0.filter((w) => w.type === activeTab);
+  const pending = rows0.filter((w) => w.status === "承認待ち").length;
+  const kpis = [
+    { label: "承認待ち", value: pending, unit: "件" },
+    { label: "本日承認", value: 8, unit: "件" },
+    { label: "今月申請", value: 42, unit: "件" },
+    { label: "SLA達成率", value: "94", unit: "%" },
+  ];
+  return `
+  <div class="page-head">
+    <div><div class="page-title">ワークフロー</div><div class="page-desc">承認・稟議・作業許可・電子決裁の統合管理</div></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" data-create="workflows" role="button">${icon("plus")}<span>新規申請</span></button>
+  </div>
+  <div class="kpi-row">${kpis.map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div></div>`).join("")}</div>
+  <div class="tabs" role="tablist">${tabs.map((t) => `<button class="tab ${t === activeTab ? "active" : ""}" data-tab="${t}" role="button">${esc(t)}</button>`).join("")}</div>
+  <div class="cards-grid">
+    ${rows.length ? rows.map((w) => `
+      <div class="entity-card">
+        <div style="display:flex;align-items:center;gap:8px"><span class="chip ${w.priority === "高" ? "danger" : w.priority === "中" ? "warn" : "accent"}">${esc(w.priority)}</span><span class="chip muted mono">${esc(w.code)}</span>${badgeHtml(w.type, "accent")}</div>
+        <div class="ec-title">${esc(w.title)}</div>
+        <div class="ec-meta">${esc(w.applicant)} · ${esc(w.project)}</div>
+        <div class="ec-body"><span><b>申請</b>: ${esc(fmtDate(w.requestedAt))}</span><span><b>期限</b>: ${esc(fmtDate(w.dueDate))}</span>${fmtVal(w, { key: "status", type: "text" })}</div>
+        <div class="ec-actions">
+          <button class="btn btn-outline btn-sm" data-edit="workflows" data-id="${w.id}" role="button">編集</button>
+          <button class="btn btn-danger-outline btn-sm" data-del="workflows" data-id="${w.id}" role="button">削除</button>
+        </div>
+      </div>`).join("")
+    : `<div class="state-box" style="grid-column:1/-1"><div class="state-title">データがありません</div><div class="state-desc">「新規申請」から申請を登録できます。</div></div>`}
+  </div>`;
+}
+
+function renderField(page) {
+  const activeTab = state.tab || page.tab || "工事一覧";
+  const tabs = ["工事一覧", "現場進捗", "工程管理", "作業日報", "現場写真", "出来形管理", "安全管理", "KY活動", "重機管理", "作業員管理", "現場ライブビュー"];
+  const projects = Store.list("projects");
+  const active = projects.filter((p) => p.status === "active");
+  const weather = Store.list("weather")[0] || {};
+
+  let body = "";
+  if (activeTab === "工事一覧") {
+    const q = (state.search["projects"] || "").trim();
+    const list = q ? active.filter((p) => Object.values(p).join(" ").toLowerCase().includes(q.toLowerCase())) : active;
+    body = `<div class="toolbar"><input class="search-input" data-search="projects" placeholder="検索(工事名・発注者・場所)…" value="${esc(q)}" aria-label="検索" /><span style="font-size:11px;color:var(--text-muted)" class="mono">${list.length} / ${active.length} 件</span></div><div class="cards-grid">${list.map((p) => `
+      <div class="entity-card">
+        <div class="ec-title">${esc(p.name)}</div>
+        <div class="ec-meta">${esc(p.client)} · ${esc(p.location)}</div>
+        ${fmtVal(p, { key: "progress", type: "number" })}
+        <div class="ec-body">
+          <span><b>作業員</b>: <span class="mono">${p.workers}名</span></span>
+          <span><b>重機</b>: <span class="mono">${p.equipment}台</span></span>
+          <span>${fmtVal(p, { key: "status", type: "text" })}</span>
+        </div>
+        <div class="ec-actions">
+          <button class="btn btn-outline btn-sm" data-edit="projects" data-id="${p.id}" role="button">編集</button>
+          <button class="btn btn-danger-outline btn-sm" data-del="projects" data-id="${p.id}" role="button">削除</button>
+        </div>
+      </div>`).join("")}</div>`;
+  } else if (activeTab === "現場進捗" || activeTab === "工程管理" || activeTab === "出来形管理") {
+    body = renderTable(projects, page.fields || PROJ_FIELDS, "projects");
+  } else if (activeTab === "作業日報") {
+    const acts = Store.list("activities");
+    body = `<div class="card-body flush">${acts.map((a) => `<div class="list-item"><span class="activity-dot" aria-hidden="true"></span><div><div class="li-title">${esc(a.title)}</div><div class="li-meta">${esc(a.project)}</div></div><span class="li-time">${esc(a.time)}</span></div>`).join("")}</div>`;
+  } else if (activeTab === "現場写真") {
+    body = renderTable(Store.list("documents").filter((d) => d.type === "写真"), DOC_FIELDS, "documents");
+  } else if (activeTab === "安全管理") {
+    const sf = Store.list("safetyEvents");
+    body = `<div class="cards-grid">${sf.map((s) => `
+      <div class="entity-card">
+        <div style="display:flex;gap:8px;align-items:center">${badgeHtml(s.type, "accent")}${fmtVal(s, { key: "severity", type: "text" })}</div>
+        <div class="ec-title">${esc(s.title)}</div>
+        <div class="ec-meta">${esc(s.project)} · ${esc(s.reporter)} · ${esc(fmtDate(s.date))}</div>
+        <div class="ec-actions">
+          <button class="btn btn-outline btn-sm" data-edit="safetyEvents" data-id="${s.id}" role="button">編集</button>
+          <button class="btn btn-danger-outline btn-sm" data-del="safetyEvents" data-id="${s.id}" role="button">削除</button>
+        </div>
+      </div>`).join("")}</div>`;
+  } else if (activeTab === "KY活動") {
+    body = renderTable(Store.list("safetyEvents").filter((s) => s.type === "KY活動"), SAFETY_FIELDS, "safetyEvents");
+  } else if (activeTab === "重機管理") {
+    body = renderTable(Store.list("equipment"), EQ_FIELDS, "equipment");
+  } else if (activeTab === "作業員管理") {
+    body = renderTable(Store.list("workers"), WORKER_FIELDS, "workers");
+  } else if (activeTab === "現場ライブビュー") {
+    const sensors = Store.list("sensors");
+    body = `<div class="kpi-row">${[{ label: "稼働センサー", value: sensors.length }, { label: "警戒中", value: sensors.filter((s) => s.status === "警戒").length }, { label: "現場稼働", value: active.length, unit: "現場" }, { label: "天候", value: weather.condition || "—", unit: weather.temp ? weather.temp + "℃" : "" }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit || "")}</span></div></div>`).join("")}</div><div class="card"><div class="card-head"><h3>ライブセンサー(自動更新)</h3><div class="spacer"></div><span class="chip ok">● LIVE</span></div><div class="card-body flush">${renderTable(sensors, SENSOR_FIELDS, "sensors")}</div></div>`;
+  }
+  return `
+  <div class="page-head">
+    <div><div class="page-title">現場DX</div><div class="page-desc">工事管理・現場進捗・安全管理</div></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" data-create="projects" role="button">${icon("plus")}<span>新規工事登録</span></button>
+  </div>
+  <div class="kpi-row">${[{ label: "進行中工事", value: active.length, unit: "件" }, { label: "作業員", value: Store.list("workers").filter((w) => w.status === "現場入場中").length, unit: "名" }, { label: "重機稼働", value: Store.list("equipment").filter((e) => e.status === "稼働中").length, unit: "台" }, { label: "天候", value: weather.condition || "—", unit: weather.temp ? weather.temp + "℃" : "" }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit || "")}</span></div></div>`).join("")}</div>
+  <div class="tabs" role="tablist">${tabs.map((t) => `<button class="tab ${t === activeTab ? "active" : ""}" data-tab="${t}" role="button">${esc(t)}</button>`).join("")}</div>
+  <div class="card"><div class="card-body">${body}</div></div>`;
+}
+
+function renderGisMap(page) {
+  const markers = Store.list("gisMarkers");
+  const kpis = [{ label: "登録地点", value: markers.length, unit: "件" }, { label: "工事中", value: markers.filter((m) => m.type === "工事中").length, unit: "件" }, { label: "準備中", value: markers.filter((m) => m.type === "準備中").length, unit: "件" }];
+  return `
+  <div class="page-head"><div><div class="page-title">${esc(page.title)}</div><div class="page-desc">工事位置の登録・編集・削除</div></div><div class="spacer"></div><button class="btn btn-primary" data-create="gisMarkers" role="button">${icon("plus")}<span>地点を登録</span></button></div>
+  <div class="kpi-row">${kpis.map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div></div>`).join("")}</div>
+  <div class="card"><div class="card-head"><h3>工事位置マップ</h3></div><div class="card-body">${renderMap()}</div></div>
+  <div class="card"><div class="card-head"><h3>地点一覧</h3></div><div class="card-body flush">${renderTable(markers, page.fields || GIS_FIELDS, "gisMarkers")}</div></div>`;
+}
+
+function renderIot(page) {
+  const sensors = Store.list("sensors");
+  const alerts = Store.list("alerts");
+  return `
+  <div class="page-head"><div><div class="page-title">${esc(page.title)}</div><div class="page-desc">IoTセンサー・アラートの管理</div></div><div class="spacer"></div><button class="btn btn-primary" data-create="sensors" role="button">${icon("plus")}<span>センサー登録</span></button></div>
+  <div class="kpi-row">${[{ label: "センサー数", value: sensors.length }, { label: "正常", value: sensors.filter((s) => s.status === "正常").length }, { label: "警戒", value: sensors.filter((s) => s.status === "警戒").length }, { label: "アラート未対応", value: alerts.filter((a) => a.status === "未対応").length }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">件</span></div></div>`).join("")}</div>
+  <div class="card"><div class="card-head"><h3>センサー一覧</h3></div><div class="card-body flush">${renderTable(sensors, page.fields || SENSOR_FIELDS, "sensors")}</div></div>
+  <div class="card"><div class="card-head"><h3>アラート</h3><div class="spacer"></div><button class="btn btn-outline btn-sm" data-create="alerts" role="button">${icon("plus")}追加</button></div><div class="card-body flush">${renderTable(alerts, ALERT_FIELDS, "alerts")}</div></div>`;
+}
+
+function renderCost(page) {
+  const costs = Store.list("costs");
+  const totalBudget = costs.reduce((a, c) => a + (Number(c.budget) || 0), 0);
+  const totalActual = costs.reduce((a, c) => a + (Number(c.actual) || 0), 0);
+  const diff = totalBudget - totalActual;
+  return `
+  <div class="page-head"><div><div class="page-title">${esc(page.title)}</div><div class="page-desc">原価・予算の実績管理</div></div><div class="spacer"></div><button class="btn btn-primary" data-create="costs" role="button">${icon("plus")}<span>原価項目を追加</span></button></div>
+  <div class="kpi-row">${[{ label: "予算合計", value: totalBudget.toLocaleString(), unit: "千円" }, { label: "実績合計", value: totalActual.toLocaleString(), unit: "千円" }, { label: "差額", value: (diff >= 0 ? "+" : "−") + Math.abs(diff).toLocaleString(), unit: "千円", deltaKind: diff >= 0 ? "up" : "down", delta: diff >= 0 ? "予算内" : "超過" }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div>${k.delta ? `<div class="kpi-delta ${k.deltaKind}">${esc(k.delta)}</div>` : ""}</div>`).join("")}</div>
+  <div class="card"><div class="card-head"><h3>原価明細</h3></div><div class="card-body flush">${renderTable(costs, page.fields || COST_FIELDS, "costs")}</div></div>`;
+}
+
+function renderBi() {
+  const costs = Store.list("costs");
+  const projects = Store.list("projects");
+  const total = projects.reduce((a, p) => a + (Number(p.budget) || 0), 0);
+  const avgProg = projects.length ? Math.round(projects.reduce((a, p) => a + (Number(p.progress) || 0), 0) / projects.length) : 0;
+  const byCat = {};
+  for (const c of costs) byCat[c.category] = (byCat[c.category] || 0) + (Number(c.actual) || 0);
+  return `
+  <div class="page-head"><div><div class="page-title">BIレポート</div><div class="page-desc">工事・原価データから集計した経営指標</div></div><div class="spacer"></div></div>
+  <div class="kpi-row">${[{ label: "工事数", value: projects.length, unit: "件" }, { label: "平均進捗", value: avgProg, unit: "%" }, { label: "工事予算総額", value: (total / 1000).toFixed(1), unit: "億円" }, { label: "原価実績", value: costs.reduce((a, c) => a + (Number(c.actual) || 0), 0).toLocaleString(), unit: "千円" }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div></div>`).join("")}</div>
+  <div class="dash-cols">
+    <div class="card"><div class="card-head"><h3>工事一覧(台帳)</h3></div><div class="card-body flush">${renderTable(projects.slice(0, 8), PROJ_FIELDS, "projects")}</div></div>
+    <div class="card"><div class="card-head"><h3>原価区分別実績</h3></div><div class="card-body">${Object.entries(byCat).map(([k, v]) => `<div class="list-item"><span class="activity-dot" aria-hidden="true"></span><div class="li-title">${esc(k)}</div><span class="li-time mono">${Number(v).toLocaleString()} 千円</span></div>`).join("") || `<div class="state-box"><div class="state-title">データがありません</div></div>`}</div></div>
+  </div>`;
+}
+
+function renderApiList() {
+  const logs = Store.list("apiLogs");
+  const ok = logs.filter((l) => l.status < 400).length;
+  return `
+  <div class="page-head"><div><div class="page-title">API一覧</div><div class="page-desc">バックエンド API の状態とログ</div></div><div class="spacer"></div><span class="chip ${state.apiStatus === "online" ? "ok" : "warn"}">${state.apiStatus === "online" ? "● API 接続中(auth)" : state.apiStatus === "offline" ? "○ ローカルモード" : "… 確認中"}</span></div>
+  <div class="kpi-row">${[{ label: "総リクエスト", value: logs.length, unit: "件" }, { label: "成功(2xx/3xx)", value: ok, unit: "件" }, { label: "エラー(4xx/5xx)", value: logs.length - ok, unit: "件" }].map((k) => `<div class="kpi-card"><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value">${k.value}<span class="unit">${esc(k.unit)}</span></div></div>`).join("")}</div>
+  <div class="card"><div class="card-head"><h3>エンドポイント</h3></div><div class="card-body flush">${renderTable(logs, APILOG_FIELDS, "apiLogs")}</div></div>`;
+}
+
+/* ページディスパッチ */
+function renderPage(page) {
+  switch (page.view) {
+    case "dashboard": return renderDashboard();
+    case "dash-field": return renderDashboard();
+    case "dash-exec": return renderDashboard();
+    case "dash-ai": return renderDashboard();
+    case "dash-kpi": {
+      const alerts = Store.list("alerts");
+      return `<div class="page-head"><div><div class="page-title">KPI/アラート</div><div class="page-desc">重要指標とアラートの一覧</div></div><div class="spacer"></div><button class="btn btn-primary" data-create="alerts" role="button">${icon("plus")}<span>アラート登録</span></button></div><div class="card"><div class="card-head"><h3>アラート一覧</h3></div><div class="card-body flush">${renderTable(alerts, ALERT_FIELDS, "alerts")}</div></div>`;
+    }
+    case "workflow": return renderWorkflow(page);
+    case "field-projects": case "field-progress": case "field-schedule": case "safety": return renderField(page);
+    case "gis-map": return renderGisMap(page);
+    case "iot": return renderIot(page);
+    case "iot-realtime": return renderIot(page);
+    case "cost": return renderCost(page);
+    case "bi": return renderBi();
+    case "api-list": return renderApiList();
+    case "live": return renderIot(page);
+    default: return renderCrudPage(page);
+  }
+}
+
+/* ================================================================
+ * メインレンダリング + イベント + 初期化
+ * ================================================================ */
+function render() {
+  const page = findPage(state.route);
+  const app = $("#app");
+  const pageHtml = renderPage(page);
+  app.innerHTML = renderSidebar() + `<div class="main">${renderHeader()}<div class="content" id="content">${pageHtml}</div></div>`;
+  bindShell(app);
+  bindPage(app);
+  if (state.modal) app.insertAdjacentHTML("beforeend", renderModal());
+  if (state.confirm) app.insertAdjacentHTML("beforeend", renderConfirm());
+}
+
+function bindPage(root) {
+  // 検索入力
+  root.querySelectorAll("[data-search]").forEach((el) => {
+    el.addEventListener("input", () => {
+      state.search[el.dataset.search] = el.value;
+      const page = findPage(state.route);
+      const content = $("#content");
+      if (content) content.innerHTML = renderPage(page);
+    });
+  });
+  // モーダル: Enter で保存
+  const form = $("#modal-form");
+  if (form) form.addEventListener("submit", (e) => { e.preventDefault(); submitModal(); });
+}
+
+async function init() {
+  Store.load();
+  // ロール・テーマを localStorage から復元
+  try {
+    const pref = JSON.parse(localStorage.getItem("ceos.mvp.pref.v1") || "{}");
+    if (pref.role) state.role = pref.role;
+    if (pref.dark !== undefined) { state.dark = pref.dark; document.documentElement.setAttribute("data-theme", pref.dark ? "dark" : "light"); }
+  } catch { /* ignore */ }
+
+  // API 状態チェック(auth サービスのみ実接続)
+  Api.checkHealth().then((ok) => {
+    state.apiStatus = ok ? "online" : "offline";
+    const foot = $(".sidebar-footer");
+    if (foot) foot.innerHTML = `MVP v1.0 · データはブラウザ内ストア<br>API: ${ok ? "接続中" : "ローカルモード"}`;
+  });
+
+  // 初期ルート(hash があれば復元、なければダッシュボード)
+  const h = location.hash.replace(/^#\/?/, "");
+  state.route = h && findPage(h).id === h ? h : "dashboard";
+  if (!h) history.replaceState(null, "", "#/dashboard");
+  render();
+
+  // データ変更の永続化プレフィックスは Store が担当。ハッシュ変化でナビゲーション
+  window.addEventListener("hashchange", () => {
+    const h = location.hash.replace(/^#\/?/, "");
+    const page = findPage(h);
+    state.route = page.id;
+    state.tab = null;
+    render();
+  });
+}
+
+document.addEventListener("DOMContentLoaded", init);
+
+</script>
+</body>
+</html>

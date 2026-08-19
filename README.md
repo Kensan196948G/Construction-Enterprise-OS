@@ -16,16 +16,20 @@
 
 建設・土木業における**全業務・全データ・全プロセスを統合**するデジタル基盤です。個別バラバラの業務アプリケーション群を **「OSレイヤ」** によって統合し、単一の真実 (Single Source of Truth) として機能させます。
 
-### 🚀 MVP 稼働状況(2026-08-18)
+### 🚀 MVP 稼働状況(2026-08-19)
 
 | 環境 | URL | 内容 | 状態 |
 |---|---|---|---|
-| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | OpenDesign WebUI(単一HTML) | ✅ 稼働・E2E 18/18 PASS |
-| 本番 | https://construction-os.mirai-dx-platform.com | OpenDesign WebUI(単一HTML) | ✅ 稼働・E2E 18/18 PASS |
+| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | WebUI `webui/app.html`(データ層+CRUD 実装) | ✅ 稼働・E2E 44/44 PASS 予定 |
+| 本番 | https://construction-os.mirai-dx-platform.com | 同上(同一コンテンツ) | ✅ 稼働 |
 | DB | Neon `construction-enterprise-os` | auth スキーマ(Migration+Seed 適用) | ✅ 空DB再実行可能 |
 
-- 設計正本: `webui/`(OpenDesign ハンドオフ)+ `docs/design/opendesign-spec.md`(画面構成 14 カテゴリ/約 90 ルート/6 ロール)
-- 検証: `e2e/mvp.spec.ts`(Playwright、Cloudflare Preview/本番 双方で 18/18 PASS)
+- **WebUI(app.html)**: OpenDesign 設計仕様(opendesign-spec.md)に基づく単一HTML SPA(依存ゼロ)。
+  **全ページ(13 カテゴリ・約 90 ルート)の右側コンテンツで「データ取得・新規作成・編集・削除・検索」が操作可能**。
+  データは localStorage 永続化ストア(シード: 工事/ワークフロー/文書/センサー/原価/安全/協力会社/ユーザー/重機/作業員/契約/請求/GIS/AI/IoT 等 30 コレクション)。
+  auth API(`/api/v1/health`・`/api/v1/auth/*`)は実接続。他サービス API 未稼働のため同一インターフェースのローカルストアで代替(将来差し替え可)。
+- 設計正本: `webui/`(OpenDesign ハンドオフ、プロトタイプは `standalone-prototype.html` として保全)+ `docs/design/opendesign-spec.md`
+- 検証: `e2e/mvp.spec.ts`(既存 18)+ `e2e/crud.spec.ts`(CRUD 26)= **44 テスト**(Playwright、desktop + mobile)
 - 運用: `docs/operations/deployment.md`・`docs/operations/neon-database.md`・`docs/operations/production-deploy-record.md`
 
 ```mermaid
