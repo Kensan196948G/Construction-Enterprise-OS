@@ -23,7 +23,7 @@
 | # | リスク | 重要度 | 対応 |
 |---|---|---|---|
 | R1 | トンネル直接 HTTPS(api.construction-os...)の証明書未発行 | 中 | ssl write 権限トークンをユーザー提供後に advanced 証明書パック発行(現状は Pages Function プロキシで HTTPS 提供済み) |
-| R2 | WebUI のダミーデータ → 実 API 接続が未実施 | ✅ 対応済み | 2026-08-19: webui/app.html(新SPA)で全ページにデータ層(localStorage 永続化ストア)+CRUD(新規/編集/削除/検索)を実装。auth API は実接続(ヘルスチェック)、他サービス API は未稼働のため同一インターフェースのローカルストアで代替(将来差し替え可)。E2E: mvp 18 + crud 26(予定) |
+| R2 | WebUI のダミーデータ → 実 API 接続が未実施 | ✅ 対応済み | 2026-08-19: **正本バンドル(スタイル不変)にデータ層+CRUD を統合**(webui/Construction-Enterprise-OS---CRUD.html)。全ページでデータ取得・新規作成・編集・削除を実装。auth API は実接続、他サービス API は未稼働のため同一インターフェースのローカルストアで代替(将来差し替え可)。E2E: mvp 18 + crud 20 |
 | R3 | サイドバーのポインター横取り・URL 非同期ルーティング | 低 | Next.js 実装時に解消(プロトタイプの既知挙動として記録済み) |
 | R4 | 本番 Cloudflare Access 未適用 | 低 | ユーザー承認後(MVP は公開運用のため保留) |
 | R5 | Pages Function プロキシの公開範囲(/api/v1/* 全公開) | 低 | 本番 Access 適用時に API も保護対象へ |

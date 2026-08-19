@@ -34,9 +34,9 @@ jobs:
       - name: Prepare deploy directory
         run: |
           mkdir -p .deploy-webui
-          # 2026-08-19: デプロイ対象をデータ層+CRUD実装の app.html(新SPA)に切替
-          # (OpenDesign プロトタイプは standalone として保全)
-          cp webui/app.html .deploy-webui/index.html
+          # 2026-08-19: デプロイ対象を「OpenDesign 正本スタイル + 全ページCRUD」統合版に切替
+          # (Construction-Enterprise-OS---CRUD.html = 正本バンドルにデータ層/CRUDを組み込んだもの)
+          cp "webui/Construction-Enterprise-OS---CRUD.html" .deploy-webui/index.html
           cp "webui/Construction-Enterprise-OS---Standalone-_1_.html" ".deploy-webui/standalone-prototype.html"
           cp webui/brand-spec.md webui/DESIGN-HANDOFF.md webui/DESIGN-MANIFEST.json .deploy-webui/
           cp webui/index.html .deploy-webui/management-review-deck.html

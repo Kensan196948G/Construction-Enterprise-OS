@@ -93,3 +93,32 @@
 | CRUD E2E(crud.spec.ts、新規) | 26/26 PASS(一覧/新規/編集/削除/検索/必須エラー/空状態/永続化/KPI 連動) |
 | CI | PR で 25/25 GREEN 確認予定 |
 | Pages 自動デプロイ | main push(webui/**)で MVP + 本番両方へ反映 |
+
+---
+
+# ラウンド6(2026-08-19): 正本バンドルへの CRUD 統合とデプロイ
+
+## 実施内容
+- **OpenDesign 正本バンドル(`Construction-Enterprise-OS---Standalone-_1_.html`)のスタイルを一切変更せず**、
+  そのバンドル自体に「データ層(localStorage 永続化ストア)+全ページ CRUD」を統合した
+  `webui/Construction-Enterprise-OS---CRUD.html` を生成(再バンドル方式)。
+- バンドル構造の解析: manifest(gzip リソース)+ template(HTML/CSS)を展開し、
+  アプリ JSX リソース 17 個に CRUD を組み込み、再圧縮して単一 HTML に再構築。
+- **全ページ(13 カテゴリ・約 90 ルート)で CRUD を実装**:
+  - データ取得(シード: 工事/承認/文書/センサー/アラート/原価/安全/協力会社/ユーザー/
+    重機/作業員/契約/請求/GIS/AI/ロボティクス/セキュリティ/システム等 30+ コレクション)
+  - 新規作成(モーダルフォーム・必須バリデーション)、編集、削除(確認ダイアログ)
+  - hash ルーティング(直接 URL アクセス・リロード・共有に対応)
+- 再生成ツール: `scripts/ceos-bundle.py`(unpack/repack)。作業ワークスペースは .bundle-work/(gitignore)。
+- デプロイ対象を CRUD 統合版に切替(元バンドルは standalone-prototype.html として保全)。
+
+## 検証結果(ローカル → デプロイ後)
+
+| 確認項目 | 結果 |
+|---|---|
+| 全 17 リソースの JSX 構文チェック | ✅ Babel 変換 VALID |
+| ページ遷移(直接 URL 含む 13 ルート) | ✅ 全て表示 |
+| 既存 E2E(mvp.spec.ts) | ローカル 16/16(SPA フォールバック除く)→ デプロイ後 18/18 |
+| CRUD E2E(crud.spec.ts) | ✅ 20/20(新規/編集/削除/永続化/タブ) |
+| CI | PR で 25/25 GREEN 確認 |
+| Pages 自動デプロイ | main push(webui/**)で MVP + 本番両方へ反映 |
