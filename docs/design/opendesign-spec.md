@@ -12,7 +12,7 @@
 | OpenDesign ハンドオフ | `webui/DESIGN-HANDOFF.md`・`webui/DESIGN-MANIFEST.json`・`webui/brand-spec.md`・`webui/index.html`(経営向け戦略レビューデッキ) |
 | OpenDesign プロジェクト | `.od/projects/700407d7-5e4d-4746-a848-80404abfafa9` |
 | 生成日 | 2026-08-18 |
-| 実装(データ層+CRUD) | 2026-08-19 — `webui/app.html`(単一HTML・依存ゼロ・localStorage ストア + auth API 実接続) |
+| 実装(データ層+CRUD) | 2026-08-19 — **正本バンドルそのものに CRUD を統合**(`webui/Construction-Enterprise-OS---CRUD.html`)。スタイルは正本と完全同一。localStorage ストア(30+ コレクション)で全ページの新規作成・編集・削除を実装 |
 | MVP 公開先 | `https://construction-os-mvp.mirai-dx-platform.com`(Pages プロジェクト `construction-os-mvp`、CI 自動デプロイ) |
 | ブランド仕様 | OpenDesign がプロトタイプ CSS 変数から抽出(brand-spec.md) |
 
@@ -153,5 +153,5 @@ CI: `.github/workflows/e2e.yml`(main への `webui/**` push / workflow_dispatch 
 |---|---|---|---|
 | 1 | サイドバー展開時に別要素がポインタイベントを横取り(稟議等のボタンがクリック不能) | マウス操作の一部が不能(キーボード操作は可) | 実装(Next.js 化)時に z-index/レイアウトを是正。E2E は focus+Enter で回避 |
 | 2 | ルーティングが state ベースで URL と同期しない | ディープリンク/共有/リロードでホームに戻る | 実装時に Next.js ルーターへ置換 |
-| 3 | プロトタイプ画面のデータは静的ダミーのみ | ~~画面から実データの操作は不可~~ | **✅ 解消(2026-08-19)**: `webui/app.html`(新SPA、本仕様に基づく実装)で全ページにデータ層(localStorage 永続化ストア)+CRUD(新規/編集/削除/検索/空・読込・エラー状態)を実装。バックエンド API + Neon は HTTPS で検証済み。データストアは将来 API へ差し替え可能なインターフェース |
+| 3 | プロトタイプ画面のデータは静的ダミーのみ | ~~画面から実データの操作は不可~~ | **✅ 解消(2026-08-19)**: **正本バンドル(スタイル不変)にデータ層+CRUD を統合**(`Construction-Enterprise-OS---CRUD.html`)。全ページでデータ取得・新規作成・編集・削除・hash ルーティング(直接URL対応)を実装。バックエンド API + Neon は HTTPS で検証済み。データストアは将来 API へ差し替え可能なインターフェース |
 | 4 | WebUI の認証はダミー(ロール切替のみ) | 画面レベルの権限境界の実証なし | ロール切替(6ロール)は画面表示のフィルタとして実装済み。auth API は実認証(JWT/Neon)を HTTPS で検証済み。WebUI ログイン(実API)は次フェーズで組み込み |

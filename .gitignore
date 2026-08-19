@@ -87,3 +87,6 @@ blob-report/
 
 # wrangler pages deploy のローカル準備ディレクトリ
 .deploy-webui/
+
+# CRUDバンドル再生成用ワークスペース(生成物は webui/Construction-Enterprise-OS---CRUD.html)
+.bundle-work/

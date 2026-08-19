@@ -20,11 +20,11 @@
 
 | 環境 | URL | 内容 | 状態 |
 |---|---|---|---|
-| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | WebUI `webui/app.html`(データ層+CRUD 実装) | ✅ 稼働・E2E 44/44 PASS 予定 |
+| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | WebUI `webui/Construction-Enterprise-OS---CRUD.html`(正本スタイル+全ページCRUD) | ✅ 稼働・E2E 38/38 PASS 予定 |
 | 本番 | https://construction-os.mirai-dx-platform.com | 同上(同一コンテンツ) | ✅ 稼働 |
 | DB | Neon `construction-enterprise-os` | auth スキーマ(Migration+Seed 適用) | ✅ 空DB再実行可能 |
 
-- **WebUI(app.html)**: OpenDesign 設計仕様(opendesign-spec.md)に基づく単一HTML SPA(依存ゼロ)。
+- **WebUI(CRUD 統合版)**: **OpenDesign 正本バンドルのスタイルを一切変更せず**、そのバンドルにデータ層+CRUD を統合(`webui/Construction-Enterprise-OS---CRUD.html`)。
   **全ページ(13 カテゴリ・約 90 ルート)の右側コンテンツで「データ取得・新規作成・編集・削除・検索」が操作可能**。
   データは localStorage 永続化ストア(シード: 工事/ワークフロー/文書/センサー/原価/安全/協力会社/ユーザー/重機/作業員/契約/請求/GIS/AI/IoT 等 30 コレクション)。
   auth API(`/api/v1/health`・`/api/v1/auth/*`)は実接続。他サービス API 未稼働のため同一インターフェースのローカルストアで代替(将来差し替え可)。
