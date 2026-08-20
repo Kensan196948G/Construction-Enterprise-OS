@@ -92,3 +92,19 @@ python -m alembic upgrade head && python -m src.seed
   MVP では auth(認証・権限・監査)を DB 正本とし、業務データは
   各サービス API のモック/インメモリ実装を利用する。
 - ロール/パーミッションの追加変更は migration 追加(002 以降)で対応すること。
+
+## 6. 接続文字列の注意 (2026-08-20 追記)
+
+Neon ダッシュボードが提示する接続 URI を **そのまま `.env` に貼らないこと**。
+ダッシュボードは `?sslmode=require&channel_binding=require` を付与するが、
+`postgresql+asyncpg://` では SQLAlchemy がクエリパラメータを asyncpg の
+`connect()` へそのまま渡すため、いずれも `TypeError: connect() got an
+unexpected keyword argument ...` となり **DB アクセスが全滅する**。
+
+- 正: `postgresql+asyncpg://<user>:<pw>@<host>/neondb?ssl=require`
+- 誤: `...?sslmode=require` / `...?channel_binding=require`
+
+**発覚しにくい理由**: `/health` と `/api/v1/health/services` は DB に触れず
+200 を返し、`POST /api/v1/auth/login` もバリデーション段階(422)までは通る。
+DB 断を検知するには **実在しないユーザーでログインを試行し 401 を確認**する
+(500 なら DB 接続失敗)。稼働確認はこの経路で行うこと。
