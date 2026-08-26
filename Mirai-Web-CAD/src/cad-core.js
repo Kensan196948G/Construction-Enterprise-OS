@@ -309,13 +309,6 @@ export function validateDrawing(drawing) {
     }
   }
 
-  const lockedChanges = drawing.commandEvents.filter((event) =>
-    event.commands.some((command) => command.entity?.lockedLayerAttempt)
-  );
-  if (lockedChanges.length > 0) {
-    issues.push(issue("critical", "locked-layer-change", "ロックレイヤー変更の痕跡があります。", lockedChanges[0].id));
-  }
-
   if (!drawing.entities.some((entity) => entity.type === "text")) {
     issues.push(issue("minor", "missing-title-note", "表題/注記の文字がありません。", drawing.id));
   }
