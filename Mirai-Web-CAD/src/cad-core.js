@@ -19,10 +19,12 @@ export const ROLE_POLICIES = {
 export function createDrawing(overrides = {}) {
   const now = new Date().toISOString();
   return {
+    schemaVersion: 1,
     id: overrides.id ?? "dwg_demo_001",
     name: overrides.name ?? "道路拡幅 仮設施工図 MVP",
     unit: overrides.unit ?? "mm",
     version: overrides.version ?? 1,
+    revision: overrides.revision ?? 1,
     state: overrides.state ?? "draft",
     currentRole: overrides.currentRole ?? "drafter",
     layers: structuredClone(DEFAULT_LAYERS),
@@ -45,7 +47,7 @@ export function createDrawing(overrides = {}) {
 }
 
 export function seedDrawing() {
-  const drawing = createDrawing();
+  const drawing = createDrawing({ revision: 0 });
   const entities = [
     line("layer-frame", [0, 0], [12000, 0], { id: "e_frame_1" }),
     line("layer-frame", [12000, 0], [12000, 7000], { id: "e_frame_2" }),
@@ -171,15 +173,34 @@ export function applyTransaction(drawing, transaction) {
 
     if (command.op === "delete") {
       const target = next.entities.find((item) => item.id === command.id);
+      if (!target) {
+        warnings.push(`削除対象が見つかりません: ${command.id}`);
+        continue;
+      }
       const layer = next.layers.find((item) => item.id === target?.layerId);
       if (layer?.locked) {
         return fail(`ロック中レイヤーの図形は削除できません: ${layer.name}`, drawing);
       }
       next.entities = next.entities.filter((item) => item.id !== command.id);
     }
+
+    if (command.op === "update_layer") {
+      const target = next.layers.find((item) => item.id === command.id);
+      if (!target) {
+        warnings.push(`更新レイヤーが見つかりません: ${command.id}`);
+        continue;
+      }
+      const allowedPatch = Object.fromEntries(
+        Object.entries(command.patch ?? {}).filter(
+          ([key, value]) => ["visible", "locked"].includes(key) && typeof value === "boolean"
+        )
+      );
+      Object.assign(target, structuredClone(allowedPatch));
+    }
   }
 
   next.updatedAt = new Date().toISOString();
+  next.revision = (drawing.revision ?? 1) + 1;
   next.commandEvents.push({
     id: transaction.id ?? `txn_${cryptoSafeId()}`,
     at: next.updatedAt,
@@ -203,6 +224,7 @@ export function applyTransaction(drawing, transaction) {
 export function createNewVersion(drawing, actor = "approver") {
   const next = structuredClone(drawing);
   next.version += 1;
+  next.revision = (drawing.revision ?? 1) + 1;
   next.state = "draft";
   next.updatedAt = new Date().toISOString();
   next.auditLog.push({
@@ -218,6 +240,7 @@ export function createNewVersion(drawing, actor = "approver") {
 export function submitForReview(drawing, actor = "drafter") {
   const next = structuredClone(drawing);
   next.state = "in_review";
+  next.revision = (drawing.revision ?? 1) + 1;
   next.updatedAt = new Date().toISOString();
   next.auditLog.push({
     id: `audit_${cryptoSafeId()}`,
@@ -234,12 +257,16 @@ export function approveDrawing(drawing, actor = "approver") {
   if (!policy.canApprove) {
     return fail(`${policy.label}は承認できません。`, drawing);
   }
+  if (drawing.state !== "in_review") {
+    return fail("レビュー中の図面だけを承認できます。", drawing);
+  }
   const issues = validateDrawing(drawing).filter((issue) => issue.severity === "critical");
   if (issues.length > 0) {
     return fail(`Critical検査項目が残っています: ${issues.length}件`, drawing);
   }
   const next = structuredClone(drawing);
   next.state = "approved";
+  next.revision = (drawing.revision ?? 1) + 1;
   next.updatedAt = new Date().toISOString();
   next.auditLog.push({
     id: `audit_${cryptoSafeId()}`,
@@ -543,7 +570,12 @@ function fail(message, drawing) {
 }
 
 function stableHash(value) {
-  const raw = JSON.stringify(value, Object.keys(JSON.parse(JSON.stringify(value))).sort());
+  const raw = JSON.stringify(value, (_key, current) => {
+    if (current && typeof current === "object" && !Array.isArray(current)) {
+      return Object.fromEntries(Object.entries(current).sort(([left], [right]) => left.localeCompare(right)));
+    }
+    return current;
+  });
   let hash = 0;
   for (let i = 0; i < raw.length; i += 1) {
     hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;

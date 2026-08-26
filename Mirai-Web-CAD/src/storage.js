@@ -3,10 +3,36 @@ const STORAGE_KEY = "mirai-web-cad-mvp";
 export function loadDrawing() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return isStoredDrawing(parsed) ? parsed : null;
   } catch {
     return null;
   }
+}
+
+export function isStoredDrawing(value) {
+  return Boolean(
+    value &&
+      value.schemaVersion === 1 &&
+      typeof value.id === "string" &&
+      typeof value.name === "string" &&
+      Number.isInteger(value.version) &&
+      Number.isInteger(value.revision) &&
+      Array.isArray(value.layers) &&
+      value.layers.every(
+        (layer) =>
+          layer &&
+          typeof layer.id === "string" &&
+          typeof layer.name === "string" &&
+          typeof layer.color === "string" &&
+          typeof layer.visible === "boolean" &&
+          typeof layer.locked === "boolean"
+      ) &&
+      Array.isArray(value.entities) &&
+      Array.isArray(value.commandEvents) &&
+      Array.isArray(value.auditLog)
+  );
 }
 
 export function saveDrawing(drawing) {

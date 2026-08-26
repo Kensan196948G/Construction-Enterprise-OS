@@ -19,6 +19,9 @@ import {
 } from "./cad-core.js";
 import { clearDrawing, exportDrawingFile, loadDrawing, saveDrawing } from "./storage.js";
 
+const VIEW_MODES = new Set(["normal", "empty", "loading", "error"]);
+const requestedViewMode = new URLSearchParams(location.search).get("state") ?? "normal";
+
 const state = {
   drawing: loadDrawing() ?? seedDrawing(),
   tool: "select",
@@ -30,7 +33,7 @@ const state = {
   camera: { x: 50, y: 40, scale: 0.075 },
   commandLog: ["起動: Mirai Web CAD MVP"],
   drag: null,
-  viewMode: new URLSearchParams(location.search).get("state") ?? "normal",
+  viewMode: VIEW_MODES.has(requestedViewMode) ? requestedViewMode : "normal",
   apiStatus: { state: "idle", message: "未確認" }
 };
 
@@ -45,8 +48,8 @@ function render() {
         <h1>Mirai Web CAD</h1>
       </div>
       <div class="drawing-meta" aria-label="図面状態">
-        <span>v${drawing.version}</span>
-        <span>${stateLabel(drawing.state)}</span>
+        <span>v${escapeHtml(drawing.version)}</span>
+        <span>${escapeHtml(stateLabel(drawing.state))}</span>
         <label>
           権限
           <select id="roleSelect" aria-label="権限を切替">
@@ -85,14 +88,16 @@ function render() {
               ${drawing.layers
                 .map(
                   (layer) =>
-                    `<option value="${layer.id}" ${state.currentLayerId === layer.id ? "selected" : ""}>${layer.name}</option>`
+                    `<option value="${escapeHtml(layer.id)}" ${state.currentLayerId === layer.id ? "selected" : ""}>${escapeHtml(
+                      layer.name
+                    )}</option>`
                 )
                 .join("")}
             </select>
           </label>
-          <span>${state.tool.toUpperCase()}</span>
-          <span>${state.selectedId ? `選択: ${state.selectedId}` : "未選択"}</span>
-          <span>表示状態: ${viewModeLabel(state.viewMode)}</span>
+          <span>${escapeHtml(state.tool.toUpperCase())}</span>
+          <span>${state.selectedId ? `選択: ${escapeHtml(state.selectedId)}` : "未選択"}</span>
+          <span>表示状態: ${escapeHtml(viewModeLabel(state.viewMode))}</span>
         </div>
         <canvas id="cadCanvas" width="1180" height="760" tabindex="0" aria-label="作図キャンバス"></canvas>
       </section>
@@ -130,10 +135,12 @@ function render() {
               .map(
                 (layer) => `
                   <label class="layer-row">
-                    <input type="checkbox" data-layer-visible="${layer.id}" ${layer.visible ? "checked" : ""} />
-                    <span class="swatch" style="background:${layer.color}"></span>
-                    <span>${layer.name}</span>
-                    <button data-layer-lock="${layer.id}" class="mini ${layer.locked ? "locked" : ""}" title="ロック切替">${
+                    <input type="checkbox" data-layer-visible="${escapeHtml(layer.id)}" ${layer.visible ? "checked" : ""} />
+                    <span class="swatch" style="background:${safeColor(layer.color)}"></span>
+                    <span>${escapeHtml(layer.name)}</span>
+                    <button data-layer-lock="${escapeHtml(layer.id)}" class="mini ${
+                      layer.locked ? "locked" : ""
+                    }" title="ロック切替">${
                       layer.locked ? "Lock" : "Open"
                     }</button>
                   </label>
@@ -232,8 +239,10 @@ function bindEvents() {
   layerVisibilityInputs.forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       const layer = state.drawing.layers.find((item) => item.id === checkbox.dataset.layerVisible);
-      layer.visible = checkbox.checked;
-      persist(`レイヤー表示切替: ${layer.name}`);
+      if (!layer) return;
+      commitCommands(`レイヤー表示切替: ${layer.name}`, [
+        { op: "update_layer", id: layer.id, patch: { visible: checkbox.checked } }
+      ]);
     });
   });
   /** @type {NodeListOf<HTMLButtonElement>} */
@@ -241,8 +250,10 @@ function bindEvents() {
   layerLockButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const layer = state.drawing.layers.find((item) => item.id === button.dataset.layerLock);
-      layer.locked = !layer.locked;
-      persist(`レイヤーロック切替: ${layer.name}`);
+      if (!layer) return;
+      commitCommands(`レイヤーロック切替: ${layer.name}`, [
+        { op: "update_layer", id: layer.id, patch: { locked: !layer.locked } }
+      ]);
     });
   });
 
@@ -254,12 +265,31 @@ function bindEvents() {
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
+  canvas.addEventListener("pointercancel", cancelDrag);
+  canvas.addEventListener("lostpointercapture", cancelDrag);
   canvas.addEventListener("wheel", onWheel, { passive: false });
   canvas.addEventListener("keydown", onCanvasKeyDown);
   canvas.focus();
 }
 
 async function changeReviewState(action) {
+  const policy = ROLE_POLICIES[state.drawing.currentRole] ?? ROLE_POLICIES.viewer;
+  const allowed = action === "submit" ? policy.canEdit : policy.canApprove;
+  if (!allowed) {
+    log(`${policy.label}は${action === "submit" ? "レビュー提出" : "承認・新版作成"}できません。`);
+    render();
+    return;
+  }
+  if (action === "submit" && !["draft", "rejected"].includes(state.drawing.state)) {
+    log("下書きまたは差戻し図面だけをレビュー提出できます。");
+    render();
+    return;
+  }
+  if (action === "new_version" && state.drawing.state !== "approved") {
+    log("承認済み図面からのみ新版を作成できます。");
+    render();
+    return;
+  }
   if (state.apiStatus.connected) {
     try {
       const body = await apiRequest(`/api/drawings/${state.drawing.id}/review`, {
@@ -309,6 +339,7 @@ function onPointerDown(event) {
     const hit = hitTest(activeDrawing(), world);
     state.selectedId = hit?.id ?? null;
     state.drag = hit && policy.canEdit ? { id: hit.id, start: world, original: structuredClone(hit) } : null;
+    if (state.drag) /** @type {HTMLCanvasElement} */ (event.currentTarget).setPointerCapture(event.pointerId);
     log(hit ? `選択: ${hit.id}` : "選択解除");
     render();
     return;
@@ -365,6 +396,16 @@ function onPointerUp() {
   const command = { op: "update", id: state.drag.id, patch: withoutIdentity(entity) };
   state.drag = null;
   commitCommands("図形移動", [command]);
+}
+
+function cancelDrag() {
+  if (!state.drag) return;
+  state.drawing.entities = state.drawing.entities.map((item) =>
+    item.id === state.drag.id ? state.drag.original : item
+  );
+  state.drag = null;
+  log("図形移動を取消");
+  render();
 }
 
 function onWheel(event) {
@@ -698,7 +739,7 @@ async function apiRequest(pathname, options = {}) {
 function transactionHeaders() {
   return {
     "idempotency-key": globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
-    "expected-version": String(state.drawing.version)
+    "expected-version": String(state.drawing.revision ?? 1)
   };
 }
 
@@ -779,9 +820,11 @@ function proposalHtml() {
   if (proposal.status === "needs_input") return `<p class="warn">${escapeHtml(proposal.question)}</p>`;
   return `
     <dl>
-      <dt>Skill</dt><dd>${proposal.skill.id}@${proposal.skill.version}</dd>
-      <dt>Impact</dt><dd>追加 ${proposal.impact.add} / 更新 ${proposal.impact.update} / 削除 ${proposal.impact.delete}</dd>
-      <dt>Gate</dt><dd>${proposal.postconditions.join(", ")}</dd>
+      <dt>Skill</dt><dd>${escapeHtml(proposal.skill.id)}@${escapeHtml(proposal.skill.version)}</dd>
+      <dt>Impact</dt><dd>追加 ${escapeHtml(proposal.impact.add)} / 更新 ${escapeHtml(proposal.impact.update)} / 削除 ${escapeHtml(
+        proposal.impact.delete
+      )}</dd>
+      <dt>Gate</dt><dd>${escapeHtml(proposal.postconditions.join(", "))}</dd>
     </dl>
     ${proposal.warnings.map((warning) => `<p class="warn">${escapeHtml(warning)}</p>`).join("")}
   `;
@@ -822,6 +865,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function safeColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : "#5b6b7a";
 }
 
 function errorMessage(error) {

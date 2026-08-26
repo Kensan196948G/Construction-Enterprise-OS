@@ -11,6 +11,7 @@ const required = [
   "src/styles.css",
   "migrations/0001_initial.sql",
   "migrations/0002_idempotency.sql",
+  "migrations/0003_drawing_revision.sql",
   "seeds/demo.sql",
   "playwright.config.js",
   "tsconfig.check.json"

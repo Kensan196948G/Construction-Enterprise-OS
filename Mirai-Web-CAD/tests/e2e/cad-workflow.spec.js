@@ -62,6 +62,12 @@ test("状態表示、権限拒否、Keyboard操作を確認できる", async ({ 
   }
 
   await page.getByLabel("権限を切替").selectOption("viewer");
+  const firstLayer = page.locator("[data-layer-visible]").first();
+  await expect(firstLayer).toBeChecked();
+  await firstLayer.click();
+  await expect(page.locator("[data-layer-visible]").first()).toBeChecked();
+  await expect(page.getByLabel("コマンドログ")).toContainText("図面を変更できません");
+
   await page.getByRole("button", { name: "線", exact: true }).click();
   await page.getByLabel("作図キャンバス").click({ position: { x: 200, y: 200 } });
   await expect(page.getByLabel("コマンドログ")).toContainText("閲覧者は作図できません");
@@ -74,6 +80,21 @@ test("CriticalまたはSeriousのアクセシビリティ違反がない", async
   const results = await new AxeBuilder({ page }).analyze();
   const blocking = results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
   expect(blocking).toEqual([]);
+});
+
+test("URLと保存図面の文字列をHTMLとして実行しない", async ({ page }) => {
+  await page.evaluate(() => {
+    const drawing = JSON.parse(localStorage.getItem("mirai-web-cad-mvp"));
+    drawing.layers[0].id = 'unsafe\"><img src=x onerror="window.__miraiXss=1">';
+    drawing.layers[0].name = '<img src=x onerror="window.__miraiXss=1">';
+    drawing.layers[0].color = "red;position:fixed;inset:0";
+    localStorage.setItem("mirai-web-cad-mvp", JSON.stringify(drawing));
+  });
+  await page.goto('/?state=%3Cimg%20src%3Dx%20onerror%3D%22window.__miraiXss%3D1%22%3E');
+  await expect(page.getByText("表示状態: 正常")).toBeVisible();
+  await expect(page.locator("#app img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__miraiXss)).toBeUndefined();
+  await expect(page.locator(".swatch").first()).toHaveCSS("background-color", "rgb(91, 107, 122)");
 });
 
 test("狭い画面でも主要操作領域が表示範囲を破綻させない", async ({ page }) => {

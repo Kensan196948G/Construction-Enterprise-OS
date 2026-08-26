@@ -21,6 +21,7 @@
 - 承認は`reviews`へ記録し、承認済み版の上書きを禁止する
 - 監査は`audit_logs`へ追記する
 - `idempotency_keys`で更新リクエストの重複実行を拒否する
+- `drawings.revision`を比較更新し、古いクライアントからの更新を409で拒否する
 - Localはメモリストア、Cloudflare Preview/Productionは`DATABASE_URL`またはHyperdriveでNeonへ接続する
 
 ## セキュリティ方針
@@ -45,6 +46,7 @@ curl http://127.0.0.1:4176/api/health
 | --- | --- |
 | `0001_initial.sql` | project、drawing/version、command、agent、review、audit |
 | `0002_idempotency.sql` | 更新APIの重複実行防止 |
+| `0003_drawing_revision.sql` | 図面更新の楽観ロック用revision |
 | `seeds/demo.sql` | 5レイヤー、4図形の再実行安全なデモ図面 |
 
-Neon検証ブランチ`mirai-web-cad-pr-15`の空DB`mirai_web_cad_verify`で、初期テーブル0件から2回適用後も8テーブル、Seed各1件を確認しました。
+Neon検証ブランチ`mirai-web-cad-pr-15`の空DB`mirai_web_cad_verify`で、初期テーブル0件から2回適用後も8テーブル、Seed各1件、revision列を確認しました。

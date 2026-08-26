@@ -37,6 +37,10 @@ class MemoryDataStore {
   }
 
   async saveDrawing(drawing) {
+    const current = memory.drawings.get(drawing.id);
+    if (current && drawing.revision !== current.revision + 1) {
+      throw conflictError(current.revision, drawing.revision - 1);
+    }
     memory.drawings.set(drawing.id, clone(drawing));
     return drawing;
   }
@@ -63,6 +67,10 @@ class MemoryDataStore {
     memory.idempotencyKeys.add(key);
     return true;
   }
+
+  async hasIdempotency(key) {
+    return memory.idempotencyKeys.has(key);
+  }
 }
 
 class NeonDataStore {
@@ -79,6 +87,9 @@ class NeonDataStore {
              ) and exists (
                select 1 from information_schema.tables
                where table_schema = 'public' and table_name = 'idempotency_keys'
+             ) and exists (
+               select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'drawings' and column_name = 'revision'
              ) as migrated
     `;
     return {
@@ -86,13 +97,13 @@ class NeonDataStore {
       mode: "connected",
       database: rows[0].database,
       migrated: rows[0].migrated,
-      migration: "0002_idempotency.sql"
+      migration: "0003_drawing_revision.sql"
     };
   }
 
   async getDrawing(id) {
     const rows = await this.sql`
-      select d.id, d.name, d.unit, d.current_version, d.state, v.content
+      select d.id, d.name, d.unit, d.current_version, d.revision, d.state, v.content
       from drawings d
       join drawing_versions v
         on v.drawing_id = d.id and v.version_no = d.current_version
@@ -108,13 +119,14 @@ class NeonDataStore {
     }
     drawing = {
       ...drawing,
+      schemaVersion: 1,
       id: row.id,
       name: row.name,
       unit: row.unit,
       version: row.current_version,
-      state: row.state
+      state: row.state,
+      revision: Number(row.revision)
     };
-    if (!isCadDrawing(row.content)) await this.saveDrawing(drawing);
     return drawing;
   }
 
@@ -123,26 +135,37 @@ class NeonDataStore {
     const contentHash = drawing.commandEvents?.at(-1)?.afterHash ?? `version-${drawing.version}`;
     const versionId = `ver_${drawing.id}_${String(drawing.version).padStart(3, "0")}`;
     const actor = drawing.auditLog?.at(-1)?.actor ?? drawing.currentRole ?? "system";
-    await this.sql.transaction([
-      this.sql`
-        insert into drawings (id, project_id, name, unit, current_version, state)
-        values (${drawing.id}, 'prj_demo_road_001', ${drawing.name}, ${drawing.unit}, ${drawing.version}, ${drawing.state})
+    const expectedRevision = drawing.revision - 1;
+    const rows = await this.sql`
+      with drawing_write as (
+        insert into drawings (id, project_id, name, unit, current_version, revision, state)
+        values (
+          ${drawing.id}, 'prj_demo_road_001', ${drawing.name}, ${drawing.unit},
+          ${drawing.version}, ${drawing.revision}, ${drawing.state}
+        )
         on conflict (id) do update set
           name = excluded.name,
           unit = excluded.unit,
           current_version = excluded.current_version,
+          revision = excluded.revision,
           state = excluded.state,
           updated_at = now()
-      `,
-      this.sql`
+        where drawings.revision = ${expectedRevision}
+        returning id
+      ), version_write as (
         insert into drawing_versions (id, drawing_id, version_no, state, content, content_hash, created_by)
-        values (${versionId}, ${drawing.id}, ${drawing.version}, ${drawing.state}, ${content}::jsonb, ${contentHash}, ${actor})
+        select ${versionId}, ${drawing.id}, ${drawing.version}, ${drawing.state},
+               ${content}::jsonb, ${contentHash}, ${actor}
+        from drawing_write
         on conflict (drawing_id, version_no) do update set
           state = excluded.state,
           content = excluded.content,
           content_hash = excluded.content_hash
-      `
-    ]);
+        returning drawing_id
+      )
+      select drawing_id from version_write
+    `;
+    if (rows.length === 0) throw conflictError(null, expectedRevision);
     return drawing;
   }
 
@@ -228,6 +251,13 @@ class NeonDataStore {
     `;
     return rows.length === 1;
   }
+
+  async hasIdempotency(key) {
+    const rows = await this.sql`
+      select exists (select 1 from idempotency_keys where key = ${key}) as claimed
+    `;
+    return rows[0].claimed;
+  }
 }
 
 function ensureMemorySeed() {
@@ -247,4 +277,9 @@ function isCadDrawing(value) {
 
 function clone(value) {
   return value == null ? value : structuredClone(value);
+}
+
+function conflictError(actual, expected) {
+  const detail = actual == null ? `expected=${expected}` : `expected=${expected}, actual=${actual}`;
+  return Object.assign(new Error(`リビジョンが競合しています。${detail}`), { status: 409 });
 }

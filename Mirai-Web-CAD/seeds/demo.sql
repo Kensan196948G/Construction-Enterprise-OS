@@ -17,7 +17,9 @@ values (
   'draft',
   '{
     "unit": "mm",
+    "schemaVersion": 1,
     "version": 1,
+    "revision": 1,
     "state": "draft",
     "currentRole": "drafter",
     "layers": [

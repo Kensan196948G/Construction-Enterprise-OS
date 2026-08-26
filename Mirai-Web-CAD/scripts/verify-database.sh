@@ -10,6 +10,7 @@ for pass in 1 2; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 \
     -f migrations/0001_initial.sql \
     -f migrations/0002_idempotency.sql \
+    -f migrations/0003_drawing_revision.sql \
     -f seeds/demo.sql >/dev/null
 done
 

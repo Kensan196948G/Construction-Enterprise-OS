@@ -63,7 +63,7 @@ npm run verify
 npm run db:verify
 ```
 
-`db:verify`は`0001_initial.sql`、`0002_idempotency.sql`、`seeds/demo.sql`を2回適用し、8テーブルとSeed重複なしを検証します。Round 3ではNeonの空DBからの適用とCloudflare Preview接続を確認済みです。
+`db:verify`は`0001_initial.sql`、`0002_idempotency.sql`、`0003_drawing_revision.sql`、`seeds/demo.sql`を2回適用し、8テーブルとSeed重複なしを検証します。Neonの空DBからの適用とCloudflare Preview接続を確認済みです。
 
 ## 主要な受入観点
 

@@ -16,6 +16,7 @@ create table if not exists drawings (
   name text not null,
   unit text not null default 'mm',
   current_version integer not null default 1,
+  revision integer not null default 1,
   state text not null default 'draft',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

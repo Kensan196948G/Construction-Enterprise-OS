@@ -67,3 +67,33 @@ test("measurements aggregate length and area", () => {
   assert.equal(value.totalLength > 0, true);
   assert.equal(value.totalArea > 0, true);
 });
+
+test("successful edits advance revision and content hash detects coordinate changes", () => {
+  const drawing = seedDrawing();
+  const target = drawing.entities.find((entity) => entity.id === "e_box_1");
+  const result = applyTransaction(drawing, {
+    source: "user",
+    label: "move for revision proof",
+    commands: [{ op: "update", id: target.id, patch: { origin: { x: target.origin.x + 100, y: target.origin.y } } }]
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.drawing.revision, drawing.revision + 1);
+  const event = result.drawing.commandEvents.at(-1);
+  assert.notEqual(event.beforeHash, event.afterHash);
+});
+
+test("layer updates use the audited transaction path", () => {
+  const drawing = seedDrawing();
+  const result = applyTransaction(drawing, {
+    source: "user",
+    label: "lock layer",
+    commands: [
+      { op: "update_layer", id: "layer-structure", patch: { locked: true, visible: "no", name: "ignored" } }
+    ]
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.drawing.layers.find((layer) => layer.id === "layer-structure").locked, true);
+  assert.equal(result.drawing.layers.find((layer) => layer.id === "layer-structure").visible, true);
+  assert.equal(result.drawing.layers.find((layer) => layer.id === "layer-structure").name, "構造物");
+  assert.equal(result.drawing.commandEvents.at(-1).label, "lock layer");
+});

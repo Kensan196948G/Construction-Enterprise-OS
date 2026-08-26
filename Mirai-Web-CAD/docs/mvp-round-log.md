@@ -129,3 +129,16 @@
 | Preview UI/API/Auth/DB | PASS | demo auth分離、Neon connected、UI経由永続化を確認 |
 | Critical/High | PASS（現在証拠） | Gitleaks/npm audit/axeでCritical/Highなし。CI再確認待ち |
 | PR/自動マージ/本番 | CONTINUE | PR #15 Checks/Review未完了。本番DeployはGate前のため未実施 |
+
+## Round 4 / 2026-08-26
+
+| 項目 | 内容 |
+| --- | --- |
+| 対象課題 | Reviewで検出された競合更新、AI提案の出所、XSS、保存データ検証、レイヤー権限、レビュー遷移のCritical/Highリスク |
+| 変更 | 図面revisionの比較更新、サーバー保存済みAI提案のみ承認、再帰的安定Hash、非信頼文字列のescape、LocalStorage schema検証、レイヤー更新のTransaction化、pointer cancel復旧、レビュー権限/状態遷移を追加 |
+| API/DB | `0003_drawing_revision.sql`を追加。更新・AI承認・レビューAPIはrevisionを検証し、Neonではdrawing更新を単一SQLの比較更新で確定 |
+| 検証 | `npm run verify`成功。23 Unit/API tests、desktop/mobile 10 E2E、型検査、静的A11y、Build成功 |
+| 追加回帰試験 | OPTIONS 204、未保存AI run拒否、Idempotency重複、古いrevision拒否、レビュー全遷移、URL/保存図面XSS、viewerレイヤー更新拒否を確認 |
+| Preview/DB | `https://mvp-round-4.mirai-web-cad.pages.dev/`でdesktop/mobile 10 E2E成功。実Neonでrevision 3から4への更新は200、同一Idempotency-Keyとrevision 3の再更新は409を確認 |
+| Migration | 空検証DBとPreview DBの両方で全migration/Seedを2回適用し、8テーブル、Seed 1件、revision列を確認 |
+| 残存課題 | GitHub Checks/再Review、OpenDesign外部正本照合、本番Merge/Deploy後確認 |

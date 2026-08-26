@@ -27,7 +27,7 @@ export async function handleApiRequest(request, env = {}) {
   const requestId = request.headers.get("x-request-id") ?? `req_${Date.now().toString(36)}`;
 
   if (request.method === "OPTIONS") {
-    return json({ ok: true }, 204, corsHeaders(env, requestId));
+    return new Response(null, { status: 204, headers: corsHeaders(env, requestId) });
   }
 
   try {
@@ -76,6 +76,7 @@ export async function handleApiRequest(request, env = {}) {
       const drawing = withActor(await getDrawing(store, transactionMatch[1]), actor.actor);
       const body = await readJson(request);
       const idempotencyKey = requireIdempotency(request);
+      await rejectClaimedIdempotency(store, idempotencyKey);
       requireExpectedVersion(request, drawing);
       const result = applyTransaction(drawing, {
         source: "user",
@@ -114,8 +115,9 @@ export async function handleApiRequest(request, env = {}) {
     if (request.method === "POST" && approveAgentMatch) {
       authorize(actor.actor, "canEdit");
       const idempotencyKey = requireIdempotency(request);
-      const body = await readJson(request);
-      const run = await resolveAgentRunForApproval(store, approveAgentMatch[1], body);
+      await rejectClaimedIdempotency(store, idempotencyKey);
+      await readJson(request);
+      const run = await getAgentRun(store, approveAgentMatch[1]);
       if (run.proposal.status !== "planned") {
         return json({ ok: false, error: "適用可能なAI提案ではありません。" }, 409, corsHeaders(env, requestId));
       }
@@ -135,10 +137,16 @@ export async function handleApiRequest(request, env = {}) {
     if (request.method === "POST" && reviewMatch) {
       const drawing = withActor(await getDrawing(store, reviewMatch[1]), actor.actor);
       const body = await readJson(request);
+      if (body.action === "submit") authorize(actor.actor, "canEdit");
+      else if (body.action === "approve" || body.action === "new_version") authorize(actor.actor, "canApprove");
+      else return json({ ok: false, error: "review actionが不正です。" }, 400, corsHeaders(env, requestId));
       const idempotencyKey = requireIdempotency(request);
+      await rejectClaimedIdempotency(store, idempotencyKey);
       requireExpectedVersion(request, drawing);
       if (body.action === "submit") {
-        authorize(actor.actor, "canEdit");
+        if (!["draft", "rejected"].includes(drawing.state)) {
+          return json({ ok: false, error: "下書きまたは差戻し図面だけをレビュー提出できます。" }, 409, corsHeaders(env, requestId));
+        }
         const next = submitForReview(drawing, actor.actor.id);
         await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
         await store.saveDrawing(next);
@@ -146,7 +154,6 @@ export async function handleApiRequest(request, env = {}) {
         return json({ ok: true, drawing: next }, 200, corsHeaders(env, requestId));
       }
       if (body.action === "approve") {
-        authorize(actor.actor, "canApprove");
         const result = approveDrawing(drawing, actor.actor.id);
         if (!result.ok) return json({ ok: false, error: result.error, issues: validateDrawing(drawing) }, 409, corsHeaders(env, requestId));
         await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
@@ -155,14 +162,15 @@ export async function handleApiRequest(request, env = {}) {
         return json({ ok: true, drawing: result.drawing }, 200, corsHeaders(env, requestId));
       }
       if (body.action === "new_version") {
-        authorize(actor.actor, "canApprove");
+        if (drawing.state !== "approved") {
+          return json({ ok: false, error: "承認済み図面からのみ新版を作成できます。" }, 409, corsHeaders(env, requestId));
+        }
         const next = createNewVersion(drawing, actor.actor.id);
         await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
         await store.saveDrawing(next);
         await audit(store, actor.actor, "drawing.version.created", "drawing", drawing.id, {});
         return json({ ok: true, drawing: next }, 200, corsHeaders(env, requestId));
       }
-      return json({ ok: false, error: "review actionが不正です。" }, 400, corsHeaders(env, requestId));
     }
 
     if (request.method === "GET" && route === "/audit-logs") {
@@ -263,23 +271,6 @@ async function getAgentRun(store, id) {
   return run;
 }
 
-async function resolveAgentRunForApproval(store, id, body) {
-  const run = await store.getAgentRun(id);
-  if (run) return run;
-  if (body?.drawingId && body?.proposal?.status === "planned" && Array.isArray(body.proposal.commands)) {
-    return {
-      id,
-      drawingId: body.drawingId,
-      status: "planned",
-      prompt: body.prompt ?? "",
-      proposal: body.proposal,
-      createdBy: "stateless-preview",
-      createdAt: new Date().toISOString()
-    };
-  }
-  return getAgentRun(store, id);
-}
-
 function withActor(drawing, actor) {
   return { ...drawing, currentRole: actor.role };
 }
@@ -303,8 +294,15 @@ function requireExpectedVersion(request, drawing) {
   if (!Number.isFinite(expected)) {
     throw httpError("expected-versionが必要です。", 428);
   }
-  if (expected !== drawing.version) {
-    throw httpError(`版が競合しています。expected=${expected}, actual=${drawing.version}`, 409);
+  const actual = drawing.revision ?? 1;
+  if (expected !== actual) {
+    throw httpError(`リビジョンが競合しています。expected=${expected}, actual=${actual}`, 409);
+  }
+}
+
+async function rejectClaimedIdempotency(store, key) {
+  if (await store.hasIdempotency(key)) {
+    throw httpError("同じIdempotency-Keyのリクエストは処理済みです。", 409);
   }
 }
 
