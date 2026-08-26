@@ -13,6 +13,19 @@ fi
 
 pg_bin="${PG_BIN:-$(pg_config --bindir)}"
 
+user_object_count="$("$pg_bin/psql" "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+  select count(*)
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname not in ('pg_catalog', 'information_schema')
+    and n.nspname not like 'pg_toast%'
+    and c.relkind in ('r', 'p', 'v', 'm', 'S', 'f')
+")"
+if [[ "$user_object_count" != "0" ]]; then
+  echo "Recovery database must be empty: found $user_object_count user objects" >&2
+  exit 4
+fi
+
 "$pg_bin/pg_restore" --dbname="$RESTORE_DATABASE_URL" \
   --exit-on-error \
   --no-owner \

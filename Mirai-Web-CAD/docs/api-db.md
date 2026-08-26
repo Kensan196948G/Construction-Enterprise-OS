@@ -31,7 +31,7 @@
 - Cloudflare Access JWTをJWKS、issuer、audienceで検証し、Worker境界でfail-closed
 - Accessロールは`ACCESS_ROLE_MAP`/`ACCESS_DEFAULT_ROLE`から決定し、クライアント指定を信頼しない
 - Custom Domainの静的SPA、health、公開デモは匿名可。任意図面取得と全更新は署名済みAccess JWTがなければ401
-- `Idempotency-Key`と`expectedVersion`を更新APIへ要求
+- `Idempotency-Key`と`expected-version`を更新APIへ要求
 - POST本文は`application/json`かつ1 MiB以下、Production CORSはCustom Domainに限定
 - CSP、frame拒否、Permissions-Policy、nosniffを静的/API応答の両方へ設定
 - Tool CallはJSON Schema検証後、サーバー側で再認可

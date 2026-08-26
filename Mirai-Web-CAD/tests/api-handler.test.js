@@ -131,6 +131,21 @@ test("mutating JSON endpoints reject unsupported media types and oversized bodie
     env
   );
   assert.equal(oversized.status, 413);
+
+  const chunkedBody = JSON.stringify({ value: "x".repeat(1_048_576) });
+  const chunkedRequest = new Request("https://example.test/api/drawings/dwg_demo_001/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-demo-role": "drafter",
+        "idempotency-key": "chunked-oversized",
+        "expected-version": "1"
+      },
+      body: chunkedBody
+    });
+  assert.equal(chunkedRequest.headers.has("content-length"), false);
+  const chunked = await handleApiRequest(chunkedRequest, env);
+  assert.equal(chunked.status, 413);
 });
 
 test("access mode ignores client role spoofing and uses server role mapping", async () => {

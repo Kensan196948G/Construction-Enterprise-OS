@@ -101,6 +101,14 @@ jobs:
       - name: Create empty recovery database
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "create database mirai_web_cad_recovery"
       - run: npm run db:backup
+      - name: Verify non-empty recovery database is rejected
+        run: |
+          psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "create table restore_guard (id integer)"
+          if npm run db:restore; then
+            echo "restore unexpectedly accepted a non-empty database" >&2
+            exit 1
+          fi
+          psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "drop table restore_guard"
       - run: npm run db:restore
 
   secret-scan:

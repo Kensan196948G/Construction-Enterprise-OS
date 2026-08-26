@@ -1,4 +1,4 @@
--- Mirai Web CAD MVP demo seed.
+-- Mirai Web CAD demo seed.
 -- Safe to re-run after migration 0001; rows are upserted by primary key.
 
 insert into projects (id, name, owner, status)
@@ -53,6 +53,6 @@ values (
   'seed.loaded',
   'drawing',
   'dwg_demo_001',
-  '{"source": "seeds/demo.sql", "purpose": "mvp demo"}'::jsonb
+  '{"source": "seeds/demo.sql", "purpose": "demo"}'::jsonb
 )
 on conflict (id) do nothing;

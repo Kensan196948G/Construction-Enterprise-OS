@@ -58,7 +58,7 @@
 1. Cloudflare上でインストール不要の公開閲覧ができる。
 2. Productionの更新APIはCloudflare Access JWTがなければfail-closedとなる。
 3. 匿名公開対象を明示的な`visibility=public`へ限定した。
-4. Viewer/Drafter/Approver/CAD Adminの能力ベースRBACがある。
+4. Viewer/Drafter/Reviewer/Approver/CAD Adminの能力ベースRBACがある。
 5. 更新APIにIdempotency-Keyを要求する。
 6. `expected-version`とDB revisionで楽観ロックする。
 7. 図面、版、コマンドイベント、監査、冪等性を単一SQLで更新する。
@@ -72,6 +72,18 @@
 15. Gitleaksとnpm auditで秘密値・既知依存脆弱性を検査できる。
 16. バックアップアーカイブ検証と空DB復元をCIで反復できる。
 17. Neon mainをprotectedにし、branch/project/computeの誤削除とresetを防止した。
+
+権限マトリクス:
+
+| Role | 閲覧 | 作図 | AI Preview | 承認 | 管理 |
+| --- | --- | --- | --- | --- | --- |
+| Viewer | 可 | 不可 | 不可 | 不可 | 不可 |
+| Drafter | 可 | 可 | 可 | 不可 | 不可 |
+| Reviewer | 可 | 不可 | 可 | 不可 | 不可 |
+| Approver | 可 | 不可 | 不可 | 可 | 不可 |
+| CAD Admin | 可 | 可 | 可 | 可 | 可 |
+
+受入時は各Roleについて許可操作の成功と禁止操作の403、client role spoof無効、案件ACLを確認する。
 
 ## 5. 弱み・リスク
 

@@ -344,10 +344,27 @@ async function readJson(request) {
   if (Number.isFinite(declaredSize) && declaredSize > MAX_JSON_BYTES) {
     throw httpError("JSON本文が1 MiBを超えています。", 413);
   }
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_JSON_BYTES) {
-    throw httpError("JSON本文が1 MiBを超えています。", 413);
+  const reader = request.body.getReader();
+  /** @type {Uint8Array[]} */
+  const chunks = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_JSON_BYTES) {
+      await reader.cancel();
+      throw httpError("JSON本文が1 MiBを超えています。", 413);
+    }
+    chunks.push(value);
   }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  const text = new TextDecoder().decode(bytes);
   if (!text.trim()) return {};
   try {
     return JSON.parse(text);
