@@ -59,14 +59,22 @@ export async function handleApiRequest(request, env = {}) {
       const idempotencyKey = requireIdempotency(request);
       await rejectClaimedIdempotency(store, idempotencyKey);
       const body = await readJson(request);
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        throw httpError("JSON本文はオブジェクトである必要があります。", 400);
+      }
       const drawing = body.template === "demo" ? seedDrawing() : createDrawing();
       drawing.id = typeof body.id === "string" && /^dwg_[a-z0-9_-]{1,60}$/i.test(body.id) ? body.id : `dwg_${cryptoSafeId()}`;
       drawing.name = typeof body.name === "string" ? body.name.trim().slice(0, 100) || "新規図面" : "新規図面";
       drawing.unit = ["mm", "m"].includes(body.unit) ? body.unit : "mm";
       drawing.currentRole = actor.actor.role;
-      await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
-      await store.saveDrawing(drawing);
-      await audit(store, actor.actor, "drawing.created", "drawing", drawing.id, { name: drawing.name });
+      const created = await store.createDrawingAtomically(
+        drawing,
+        createAuditEntry(actor.actor, "drawing.created", "drawing", drawing.id, { name: drawing.name }),
+        idempotencyKey,
+        actor.actor.id,
+        route
+      );
+      if (!created) throw httpError("同じIdempotency-Keyまたは図面IDは処理済みです。", 409);
       return json({ ok: true, drawing }, 201, corsHeaders(env, requestId));
     }
 
@@ -343,7 +351,11 @@ function corsHeaders(env, requestId) {
 }
 
 async function audit(store, actor, action, targetType, targetId, detail) {
-  await store.appendAudit({
+  await store.appendAudit(createAuditEntry(actor, action, targetType, targetId, detail));
+}
+
+function createAuditEntry(actor, action, targetType, targetId, detail) {
+  return {
     id: `audit_${cryptoSafeId()}`,
     actorId: actor.id,
     role: actor.role,
@@ -352,7 +364,7 @@ async function audit(store, actor, action, targetType, targetId, detail) {
     targetId,
     detail,
     createdAt: new Date().toISOString()
-  });
+  };
 }
 
 function httpError(message, status) {

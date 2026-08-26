@@ -114,6 +114,16 @@ test("新規図面、コマンドライン、JSON Importを連続操作できる
   await expect(quantity).toHaveText("2");
   await expect(page.getByLabel("検査とAI").getByText("測量", { exact: true })).toBeVisible();
   await expect(page.getByLabel("コマンドログ")).toContainText("Import完了: 1/1図形");
+
+  await command.fill("UNDO");
+  await command.press("Enter");
+  await expect(quantity).toHaveText("1");
+  await expect(page.getByLabel("検査とAI").getByText("測量", { exact: true })).toHaveCount(0);
+
+  await command.fill("REDO");
+  await command.press("Enter");
+  await expect(quantity).toHaveText("2");
+  await expect(page.getByLabel("検査とAI").getByText("測量", { exact: true })).toBeVisible();
 });
 
 test("CriticalまたはSeriousのアクセシビリティ違反がない", async ({ page }) => {

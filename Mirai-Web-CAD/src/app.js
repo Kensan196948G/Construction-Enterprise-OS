@@ -743,6 +743,11 @@ function snapshotCommands(current, target) {
       commands.push({ op: "update", id: entity.id, patch: withoutIdentity(entity) });
     }
   }
+  for (const layer of current.layers) {
+    if (!target.layers.some((item) => item.id === layer.id)) {
+      commands.push({ op: "delete_layer", id: layer.id });
+    }
+  }
   for (const layer of target.layers) {
     const existing = current.layers.find((item) => item.id === layer.id);
     if (!existing) commands.unshift({ op: "add_layer", layer: structuredClone(layer) });

@@ -151,6 +151,7 @@ function point(value) {
 }
 
 function number(value, label) {
+  if (String(value).trim() === "") throw new Error(`${label}が空です。`);
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) throw new Error(`${label}が数値ではありません: ${value}`);
   return parsed;

@@ -47,6 +47,20 @@ test("drawing creation supports blank and demo templates", async () => {
 
   const duplicate = await create("blank", "create-blank");
   assert.equal(duplicate.status, 409);
+
+  const invalidBody = await handleApiRequest(
+    new Request("https://example.test/api/drawings", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-demo-role": "drafter",
+        "idempotency-key": "create-invalid"
+      },
+      body: "null"
+    }),
+    env
+  );
+  assert.equal(invalidBody.status, 400);
 });
 
 test("production-like access mode fails closed without Cloudflare Access headers", async () => {

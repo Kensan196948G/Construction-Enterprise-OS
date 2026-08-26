@@ -203,6 +203,19 @@ export function applyTransaction(drawing, transaction) {
       next.entities = next.entities.filter((item) => item.id !== command.id);
     }
 
+    if (command.op === "delete_layer") {
+      const target = next.layers.find((item) => item.id === command.id);
+      if (!target) {
+        warnings.push(`削除レイヤーが見つかりません: ${command.id}`);
+        continue;
+      }
+      if (next.layers.length === 1) return fail("最後のレイヤーは削除できません。", drawing);
+      if (next.entities.some((entity) => entity.layerId === command.id)) {
+        return fail(`図形が残るレイヤーは削除できません: ${target.name}`, drawing);
+      }
+      next.layers = next.layers.filter((item) => item.id !== command.id);
+    }
+
     if (command.op === "update_layer") {
       const target = next.layers.find((item) => item.id === command.id);
       if (!target) {

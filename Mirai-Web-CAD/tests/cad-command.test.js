@@ -43,6 +43,7 @@ test("command line supports UI commands and rejects malformed input", () => {
   assert.deepEqual(parseCadCommand("REDO", context()), { kind: "ui", action: "redo" });
   assert.equal(parseCadCommand("LAYER 構造物", context()).layerId, "layer-structure");
   assert.equal(parseCadCommand("NEW 仮設計画図", context()).name, "仮設計画図");
+  assert.throws(() => parseCadCommand("LINE 0,0 100,", context()), /yが空/);
   assert.throws(() => parseCadCommand("CIRCLE 0,0 -1", context()), /半径/);
   assert.throws(() => parseCadCommand("UNKNOWN", context()), /未対応/);
 });
