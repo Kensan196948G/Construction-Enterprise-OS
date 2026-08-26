@@ -141,4 +141,5 @@
 | 追加回帰試験 | OPTIONS 204、未保存AI run拒否、Idempotency重複、古いrevision拒否、レビュー全遷移、URL/保存図面XSS、viewerレイヤー更新拒否を確認 |
 | Preview/DB | `https://mvp-round-4.mirai-web-cad.pages.dev/`でdesktop/mobile 10 E2E成功。実Neonでrevision 3から4への更新は200、同一Idempotency-Keyとrevision 3の再更新は409を確認 |
 | Migration | 空検証DBとPreview DBの両方で全migration/Seedを2回適用し、8テーブル、Seed 1件、revision列を確認 |
+| Production準備 | Neon primary branchに専用DB`mirai_web_cad_production`を作成して全migration/Seedを2回検証。GitHub/Pages production branchを`fix/auth-guard-fail-closed`へ統一し、merge後のみ全検証、Deploy、公開境界smoke testを行うworkflowを追加 |
 | 残存課題 | GitHub Checks/再Review、OpenDesign外部正本照合、本番Merge/Deploy後確認 |

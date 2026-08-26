@@ -18,7 +18,7 @@
 ## Preview E2E
 
 ```bash
-E2E_BASE_URL=https://mvp-round-3.mirai-web-cad.pages.dev npm run test:e2e
+E2E_BASE_URL=https://mvp-round-4.mirai-web-cad.pages.dev npm run test:e2e
 ```
 
 正常、空、Loading、Error、viewer拒否、Escapeキー、狭幅レイアウト、axe Critical/Serious 0件をdesktop/mobile Chromiumで確認します。AI変更はPreview表示後の明示承認でのみ適用します。

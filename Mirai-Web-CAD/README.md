@@ -21,7 +21,7 @@ Agentic AIと決定論的な2D CAD Coreを組み合わせた、土木施工図�
 
 | 用途 | URL | 状態 |
 | --- | --- | --- |
-| Cloudflare Pages Preview | `https://mvp-round-3.mirai-web-cad.pages.dev/` | UI/API/Neon/AI承認/権限/Responsive/A11y E2E確認済み |
+| Cloudflare Pages Preview | `https://mvp-round-4.mirai-web-cad.pages.dev/` | UI/API/Neon/AI承認/権限/Responsive/A11y E2E確認済み |
 | Custom Domain | `https://mirai-web-cad.mirai-dx-platform.com/` | Cloudflare Access保護済み。本番DeployはMerge Gate後に実施 |
 
 ## 起動
@@ -75,6 +75,7 @@ npm run db:verify
 - API更新は`Idempotency-Key`と`expected-version`がない場合に拒否する
 - 同じ`Idempotency-Key`の再送は409で拒否し、二重変更を防ぐ
 - 本番の`AUTH_MODE=access`ではAccess JWTの署名、issuer、audienceを検証し、ロールはサーバー設定から決定する
+- 既定branchへのmerge後、`.github/workflows/mirai-web-cad-production.yml`が全検証成功時のみPages productionへ配信する
 
 ## 関連文書
 

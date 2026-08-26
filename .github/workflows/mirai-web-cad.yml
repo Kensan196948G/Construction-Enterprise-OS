@@ -5,10 +5,12 @@ on:
     paths:
       - "Mirai-Web-CAD/**"
       - ".github/workflows/mirai-web-cad.yml"
+      - ".github/workflows/mirai-web-cad-production.yml"
   pull_request:
     paths:
       - "Mirai-Web-CAD/**"
       - ".github/workflows/mirai-web-cad.yml"
+      - ".github/workflows/mirai-web-cad-production.yml"
 
 concurrency:
   group: mirai-web-cad-${{ github.workflow }}-${{ github.ref }}
