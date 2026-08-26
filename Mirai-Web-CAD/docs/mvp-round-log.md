@@ -63,6 +63,7 @@
 | Cloudflare Preview SPA | PASS | `https://mvp-round-2.mirai-web-cad.pages.dev/` がHTTP 200 |
 | Cloudflare Preview API | PASS | `/api/health`、AI提案承認、viewer更新拒否を確認 |
 | Neon migration実適用 | 未実施 | `DATABASE_URL`なし、ローカルPostgreSQL未起動。SQLは`create table if not exists`/`on conflict`で再実行可能性を静的確認 |
+| GitHub PR | OPEN | PR #15 `https://github.com/Kensan196948G/Construction-Enterprise-OS/pull/15` を作成。CodeRabbit Pendingのため自動マージ未実施 |
 
 ## Round 2 Completion Gate
 
@@ -75,3 +76,13 @@
 | 型検査/Lint/Test/E2E/Build | CONTINUE | lint/a11y/test/build成功。型検査とPlaywright E2Eは未導入 |
 | PreviewでUI/API/認証/DB | CONTINUE | Cloudflare PreviewでUI/API/Auth demo確認。DBは`memory-preview`でNeon未接続 |
 | Critical/High解消 | CONTINUE | 権限/承認/ロックのCritical相当テストあり。依存脆弱性/Secret ScanのCI Gate未実施 |
+
+## PR / Release 状態
+
+| 項目 | 状態 | 理由 |
+| --- | --- | --- |
+| PR | OPEN | #15 作成済み |
+| Review/Checks | CONTINUE | CodeRabbitがPending |
+| 自動マージ | 未実施 | 必須Check/Review、Neon、Preview E2E、Access実設定が未達 |
+| 本番Deploy | 未実施 | Merge未完了かつ本番Gate未達 |
+| Rollback | 準備済み | Cloudflare Pages Preview単位では直前deploymentへ戻せる。DB破壊的migrationなし |
