@@ -6,7 +6,7 @@ values ('prj_demo_road_001', '道路拡幅デモ案件', 'mirai-demo', 'active')
 on conflict (id) do nothing;
 
 insert into drawings (id, project_id, name, unit, current_version, state)
-values ('dwg_demo_001', 'prj_demo_road_001', '道路拡幅 仮設施工図 MVP', 'mm', 1, 'draft')
+values ('dwg_demo_001', 'prj_demo_road_001', '道路拡幅 仮設施工図', 'mm', 1, 'draft')
 on conflict (id) do nothing;
 
 insert into drawing_versions (id, drawing_id, version_no, state, content, content_hash, created_by)

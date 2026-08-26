@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: Mirai-Web-CAD
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -67,14 +67,47 @@ jobs:
     env:
       DATABASE_URL: postgresql://mirai:mirai_ci_only@127.0.0.1:5432/mirai_web_cad
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: npm run db:verify
+
+  recovery:
+    name: PostgreSQL Backup and Restore Drill
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mirai
+          POSTGRES_PASSWORD: mirai_ci_only
+          POSTGRES_DB: mirai_web_cad_source
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mirai -d mirai_web_cad_source"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: Mirai-Web-CAD
+    env:
+      DATABASE_URL: postgresql://mirai:mirai_ci_only@127.0.0.1:5432/mirai_web_cad_source
+      RESTORE_DATABASE_URL: postgresql://mirai:mirai_ci_only@127.0.0.1:5432/mirai_web_cad_recovery
+      BACKUP_FILE: artifacts/mirai-web-cad.dump
+      ALLOW_DATABASE_RESTORE: "yes"
+    steps:
+      - uses: actions/checkout@v5
+      - run: npm run db:verify
+      - name: Create empty recovery database
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "create database mirai_web_cad_recovery"
+      - run: npm run db:backup
+      - run: npm run db:restore
 
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Scan Mirai Web CAD files
         run: >-
           docker run --rm
