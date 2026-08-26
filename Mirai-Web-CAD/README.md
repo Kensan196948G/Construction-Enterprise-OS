@@ -12,16 +12,17 @@ Agentic AIと決定論的な2D CAD Coreを組み合わせた、土木施工図�
 | 検査 | 実装済み | 重複ID、存在しないレイヤー、用紙外、0長線、円半径、Critical残存を検出 |
 | 版/承認 | 実装済み | 下書き、レビュー提出、承認、承認済み版の直接変更禁止、新版作成 |
 | 権限 | 実装済み | 閲覧者、作図者、レビュアー、承認者、CAD管理者の主要操作制御 |
-| 保存 | 実装済み | LocalStorage自動保存、JSON出力、デモ初期化 |
-| API | 実装済み | Cloudflare Pages Functions互換の`/api/health`、図面取得、Transaction、AI Run、承認、監査ログ |
+| 保存 | 実装済み | LocalStorage自動保存、JSON出力、デモ初期化。API接続後はNeonへ同期 |
+| API | 実装済み | Cloudflare Pages Functionsの`/api/health`、図面取得、Transaction、AI Run、承認、監査ログ、重複実行拒否 |
 | 状態確認 | 実装済み | 正常、空、Loading、Errorを画面内のState Reviewで切替 |
-| DB | 雛形 | Neon PostgreSQL向けmigration/seedを追加。現時点のPreview APIはメモリ永続化 |
+| DB | 実装済み | Neon PostgreSQLへ接続し、図面、AI Run、監査、Idempotencyを永続化 |
 
 ## Preview
 
 | 用途 | URL | 状態 |
 | --- | --- | --- |
-| Cloudflare Pages Preview | `https://mvp-round-2.mirai-web-cad.pages.dev/` | SPA 200、`/api/health`、AI提案承認、閲覧者fail-closedを確認済み |
+| Cloudflare Pages Preview | `https://mvp-round-3.mirai-web-cad.pages.dev/` | UI/API/Neon/AI承認/権限/Responsive/A11y E2E確認済み |
+| Custom Domain | `https://mirai-web-cad.mirai-dx-platform.com/` | Cloudflare Access保護済み。本番DeployはMerge Gate後に実施 |
 
 ## 起動
 
@@ -48,20 +49,21 @@ npm run verify
 実行内容:
 
 - `npm run lint`: 必須ファイル存在、JS構文、未解決マーカーを検査
+- `npm run typecheck`: TypeScriptの`checkJs`でブラウザ/Core/API/DB層を型検査
 - `npm run a11y`: lang、viewport、aria、focus-visible、Responsive CSS等を静的検査
-- `npm test`: CAD Coreの権限、ロック、AI承認ゲート、測定、承認を検査
+- `npm test`: CAD Core、API認証/権限、JWT fail-closed、Idempotency、AI承認を検査
 - `npm run build`: `dist/`へ静的配信物を生成
+- `npm run test:e2e`: desktop/mobile ChromiumでUI、API同期、Neon経由作図/AI承認、Keyboard、axeを検査
 
 ## DB初期化
 
 空のNeon PostgreSQLへ適用する場合:
 
 ```bash
-psql "$DATABASE_URL" -f migrations/0001_initial.sql
-psql "$DATABASE_URL" -f seeds/demo.sql
+npm run db:verify
 ```
 
-本MVPの画面はブラウザ内保存で動き、Cloudflare Pages Functions互換APIはメモリストアで動きます。Neon実接続は`DATABASE_URL`またはHyperdrive bindingを設定したPreview環境で次Roundに実装・検証します。
+`db:verify`は`0001_initial.sql`、`0002_idempotency.sql`、`seeds/demo.sql`を2回適用し、8テーブルとSeed重複なしを検証します。Round 3ではNeonの空DBからの適用とCloudflare Preview接続を確認済みです。
 
 ## 主要な受入観点
 
@@ -71,10 +73,13 @@ psql "$DATABASE_URL" -f seeds/demo.sql
 - レイヤーロックと承認済み版はfail-closedで変更拒否する
 - Critical検査項目が残る図面は承認不可
 - API更新は`Idempotency-Key`と`expected-version`がない場合に拒否する
-- 本番相当の`AUTH_MODE=access`ではCloudflare Accessヘッダーがないリクエストをfail-closedにする
+- 同じ`Idempotency-Key`の再送は409で拒否し、二重変更を防ぐ
+- 本番の`AUTH_MODE=access`ではAccess JWTの署名、issuer、audienceを検証し、ロールはサーバー設定から決定する
 
 ## 関連文書
 
 - [Roundログ](docs/mvp-round-log.md)
 - [運用・復旧メモ](docs/operations.md)
 - [API/DBメモ](docs/api-db.md)
+- [テスト方針](docs/testing.md)
+- [要件・設計トレーサビリティ](docs/mvp-traceability.md)

@@ -86,3 +86,46 @@
 | 自動マージ | 未実施 | 必須Check/Review、Neon、Preview E2E、Access実設定が未達 |
 | 本番Deploy | 未実施 | Merge未完了かつ本番Gate未達 |
 | Rollback | 準備済み | Cloudflare Pages Preview単位では直前deploymentへ戻せる。DB破壊的migrationなし |
+
+## Round 3 / 2026-08-26
+
+| 項目 | 内容 |
+| --- | --- |
+| 対象課題 | Neon実接続、実ブラウザE2E、型検査、CI Gate、Custom Domain/Accessが未達 |
+| 変更 | Neon永続化層、Access JWT検証、Idempotency migration、UIからAPI/Neonへの作図・AI・レビュー同期、Playwright/axe、型検査、専用GitHub Actions、運用/Test/トレーサビリティ文書を追加 |
+| DB | Neon branch`mirai-web-cad-pr-15`へ専用DBを作成。空DB`mirai_web_cad_verify`は初期0テーブルからMigration/Seedを2回適用し、8テーブル/Seed各1件を確認 |
+| Preview | `https://mvp-round-3.mirai-web-cad.pages.dev/`へDeploy。Healthは`db=connected`/`migrated=true`、画面から作図とAI承認後に別リクエストで永続化を確認 |
+| Domain/Auth | `mirai-web-cad.mirai-dx-platform.com`のPages Custom Domain、proxied CNAME、専用Access app/policyを作成。未認証302を確認。ProductionはJWT署名/issuer/audience必須、Previewはdemoに分離 |
+| 検証 | `npm run verify`成功。15 Unit/API tests、desktop/mobile 8 E2E、axe Critical/Serious 0、Build成功。Gitleaks no leaks、npm audit 0 vulnerabilities |
+| 改善 | E2Eで権限拒否ログが再描画されない不具合を検出し修正。Accessメール/クライアントrole信頼を廃止しJWTとサーバーrole mapへ変更 |
+| 残存課題 | GitHub Actions実行結果とReview、OpenDesign外部正本照合、本番Merge/Deploy後のHealth/Logs/Error Rate確認 |
+| 次Round | commit/push後にPR Checksを監視し、失敗を修正。全Gate成功かつReview条件成立時のみSquash Merge/本番Deployへ進む |
+
+## Round 3 検証結果
+
+| 対象 | 結果 | 証拠 |
+| --- | --- | --- |
+| Lint/Type/A11y/Unit/Build | PASS | `npm run verify`、15 tests pass |
+| Local E2E | PASS | desktop/mobile Chromium 8 tests pass |
+| Preview E2E | PASS | Round 3 Previewに対し8 tests pass |
+| Canvas visual | PASS | desktop/mobile screenshotとCanvas pixel非空検査 |
+| Neon空DB | PASS | 初期0テーブル、2回適用後8テーブル、5レイヤー/4図形Seed |
+| Neon永続化 | PASS | UI作図/AI承認後に7図形、3 Command Events、監査6件を別リクエストで確認 |
+| Idempotency | PASS | Previewで初回200、同一Key再送は409 |
+| Access | PASS（設定） | Custom Domain未認証アクセスがAccess loginへ302。JWT fail-closed Unit test成功 |
+| Secret/Dependency | PASS | Gitleaks no leaks、`npm audit` 0 vulnerabilities |
+| CI/Review | CONTINUE | workflow追加済み。push後のGitHub Check/Review結果待ち |
+
+## Round 3 Completion Gate
+
+| Gate | 状態 | 根拠 |
+| --- | --- | --- |
+| 主要業務フロー実操作 | PASS | Preview UIからNeon同期、作図、AI Preview/承認、権限拒否を操作 |
+| 要件/設計整合 | CONTINUE | リポジトリ内正本との対応表あり。OpenDesign外部正本は接続情報なし |
+| 正常/空/Error/権限別状態 | PASS | desktop/mobile E2Eで確認 |
+| Migration/Seed | PASS | 空Neon DBとCI用PostgreSQL手順で2回適用可能 |
+| 型検査/Lint/Test/E2E/Build | PASS | 全ローカルGate成功 |
+| Responsive/Keyboard/A11y | PASS | desktop/mobile、Keyboard、axe/static検査成功 |
+| Preview UI/API/Auth/DB | PASS | demo auth分離、Neon connected、UI経由永続化を確認 |
+| Critical/High | PASS（現在証拠） | Gitleaks/npm audit/axeでCritical/Highなし。CI再確認待ち |
+| PR/自動マージ/本番 | CONTINUE | PR #15 Checks/Review未完了。本番DeployはGate前のため未実施 |

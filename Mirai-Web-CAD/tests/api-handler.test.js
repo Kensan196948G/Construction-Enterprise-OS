@@ -25,6 +25,44 @@ test("production-like access mode fails closed without Cloudflare Access headers
   assert.equal(body.ok, false);
 });
 
+test("access mode ignores client role spoofing and uses server role mapping", async () => {
+  resetMemoryStore();
+  const response = await handleApiRequest(
+    new Request("https://example.test/api/health", {
+      headers: {
+        "cf-access-jwt-assertion": "signed-test-token",
+        "cf-access-authenticated-user-email": "attacker@example.com",
+        "x-mirai-role": "cad_admin"
+      }
+    }),
+    {
+      APP_ENV: "production",
+      AUTH_MODE: "access",
+      ACCESS_ROLE_MAP: JSON.stringify({ "drafter@example.com": "drafter" }),
+      ACCESS_JWT_VERIFIER: async (token) => {
+        assert.equal(token, "signed-test-token");
+        return { email: "drafter@example.com" };
+      }
+    }
+  );
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.auth.role, "drafter");
+});
+
+test("access mode fails closed when JWT verifier configuration is absent", async () => {
+  resetMemoryStore();
+  const response = await handleApiRequest(
+    new Request("https://example.test/api/health", {
+      headers: { "cf-access-jwt-assertion": "unverified-token" }
+    }),
+    { APP_ENV: "production", AUTH_MODE: "access" }
+  );
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.match(body.error, /JWT/);
+});
+
 test("viewer cannot create transactions", async () => {
   resetMemoryStore();
   const response = await handleApiRequest(
@@ -71,6 +109,55 @@ test("transaction requires idempotency and expected version gates", async () => 
     env
   );
   assert.equal(wrongVersion.status, 409);
+});
+
+test("duplicate idempotency key cannot execute a transaction twice", async () => {
+  resetMemoryStore();
+  const request = () =>
+    new Request("https://example.test/api/drawings/dwg_demo_001/transactions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-demo-role": "drafter",
+        "idempotency-key": "idem-duplicate",
+        "expected-version": "1"
+      },
+      body: JSON.stringify({ label: "duplicate guard", commands: [] })
+    });
+  const first = await handleApiRequest(request(), env);
+  const second = await handleApiRequest(request(), env);
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 409);
+  assert.match((await second.json()).error, /処理済み/);
+});
+
+test("review updates require concurrency and idempotency gates", async () => {
+  resetMemoryStore();
+  const missingGates = await handleApiRequest(
+    new Request("https://example.test/api/drawings/dwg_demo_001/review", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-demo-role": "drafter" },
+      body: JSON.stringify({ action: "submit" })
+    }),
+    env
+  );
+  assert.equal(missingGates.status, 428);
+
+  const submitted = await handleApiRequest(
+    new Request("https://example.test/api/drawings/dwg_demo_001/review", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-demo-role": "drafter",
+        "idempotency-key": "idem-review-submit",
+        "expected-version": "1"
+      },
+      body: JSON.stringify({ action: "submit" })
+    }),
+    env
+  );
+  assert.equal(submitted.status, 200);
+  assert.equal((await submitted.json()).drawing.state, "in_review");
 });
 
 test("agent run preview then explicit approval mutates drawing", async () => {

@@ -9,6 +9,8 @@ import {
   submitForReview,
   validateDrawing
 } from "./cad-core.js";
+import { createDataStore, resetMemoryStoreData } from "./data-store.js";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -17,14 +19,8 @@ const JSON_HEADERS = {
   "referrer-policy": "no-referrer"
 };
 
-const memory = {
-  drawings: new Map(),
-  agentRuns: new Map(),
-  auditLogs: []
-};
-
 export async function handleApiRequest(request, env = {}) {
-  ensureSeed(memory);
+  const store = createDataStore(env);
   const url = new URL(request.url);
   const startedAt = Date.now();
   const route = normalizeRoute(url.pathname);
@@ -35,16 +31,17 @@ export async function handleApiRequest(request, env = {}) {
   }
 
   try {
-    const actor = resolveActor(request, env);
+    const actor = await resolveActor(request, env);
     if (!actor.ok) return json({ ok: false, error: actor.error }, 401, corsHeaders(env, requestId));
 
     if (request.method === "GET" && route === "/health") {
+      const db = await store.probe();
       return json(
         {
           ok: true,
           service: "mirai-web-cad-api",
           auth: { mode: authMode(env), actor: actor.actor.id, role: actor.actor.role },
-          db: databaseStatus(env),
+          db,
           durationMs: Date.now() - startedAt
         },
         200,
@@ -53,7 +50,7 @@ export async function handleApiRequest(request, env = {}) {
     }
 
     if (request.method === "GET" && route === "/drawings/demo") {
-      return json({ ok: true, drawing: getDrawing("dwg_demo_001") }, 200, corsHeaders(env, requestId));
+      return json({ ok: true, drawing: await getDrawing(store, "dwg_demo_001") }, 200, corsHeaders(env, requestId));
     }
 
     if (request.method === "POST" && route === "/drawings") {
@@ -63,22 +60,22 @@ export async function handleApiRequest(request, env = {}) {
       drawing.id = body.id ?? `dwg_${cryptoSafeId()}`;
       drawing.name = body.name ?? "新規図面";
       drawing.currentRole = actor.actor.role;
-      memory.drawings.set(drawing.id, drawing);
-      audit(actor.actor, "drawing.created", "drawing", drawing.id, { name: drawing.name });
+      await store.saveDrawing(drawing);
+      await audit(store, actor.actor, "drawing.created", "drawing", drawing.id, { name: drawing.name });
       return json({ ok: true, drawing }, 201, corsHeaders(env, requestId));
     }
 
     const drawingMatch = route.match(/^\/drawings\/([^/]+)$/);
     if (request.method === "GET" && drawingMatch) {
-      return json({ ok: true, drawing: getDrawing(drawingMatch[1]) }, 200, corsHeaders(env, requestId));
+      return json({ ok: true, drawing: await getDrawing(store, drawingMatch[1]) }, 200, corsHeaders(env, requestId));
     }
 
     const transactionMatch = route.match(/^\/drawings\/([^/]+)\/transactions$/);
     if (request.method === "POST" && transactionMatch) {
       authorize(actor.actor, "canEdit");
-      const drawing = withActor(getDrawing(transactionMatch[1]), actor.actor);
+      const drawing = withActor(await getDrawing(store, transactionMatch[1]), actor.actor);
       const body = await readJson(request);
-      requireIdempotency(request);
+      const idempotencyKey = requireIdempotency(request);
       requireExpectedVersion(request, drawing);
       const result = applyTransaction(drawing, {
         source: "user",
@@ -87,15 +84,16 @@ export async function handleApiRequest(request, env = {}) {
         commands: body.commands ?? []
       });
       if (!result.ok) return json({ ok: false, error: result.error }, 409, corsHeaders(env, requestId));
-      memory.drawings.set(drawing.id, result.drawing);
-      audit(actor.actor, "drawing.transaction", "drawing", drawing.id, { label: body.label });
+      await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
+      await store.saveDrawing(result.drawing);
+      await audit(store, actor.actor, "drawing.transaction", "drawing", drawing.id, { label: body.label });
       return json({ ok: true, drawing: result.drawing, warnings: result.warnings }, 200, corsHeaders(env, requestId));
     }
 
     const agentMatch = route.match(/^\/drawings\/([^/]+)\/agent-runs$/);
     if (request.method === "POST" && agentMatch) {
       authorize(actor.actor, "canRunAi");
-      const drawing = withActor(getDrawing(agentMatch[1]), actor.actor);
+      const drawing = withActor(await getDrawing(store, agentMatch[1]), actor.actor);
       const body = await readJson(request);
       const proposal = buildAiProposal(drawing, body.prompt ?? "");
       const run = {
@@ -107,54 +105,61 @@ export async function handleApiRequest(request, env = {}) {
         createdBy: actor.actor.id,
         createdAt: new Date().toISOString()
       };
-      memory.agentRuns.set(run.id, run);
-      audit(actor.actor, "agent.planned", "agent_run", run.id, { status: run.status });
+      await store.saveAgentRun(run);
+      await audit(store, actor.actor, "agent.planned", "agent_run", run.id, { status: run.status });
       return json({ ok: true, run }, proposal.status === "planned" ? 201 : 202, corsHeaders(env, requestId));
     }
 
     const approveAgentMatch = route.match(/^\/agent-runs\/([^/]+)\/approve$/);
     if (request.method === "POST" && approveAgentMatch) {
       authorize(actor.actor, "canEdit");
-      requireIdempotency(request);
+      const idempotencyKey = requireIdempotency(request);
       const body = await readJson(request);
-      const run = resolveAgentRunForApproval(approveAgentMatch[1], body);
+      const run = await resolveAgentRunForApproval(store, approveAgentMatch[1], body);
       if (run.proposal.status !== "planned") {
         return json({ ok: false, error: "適用可能なAI提案ではありません。" }, 409, corsHeaders(env, requestId));
       }
-      const drawing = withActor(getDrawing(run.drawingId), actor.actor);
+      const drawing = withActor(await getDrawing(store, run.drawingId), actor.actor);
       requireExpectedVersion(request, drawing);
       const result = applyTransaction(drawing, proposalToTransaction(run.proposal, actor.actor.id));
       if (!result.ok) return json({ ok: false, error: result.error }, 409, corsHeaders(env, requestId));
+      await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
       run.status = "completed";
-      memory.drawings.set(drawing.id, result.drawing);
-      audit(actor.actor, "agent.approved", "drawing", drawing.id, { runId: run.id });
+      await store.saveDrawing(result.drawing);
+      await store.saveAgentRun(run);
+      await audit(store, actor.actor, "agent.approved", "drawing", drawing.id, { runId: run.id });
       return json({ ok: true, drawing: result.drawing, run }, 200, corsHeaders(env, requestId));
     }
 
     const reviewMatch = route.match(/^\/drawings\/([^/]+)\/review$/);
     if (request.method === "POST" && reviewMatch) {
-      const drawing = withActor(getDrawing(reviewMatch[1]), actor.actor);
+      const drawing = withActor(await getDrawing(store, reviewMatch[1]), actor.actor);
       const body = await readJson(request);
+      const idempotencyKey = requireIdempotency(request);
+      requireExpectedVersion(request, drawing);
       if (body.action === "submit") {
         authorize(actor.actor, "canEdit");
         const next = submitForReview(drawing, actor.actor.id);
-        memory.drawings.set(drawing.id, next);
-        audit(actor.actor, "review.submitted", "drawing", drawing.id, {});
+        await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
+        await store.saveDrawing(next);
+        await audit(store, actor.actor, "review.submitted", "drawing", drawing.id, {});
         return json({ ok: true, drawing: next }, 200, corsHeaders(env, requestId));
       }
       if (body.action === "approve") {
         authorize(actor.actor, "canApprove");
         const result = approveDrawing(drawing, actor.actor.id);
         if (!result.ok) return json({ ok: false, error: result.error, issues: validateDrawing(drawing) }, 409, corsHeaders(env, requestId));
-        memory.drawings.set(drawing.id, result.drawing);
-        audit(actor.actor, "review.approved", "drawing", drawing.id, {});
+        await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
+        await store.saveDrawing(result.drawing);
+        await audit(store, actor.actor, "review.approved", "drawing", drawing.id, {});
         return json({ ok: true, drawing: result.drawing }, 200, corsHeaders(env, requestId));
       }
       if (body.action === "new_version") {
         authorize(actor.actor, "canApprove");
         const next = createNewVersion(drawing, actor.actor.id);
-        memory.drawings.set(drawing.id, next);
-        audit(actor.actor, "drawing.version.created", "drawing", drawing.id, {});
+        await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
+        await store.saveDrawing(next);
+        await audit(store, actor.actor, "drawing.version.created", "drawing", drawing.id, {});
         return json({ ok: true, drawing: next }, 200, corsHeaders(env, requestId));
       }
       return json({ ok: false, error: "review actionが不正です。" }, 400, corsHeaders(env, requestId));
@@ -162,24 +167,22 @@ export async function handleApiRequest(request, env = {}) {
 
     if (request.method === "GET" && route === "/audit-logs") {
       authorize(actor.actor, "canApprove");
-      return json({ ok: true, auditLogs: memory.auditLogs.slice(-100).reverse() }, 200, corsHeaders(env, requestId));
+      return json({ ok: true, auditLogs: await store.listAuditLogs(100) }, 200, corsHeaders(env, requestId));
     }
 
     return json({ ok: false, error: "not found" }, 404, corsHeaders(env, requestId));
   } catch (error) {
-    const status = error.status ?? 500;
-    return json({ ok: false, error: error.message ?? "internal error" }, status, corsHeaders(env, requestId));
+    const status = error instanceof Error && "status" in error ? Number(error.status) : 500;
+    const message = error instanceof Error ? error.message : "internal error";
+    return json({ ok: false, error: message }, status, corsHeaders(env, requestId));
   }
 }
 
 export function resetMemoryStore() {
-  memory.drawings.clear();
-  memory.agentRuns.clear();
-  memory.auditLogs.splice(0, memory.auditLogs.length);
-  ensureSeed(memory);
+  resetMemoryStoreData();
 }
 
-function resolveActor(request, env) {
+async function resolveActor(request, env) {
   const mode = authMode(env);
   if (mode === "demo") {
     const role = request.headers.get("x-demo-role") ?? "drafter";
@@ -187,12 +190,49 @@ function resolveActor(request, env) {
     return { ok: true, actor: { id: request.headers.get("x-demo-actor") ?? "demo@example.com", role } };
   }
 
-  const jwtEmail = request.headers.get("cf-access-authenticated-user-email");
-  const role = request.headers.get("x-mirai-role");
-  if (!jwtEmail || !role || !ROLE_POLICIES[role]) {
+  const accessJwt = request.headers.get("cf-access-jwt-assertion");
+  if (!accessJwt) {
     return { ok: false, error: "Cloudflare Access認証情報を確認できません。" };
   }
+  let claims;
+  try {
+    claims = env.ACCESS_JWT_VERIFIER
+      ? await env.ACCESS_JWT_VERIFIER(accessJwt)
+      : await verifyAccessJwt(accessJwt, env);
+  } catch {
+    return { ok: false, error: "Cloudflare Access JWTを検証できません。" };
+  }
+  const jwtEmail = claims.email;
+  if (typeof jwtEmail !== "string" || !jwtEmail.includes("@")) {
+    return { ok: false, error: "Cloudflare Access JWTにemail claimがありません。" };
+  }
+  const roleMap = parseRoleMap(env.ACCESS_ROLE_MAP);
+  const role = roleMap[jwtEmail.toLowerCase()] ?? env.ACCESS_DEFAULT_ROLE ?? "viewer";
+  if (!ROLE_POLICIES[role]) return { ok: false, error: "Access権限設定が不正です。" };
   return { ok: true, actor: { id: jwtEmail, role } };
+}
+
+async function verifyAccessJwt(token, env) {
+  if (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD) {
+    throw new Error("Access JWT verifier configuration is missing");
+  }
+  const issuer = `https://${env.CF_ACCESS_TEAM_DOMAIN.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  const jwks = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
+  const { payload } = await jwtVerify(token, jwks, {
+    issuer,
+    audience: env.CF_ACCESS_AUD
+  });
+  return payload;
+}
+
+function parseRoleMap(value) {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 function authMode(env) {
@@ -200,46 +240,31 @@ function authMode(env) {
   return env.APP_ENV === "production" ? "access" : "demo";
 }
 
-function databaseStatus(env) {
-  return {
-    provider: "neon-postgres",
-    configured: Boolean(env.DATABASE_URL || env.HYPERDRIVE),
-    mode: env.DATABASE_URL || env.HYPERDRIVE ? "configured-not-probed" : "memory-preview",
-    migration: "0001_initial.sql"
-  };
-}
-
 function authorize(actor, capability) {
   const policy = ROLE_POLICIES[actor.role] ?? ROLE_POLICIES.viewer;
   if (!policy[capability]) {
-    const error = new Error(`${policy.label}には${capability}権限がありません。`);
-    error.status = 403;
-    throw error;
+    throw httpError(`${policy.label}には${capability}権限がありません。`, 403);
   }
 }
 
-function getDrawing(id) {
-  const drawing = memory.drawings.get(id);
+async function getDrawing(store, id) {
+  const drawing = await store.getDrawing(id);
   if (!drawing) {
-    const error = new Error(`図面が見つかりません: ${id}`);
-    error.status = 404;
-    throw error;
+    throw httpError(`図面が見つかりません: ${id}`, 404);
   }
   return drawing;
 }
 
-function getAgentRun(id) {
-  const run = memory.agentRuns.get(id);
+async function getAgentRun(store, id) {
+  const run = await store.getAgentRun(id);
   if (!run) {
-    const error = new Error(`Agent Runが見つかりません: ${id}`);
-    error.status = 404;
-    throw error;
+    throw httpError(`Agent Runが見つかりません: ${id}`, 404);
   }
   return run;
 }
 
-function resolveAgentRunForApproval(id, body) {
-  const run = memory.agentRuns.get(id);
+async function resolveAgentRunForApproval(store, id, body) {
+  const run = await store.getAgentRun(id);
   if (run) return run;
   if (body?.drawingId && body?.proposal?.status === "planned" && Array.isArray(body.proposal.commands)) {
     return {
@@ -252,7 +277,7 @@ function resolveAgentRunForApproval(id, body) {
       createdAt: new Date().toISOString()
     };
   }
-  return getAgentRun(id);
+  return getAgentRun(store, id);
 }
 
 function withActor(drawing, actor) {
@@ -260,24 +285,26 @@ function withActor(drawing, actor) {
 }
 
 function requireIdempotency(request) {
-  if (!request.headers.get("idempotency-key")) {
-    const error = new Error("Idempotency-Keyが必要です。");
-    error.status = 428;
-    throw error;
+  const key = request.headers.get("idempotency-key");
+  if (!key) {
+    throw httpError("Idempotency-Keyが必要です。", 428);
+  }
+  return key;
+}
+
+async function claimIdempotency(store, key, actorId, route) {
+  if (!(await store.claimIdempotency(key, actorId, route))) {
+    throw httpError("同じIdempotency-Keyのリクエストは処理済みです。", 409);
   }
 }
 
 function requireExpectedVersion(request, drawing) {
   const expected = Number(request.headers.get("expected-version"));
   if (!Number.isFinite(expected)) {
-    const error = new Error("expected-versionが必要です。");
-    error.status = 428;
-    throw error;
+    throw httpError("expected-versionが必要です。", 428);
   }
   if (expected !== drawing.version) {
-    const error = new Error(`版が競合しています。expected=${expected}, actual=${drawing.version}`);
-    error.status = 409;
-    throw error;
+    throw httpError(`版が競合しています。expected=${expected}, actual=${drawing.version}`, 409);
   }
 }
 
@@ -288,9 +315,7 @@ async function readJson(request) {
   try {
     return JSON.parse(text);
   } catch {
-    const error = new Error("JSON本文が不正です。");
-    error.status = 400;
-    throw error;
+    throw httpError("JSON本文が不正です。", 400);
   }
 }
 
@@ -314,14 +339,8 @@ function corsHeaders(env, requestId) {
   };
 }
 
-function ensureSeed(store) {
-  if (!store.drawings.has("dwg_demo_001")) {
-    store.drawings.set("dwg_demo_001", seedDrawing());
-  }
-}
-
-function audit(actor, action, targetType, targetId, detail) {
-  memory.auditLogs.push({
+async function audit(store, actor, action, targetType, targetId, detail) {
+  await store.appendAudit({
     id: `audit_${cryptoSafeId()}`,
     actorId: actor.id,
     role: actor.role,
@@ -331,6 +350,10 @@ function audit(actor, action, targetType, targetId, detail) {
     detail,
     createdAt: new Date().toISOString()
   });
+}
+
+function httpError(message, status) {
+  return Object.assign(new Error(message), { status });
 }
 
 function cryptoSafeId() {

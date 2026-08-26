@@ -26,6 +26,7 @@ const state = {
   selectedId: null,
   draftPoints: [],
   previewProposal: null,
+  previewRunId: null,
   camera: { x: 50, y: 40, scale: 0.075 },
   commandLog: ["起動: Mirai Web CAD MVP"],
   drag: null,
@@ -169,7 +170,9 @@ function render() {
 }
 
 function bindEvents() {
-  document.querySelectorAll("[data-view-mode]").forEach((button) => {
+  /** @type {NodeListOf<HTMLButtonElement>} */
+  const viewModeButtons = document.querySelectorAll("[data-view-mode]");
+  viewModeButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.viewMode = button.dataset.viewMode;
       state.selectedId = null;
@@ -181,7 +184,9 @@ function bindEvents() {
 
   document.querySelector("#apiHealthBtn").addEventListener("click", checkApiHealth);
 
-  document.querySelectorAll("[data-tool]").forEach((button) => {
+  /** @type {NodeListOf<HTMLButtonElement>} */
+  const toolButtons = document.querySelectorAll("[data-tool]");
+  toolButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.tool = button.dataset.tool;
       state.draftPoints = [];
@@ -190,13 +195,15 @@ function bindEvents() {
     });
   });
 
-  document.querySelector("#roleSelect").addEventListener("change", (event) => {
-    state.drawing.currentRole = event.target.value;
+  const roleSelect = /** @type {HTMLSelectElement} */ (document.querySelector("#roleSelect"));
+  roleSelect.addEventListener("change", () => {
+    state.drawing.currentRole = roleSelect.value;
     persist("権限切替");
   });
 
-  document.querySelector("#layerSelect").addEventListener("change", (event) => {
-    state.currentLayerId = event.target.value;
+  const layerSelect = /** @type {HTMLSelectElement} */ (document.querySelector("#layerSelect"));
+  layerSelect.addEventListener("change", () => {
+    state.currentLayerId = layerSelect.value;
     log(`現在レイヤー: ${layerName(state.currentLayerId)}`);
     render();
   });
@@ -212,24 +219,26 @@ function bindEvents() {
     state.drawing = seedDrawing();
     state.selectedId = null;
     state.previewProposal = null;
+    state.previewRunId = null;
+    state.apiStatus = { state: "idle", message: "未確認", connected: false };
     persist("デモ初期化");
   });
 
-  document.querySelector("#planAiBtn").addEventListener("click", () => {
-    state.previewProposal = buildAiProposal(state.drawing, document.querySelector("#aiPrompt").value);
-    log(state.previewProposal.status === "planned" ? `AI Preview生成: ${state.previewProposal.label}` : "AI追加入力が必要");
-    render();
-  });
+  document.querySelector("#planAiBtn").addEventListener("click", planAiProposal);
   document.querySelector("#applyAiBtn").addEventListener("click", applyAiProposal);
 
-  document.querySelectorAll("[data-layer-visible]").forEach((checkbox) => {
+  /** @type {NodeListOf<HTMLInputElement>} */
+  const layerVisibilityInputs = document.querySelectorAll("[data-layer-visible]");
+  layerVisibilityInputs.forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       const layer = state.drawing.layers.find((item) => item.id === checkbox.dataset.layerVisible);
       layer.visible = checkbox.checked;
       persist(`レイヤー表示切替: ${layer.name}`);
     });
   });
-  document.querySelectorAll("[data-layer-lock]").forEach((button) => {
+  /** @type {NodeListOf<HTMLButtonElement>} */
+  const layerLockButtons = document.querySelectorAll("[data-layer-lock]");
+  layerLockButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const layer = state.drawing.layers.find((item) => item.id === button.dataset.layerLock);
       layer.locked = !layer.locked;
@@ -237,26 +246,11 @@ function bindEvents() {
     });
   });
 
-  document.querySelector("#reviewBtn").addEventListener("click", () => {
-    state.drawing = submitForReview(state.drawing, state.drawing.currentRole);
-    persist("レビュー提出");
-  });
-  document.querySelector("#approveBtn").addEventListener("click", () => {
-    const result = approveDrawing(state.drawing, state.drawing.currentRole);
-    if (!result.ok) {
-      log(`承認失敗: ${result.error}`);
-      render();
-      return;
-    }
-    state.drawing = result.drawing;
-    persist("承認完了");
-  });
-  document.querySelector("#newVersionBtn").addEventListener("click", () => {
-    state.drawing = createNewVersion(state.drawing, state.drawing.currentRole);
-    persist("新版作成");
-  });
+  document.querySelector("#reviewBtn").addEventListener("click", () => changeReviewState("submit"));
+  document.querySelector("#approveBtn").addEventListener("click", () => changeReviewState("approve"));
+  document.querySelector("#newVersionBtn").addEventListener("click", () => changeReviewState("new_version"));
 
-  const canvas = document.querySelector("#cadCanvas");
+  const canvas = /** @type {HTMLCanvasElement} */ (document.querySelector("#cadCanvas"));
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
@@ -265,9 +259,47 @@ function bindEvents() {
   canvas.focus();
 }
 
+async function changeReviewState(action) {
+  if (state.apiStatus.connected) {
+    try {
+      const body = await apiRequest(`/api/drawings/${state.drawing.id}/review`, {
+        method: "POST",
+        headers: transactionHeaders(),
+        body: JSON.stringify({ action })
+      });
+      state.drawing = body.drawing;
+      persist({ submit: "レビュー提出", approve: "承認完了", new_version: "新版作成" }[action]);
+    } catch (error) {
+      log(`API操作失敗: ${errorMessage(error)}`);
+      render();
+    }
+    return;
+  }
+
+  if (action === "submit") {
+    state.drawing = submitForReview(state.drawing, state.drawing.currentRole);
+    persist("レビュー提出");
+  }
+  if (action === "approve") {
+    const result = approveDrawing(state.drawing, state.drawing.currentRole);
+    if (!result.ok) {
+      log(`承認失敗: ${result.error}`);
+      render();
+      return;
+    }
+    state.drawing = result.drawing;
+    persist("承認完了");
+  }
+  if (action === "new_version") {
+    state.drawing = createNewVersion(state.drawing, state.drawing.currentRole);
+    persist("新版作成");
+  }
+}
+
 function onPointerDown(event) {
   if (state.viewMode === "loading" || state.viewMode === "error") {
     log(`${viewModeLabel(state.viewMode)}状態ではCanvas操作を停止しています。`);
+    render();
     return;
   }
   const world = screenToWorld(event.offsetX, event.offsetY);
@@ -284,6 +316,7 @@ function onPointerDown(event) {
 
   if (!policy.canEdit) {
     log(`${policy.label}は作図できません。`);
+    render();
     return;
   }
 
@@ -328,25 +361,10 @@ function onPointerMove(event) {
 function onPointerUp() {
   if (!state.drag) return;
   const entity = state.drawing.entities.find((item) => item.id === state.drag.id);
-  const result = applyTransaction(
-    {
-      ...state.drawing,
-      entities: state.drawing.entities.map((item) => (item.id === state.drag.id ? state.drag.original : item))
-    },
-    {
-      source: "user",
-      label: "図形移動",
-      commands: [{ op: "update", id: state.drag.id, patch: withoutIdentity(entity) }]
-    }
-  );
+  state.drawing.entities = state.drawing.entities.map((item) => (item.id === state.drag.id ? state.drag.original : item));
+  const command = { op: "update", id: state.drag.id, patch: withoutIdentity(entity) };
   state.drag = null;
-  if (result.ok) {
-    state.drawing = result.drawing;
-    persist("図形移動");
-  } else {
-    log(`移動失敗: ${result.error}`);
-    render();
-  }
+  commitCommands("図形移動", [command]);
 }
 
 function onWheel(event) {
@@ -397,18 +415,63 @@ function commitTwoPointTool() {
 function deleteSelected() {
   if (!state.selectedId) {
     log("削除対象が未選択です。");
+    render();
     return;
   }
   commitCommands("図形削除", [{ op: "delete", id: state.selectedId }]);
   state.selectedId = null;
 }
 
-function applyAiProposal() {
+async function planAiProposal() {
+  const promptInput = /** @type {HTMLTextAreaElement} */ (document.querySelector("#aiPrompt"));
+  const promptValue = promptInput.value;
+  if (state.apiStatus.connected) {
+    try {
+      const body = await apiRequest(`/api/drawings/${state.drawing.id}/agent-runs`, {
+        method: "POST",
+        body: JSON.stringify({ prompt: promptValue })
+      });
+      state.previewProposal = body.run.proposal;
+      state.previewRunId = body.run.id;
+    } catch (error) {
+      log(`AI Preview失敗: ${errorMessage(error)}`);
+      render();
+      return;
+    }
+  } else {
+    state.previewProposal = buildAiProposal(state.drawing, promptValue);
+    state.previewRunId = null;
+  }
+  log(state.previewProposal.status === "planned" ? `AI Preview生成: ${state.previewProposal.label}` : "AI追加入力が必要");
+  render();
+}
+
+async function applyAiProposal() {
   const policy = ROLE_POLICIES[state.drawing.currentRole] ?? ROLE_POLICIES.viewer;
   if (!policy.canRunAi && !policy.canEdit) {
     log(`${policy.label}はAI提案を適用できません。`);
+    render();
     return;
   }
+
+  if (state.apiStatus.connected && state.previewRunId) {
+    try {
+      const body = await apiRequest(`/api/agent-runs/${state.previewRunId}/approve`, {
+        method: "POST",
+        headers: transactionHeaders(),
+        body: JSON.stringify({ drawingId: state.drawing.id, proposal: state.previewProposal })
+      });
+      state.drawing = body.drawing;
+      state.previewProposal = null;
+      state.previewRunId = null;
+      persist("AI提案を承認適用 / Neon同期");
+    } catch (error) {
+      log(`AI適用失敗: ${errorMessage(error)}`);
+      render();
+    }
+    return;
+  }
+
   const result = applyTransaction(state.drawing, proposalToTransaction(state.previewProposal, state.drawing.currentRole));
   if (!result.ok) {
     log(`AI適用失敗: ${result.error}`);
@@ -420,7 +483,23 @@ function applyAiProposal() {
   persist("AI提案を承認適用");
 }
 
-function commitCommands(label, commands) {
+async function commitCommands(label, commands) {
+  if (state.apiStatus.connected) {
+    try {
+      const body = await apiRequest(`/api/drawings/${state.drawing.id}/transactions`, {
+        method: "POST",
+        headers: transactionHeaders(),
+        body: JSON.stringify({ label, commands })
+      });
+      state.drawing = body.drawing;
+      persist(`${label} / Neon同期`);
+    } catch (error) {
+      log(`${label}失敗: ${errorMessage(error)}`);
+      render();
+    }
+    return;
+  }
+
   const result = applyTransaction(state.drawing, {
     source: "user",
     actor: state.drawing.currentRole,
@@ -437,7 +516,7 @@ function commitCommands(label, commands) {
 }
 
 function drawCanvas(pointerWorld = null) {
-  const canvas = document.querySelector("#cadCanvas");
+  const canvas = /** @type {HTMLCanvasElement | null} */ (document.querySelector("#cadCanvas"));
   if (!canvas) return;
   const drawing = activeDrawing();
   const ctx = canvas.getContext("2d");
@@ -583,20 +662,44 @@ function persist(message) {
 }
 
 async function checkApiHealth() {
-  state.apiStatus = { state: "loading", message: "確認中" };
+  state.apiStatus = { state: "loading", message: "確認中", connected: false };
   render();
   try {
-    const response = await fetch("/api/health", { headers: { "x-demo-role": state.drawing.currentRole } });
-    const body = await response.json();
-    if (!response.ok || !body.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+    const body = await apiRequest("/api/health");
+    const drawingBody = await apiRequest("/api/drawings/demo");
+    const selectedRole = state.drawing.currentRole;
+    state.drawing = { ...drawingBody.drawing, currentRole: selectedRole };
+    saveDrawing(state.drawing);
     state.apiStatus = {
       state: "ok",
-      message: `${body.service} / auth=${body.auth.mode} / db=${body.db.mode}`
+      message: `${body.service} / auth=${body.auth.mode} / db=${body.db.mode} / 同期済み`,
+      connected: true
     };
   } catch (error) {
-    state.apiStatus = { state: "error", message: `API未接続: ${error.message}` };
+    state.apiStatus = { state: "error", message: `API未接続: ${errorMessage(error)}`, connected: false };
   }
   render();
+}
+
+async function apiRequest(pathname, options = {}) {
+  const response = await fetch(pathname, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      "x-demo-role": state.drawing.currentRole,
+      ...options.headers
+    }
+  });
+  const body = await response.json();
+  if (!response.ok || !body.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+  return body;
+}
+
+function transactionHeaders() {
+  return {
+    "idempotency-key": globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
+    "expected-version": String(state.drawing.version)
+  };
 }
 
 function log(message) {
@@ -719,6 +822,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 render();

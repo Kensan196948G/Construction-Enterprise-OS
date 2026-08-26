@@ -20,7 +20,12 @@ const server = createServer(async (req, res) => {
     const request = await nodeRequestToFetchRequest(req, url);
     const response = await handleApiRequest(request, {
       AUTH_MODE: process.env.AUTH_MODE ?? "demo",
-      APP_ENV: process.env.APP_ENV ?? "preview"
+      APP_ENV: process.env.APP_ENV ?? "preview",
+      DATABASE_URL: process.env.DATABASE_URL,
+      ACCESS_ROLE_MAP: process.env.ACCESS_ROLE_MAP,
+      ACCESS_DEFAULT_ROLE: process.env.ACCESS_DEFAULT_ROLE,
+      CF_ACCESS_TEAM_DOMAIN: process.env.CF_ACCESS_TEAM_DOMAIN,
+      CF_ACCESS_AUD: process.env.CF_ACCESS_AUD
     });
     await writeFetchResponse(res, response);
     return;

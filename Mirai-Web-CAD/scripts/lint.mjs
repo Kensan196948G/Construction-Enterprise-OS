@@ -10,7 +10,10 @@ const required = [
   "src/storage.js",
   "src/styles.css",
   "migrations/0001_initial.sql",
-  "seeds/demo.sql"
+  "migrations/0002_idempotency.sql",
+  "seeds/demo.sql",
+  "playwright.config.js",
+  "tsconfig.check.json"
 ];
 
 const failures = [];
