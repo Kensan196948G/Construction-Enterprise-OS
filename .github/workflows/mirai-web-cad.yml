@@ -1,0 +1,83 @@
+name: Mirai Web CAD Gate
+
+on:
+  push:
+    paths:
+      - "Mirai-Web-CAD/**"
+      - ".github/workflows/mirai-web-cad.yml"
+      - ".github/workflows/mirai-web-cad-production.yml"
+  pull_request:
+    paths:
+      - "Mirai-Web-CAD/**"
+      - ".github/workflows/mirai-web-cad.yml"
+      - ".github/workflows/mirai-web-cad-production.yml"
+
+concurrency:
+  group: mirai-web-cad-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    name: Lint, Test, Build, E2E, A11y
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Mirai-Web-CAD
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: Mirai-Web-CAD/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirai-web-cad-playwright-report
+          path: Mirai-Web-CAD/playwright-report/
+          retention-days: 14
+
+  migration:
+    name: Empty PostgreSQL Migration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: mirai
+          POSTGRES_PASSWORD: mirai_ci_only
+          POSTGRES_DB: mirai_web_cad
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mirai -d mirai_web_cad"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: Mirai-Web-CAD
+    env:
+      DATABASE_URL: postgresql://mirai:mirai_ci_only@127.0.0.1:5432/mirai_web_cad
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run db:verify
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan Mirai Web CAD files
+        run: >-
+          docker run --rm
+          -v "$PWD:/repo"
+          ghcr.io/gitleaks/gitleaks:v8.30.1
+          dir /repo/Mirai-Web-CAD --redact --no-banner
