@@ -147,6 +147,25 @@ export function applyTransaction(drawing, transaction) {
   const beforeHash = stableHash(next.entities);
 
   for (const command of transaction.commands) {
+    if (command.op === "add_layer") {
+      const layer = command.layer;
+      if (!layer || typeof layer.id !== "string" || typeof layer.name !== "string") {
+        return fail("追加レイヤーが不正です。", drawing);
+      }
+      if (next.layers.some((item) => item.id === layer.id)) {
+        warnings.push(`レイヤーは追加済みです: ${layer.name}`);
+        continue;
+      }
+      next.layers.push({
+        id: layer.id,
+        name: layer.name.slice(0, 80),
+        color: /^#[0-9a-f]{6}$/i.test(layer.color) ? layer.color : "#5b6b7a",
+        locked: false,
+        visible: true,
+        printable: layer.printable !== false
+      });
+    }
+
     if (command.op === "add") {
       const layer = next.layers.find((item) => item.id === command.entity.layerId);
       if (!layer) {

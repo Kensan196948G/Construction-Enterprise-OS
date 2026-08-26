@@ -3,6 +3,7 @@ import {
   applyTransaction,
   approveDrawing,
   buildAiProposal,
+  createDrawing,
   createNewVersion,
   proposalToTransaction,
   seedDrawing,
@@ -55,11 +56,15 @@ export async function handleApiRequest(request, env = {}) {
 
     if (request.method === "POST" && route === "/drawings") {
       authorize(actor.actor, "canEdit");
+      const idempotencyKey = requireIdempotency(request);
+      await rejectClaimedIdempotency(store, idempotencyKey);
       const body = await readJson(request);
-      const drawing = seedDrawing();
-      drawing.id = body.id ?? `dwg_${cryptoSafeId()}`;
-      drawing.name = body.name ?? "新規図面";
+      const drawing = body.template === "demo" ? seedDrawing() : createDrawing();
+      drawing.id = typeof body.id === "string" && /^dwg_[a-z0-9_-]{1,60}$/i.test(body.id) ? body.id : `dwg_${cryptoSafeId()}`;
+      drawing.name = typeof body.name === "string" ? body.name.trim().slice(0, 100) || "新規図面" : "新規図面";
+      drawing.unit = ["mm", "m"].includes(body.unit) ? body.unit : "mm";
       drawing.currentRole = actor.actor.role;
+      await claimIdempotency(store, idempotencyKey, actor.actor.id, route);
       await store.saveDrawing(drawing);
       await audit(store, actor.actor, "drawing.created", "drawing", drawing.id, { name: drawing.name });
       return json({ ok: true, drawing }, 201, corsHeaders(env, requestId));
