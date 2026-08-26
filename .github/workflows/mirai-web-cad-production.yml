@@ -1,12 +1,8 @@
 name: Mirai Web CAD Production
 
+# Production ownership moved to Kensan196948G/Mirai-Web-CAD.
+# Keep manual execution temporarily for the migration rollback window.
 on:
-  push:
-    branches:
-      - "fix/auth-guard-fail-closed"
-    paths:
-      - "Mirai-Web-CAD/**"
-      - ".github/workflows/mirai-web-cad-production.yml"
   workflow_dispatch:
 
 concurrency:
