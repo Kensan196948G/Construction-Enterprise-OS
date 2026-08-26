@@ -151,7 +151,7 @@ function render() {
                 (layer) => `
                   <label class="layer-row">
                     <input type="checkbox" data-layer-visible="${escapeHtml(layer.id)}" ${layer.visible ? "checked" : ""} />
-                    <span class="swatch" style="background:${safeColor(layer.color)}"></span>
+                    <input class="swatch" type="color" value="${safeColor(layer.color)}" disabled aria-label="${escapeHtml(layer.name)}の色" />
                     <span>${escapeHtml(layer.name)}</span>
                     <button data-layer-lock="${escapeHtml(layer.id)}" class="mini ${
                       layer.locked ? "locked" : ""
