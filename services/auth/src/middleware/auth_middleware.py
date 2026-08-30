@@ -94,16 +94,20 @@ async def get_optional_current_user(
     return decode_token(credentials.credentials)
 
 
-def require_permission(resource: str, action: str):
-    """権限チェック依存性。DB上の Permission/RolePermission/UserRole を参照して検証する"""
+def require_permission(resource: str, action: str, *, admin_bypass: bool = True):
+    """権限チェック依存性。DB上の Permission/RolePermission/UserRole を参照して検証する
+
+    admin_bypass=False の場合、"admin" ロールであっても DB 上の権限付与を必須とする
+    (監査ログなど、admin であっても明示的な権限付与を要求したいリソース向け)。
+    """
 
     async def permission_check(
         token_data: TokenData = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ) -> TokenData:
         required = f"{resource}:{action}"
-        # 管理者は全権限を持つ
-        if "admin" in token_data.roles:
+        # 管理者は全権限を持つ(admin_bypass=False の場合を除く)
+        if admin_bypass and "admin" in token_data.roles:
             return token_data
 
         try:

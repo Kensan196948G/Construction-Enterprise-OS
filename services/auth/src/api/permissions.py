@@ -23,12 +23,13 @@ async def list_permissions(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     resource: str | None = Query(None),
+    action: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(require_permission("permissions", "read")),
 ):
-    """権限一覧取得(ページネーション・resourceフィルタ)"""
+    """権限一覧取得(ページネーション・resource/actionフィルタ)"""
     permissions, total = await get_permissions_paginated(
-        db, page=page, per_page=per_page, resource=resource
+        db, page=page, per_page=per_page, resource=resource, action=action
     )
     return APIResponse(
         data=PermissionListResponse(

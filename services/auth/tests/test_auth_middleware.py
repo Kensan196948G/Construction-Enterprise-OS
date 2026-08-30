@@ -27,6 +27,14 @@ def _make_app():
     ):
         return {"ok": True}
 
+    @app.get("/protected-strict")
+    async def protected_strict(
+        current_user: TokenData = Depends(
+            require_permission("audit", "read", admin_bypass=False)
+        ),
+    ):
+        return {"ok": True}
+
     return app
 
 
@@ -122,3 +130,45 @@ def test_malformed_subject_is_denied(app, mock_db):
 
     response = client.get("/protected")
     assert response.status_code == 403
+
+
+def test_admin_without_bypass_requires_db_permission(app, mock_db):
+    """admin_bypass=False の場合、admin ロールでも DB 権限が無ければ拒否される"""
+    app.dependency_overrides[get_current_user] = _override_current_user(
+        TokenData(sub=USER_ID, type="user", roles=["admin"])
+    )
+
+    async def mock_get_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = mock_get_db
+    client = TestClient(app)
+
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=False),
+    ):
+        response = client.get("/protected-strict")
+
+    assert response.status_code == 403
+
+
+def test_admin_without_bypass_allowed_with_db_permission(app, mock_db):
+    """admin_bypass=False の場合、DB 権限があれば admin も許可される"""
+    app.dependency_overrides[get_current_user] = _override_current_user(
+        TokenData(sub=USER_ID, type="user", roles=["admin"])
+    )
+
+    async def mock_get_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = mock_get_db
+    client = TestClient(app)
+
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=True),
+    ):
+        response = client.get("/protected-strict")
+
+    assert response.status_code == 200

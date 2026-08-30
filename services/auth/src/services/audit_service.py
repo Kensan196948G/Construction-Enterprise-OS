@@ -41,7 +41,7 @@ async def get_audit_logs_paginated(
     total = (await db.execute(count_query)).scalar() or 0
 
     query = (
-        base_query.order_by(AuditLog.created_at.desc())
+        base_query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
         .offset((page - 1) * per_page)
         .limit(per_page)
     )

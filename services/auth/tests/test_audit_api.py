@@ -1,6 +1,6 @@
 """監査ログ検索API 結合テスト"""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -52,9 +52,14 @@ def _client_as(mock_db, token_data: TokenData) -> TestClient:
     return TestClient(app)
 
 
-def test_list_audit_logs_as_admin(mock_db):
+def test_list_audit_logs_as_admin_with_db_permission(mock_db):
+    """audit:read はadminバイパス対象外のため、DB権限があって初めて許可される(seed済みadminは実際にaudit:readを保持)"""
     client = _client_as(mock_db, TokenData(sub=USER_ID, type="user", roles=["admin"]))
-    response = client.get("/api/v1/audit-logs")
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=True),
+    ):
+        response = client.get("/api/v1/audit-logs")
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["logs"] == []
@@ -63,16 +68,35 @@ def test_list_audit_logs_as_admin(mock_db):
 
 def test_list_audit_logs_with_filters_as_admin(mock_db):
     client = _client_as(mock_db, TokenData(sub=USER_ID, type="user", roles=["admin"]))
-    response = client.get(
-        "/api/v1/audit-logs",
-        params={"event_type": "login", "success": "true", "page": 1, "per_page": 10},
-    )
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=True),
+    ):
+        response = client.get(
+            "/api/v1/audit-logs",
+            params={"event_type": "login", "success": "true", "page": 1, "per_page": 10},
+        )
     assert response.status_code == 200
+
+
+def test_list_audit_logs_admin_without_db_permission_is_denied(mock_db):
+    """admin ロールであっても DB に audit:read が付与されていなければ拒否される"""
+    client = _client_as(mock_db, TokenData(sub=USER_ID, type="user", roles=["admin"]))
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=False),
+    ):
+        response = client.get("/api/v1/audit-logs")
+    assert response.status_code == 403
 
 
 def test_list_audit_logs_without_permission_role_is_denied(mock_db):
     client = _client_as(mock_db, TokenData(sub=USER_ID, type="user", roles=["field"]))
-    response = client.get("/api/v1/audit-logs")
+    with patch(
+        "src.middleware.auth_middleware.user_has_permission",
+        new=AsyncMock(return_value=False),
+    ):
+        response = client.get("/api/v1/audit-logs")
     assert response.status_code == 403
 
 

@@ -14,10 +14,13 @@ async def get_permissions_paginated(
     page: int = 1,
     per_page: int = 20,
     resource: str | None = None,
+    action: str | None = None,
 ) -> tuple[list[Permission], int]:
     conditions = []
     if resource:
         conditions.append(Permission.resource == resource)
+    if action:
+        conditions.append(Permission.action == action)
 
     base_query = select(Permission)
     if conditions:

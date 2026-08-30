@@ -31,7 +31,9 @@ async def list_audit_logs(
     since: datetime | None = Query(None),
     until: datetime | None = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: TokenData = Depends(require_permission("audit", "read")),
+    current_user: TokenData = Depends(
+        require_permission("audit", "read", admin_bypass=False)
+    ),
 ):
     """監査ログ検索(フィルタ・ページネーション)"""
     logs, total = await get_audit_logs_paginated(
