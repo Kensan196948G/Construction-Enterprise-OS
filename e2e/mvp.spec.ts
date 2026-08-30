@@ -9,6 +9,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Construction Enterprise OS MVP WebUI", () => {
+  // このブロックはサイドバーが常時表示されるデスクトップUIを前提にしている。
+  // モバイルではサイドバーはハンバーガーメニューを開くまで非表示(.hide-mobile)のため、
+  // モバイル固有の検証は下部の「モバイル / アクセシビリティ」ブロックで行う。
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name === "mobile",
+      "デスクトップUI前提のテスト(サイドバー常時表示)。モバイル検証は別ブロックで実施",
+    );
+  });
+
   test("ホーム: タイトル・サイドバー・ダッシュボードKPIが表示される", async ({
     page,
   }) => {
