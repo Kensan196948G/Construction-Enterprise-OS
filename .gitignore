@@ -28,6 +28,9 @@ env/
 .env.local
 .env.*.local
 *.env
+.env.bak*
+.env.*.bak*
+*.env.bak*
 
 # Claude / agent local config
 .claude/
