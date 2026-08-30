@@ -195,6 +195,32 @@ class PermissionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PermissionListResponse(BaseModel):
+    permissions: list[PermissionResponse]
+    total: int
+
+
+# ============================================
+# 監査ログ
+# ============================================
+class AuditLogResponse(BaseModel):
+    id: int
+    user_id: UUID | None
+    event_type: str
+    event_data: dict | None
+    ip_address: str | None
+    user_agent: str | None
+    success: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AuditLogListResponse(BaseModel):
+    logs: list[AuditLogResponse]
+    total: int
+
+
 # ============================================
 # APIクライアント
 # ============================================
