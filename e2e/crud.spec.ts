@@ -10,14 +10,19 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function fillModal(page: Page, placeholder: string, value: string) {
-  await page.locator(".ceos-crud-modal").getByPlaceholder(placeholder).fill(value);
+  await page
+    .locator(".ceos-crud-modal")
+    .getByPlaceholder(placeholder)
+    .fill(value);
 }
 
 test.describe("CRUD — ダッシュボード(projects)", () => {
   test("一覧表示: シードデータ(工事進捗)が表示される", async ({ page }) => {
     await page.goto("/");
     await page.waitForTimeout(2500);
-    await expect(page.getByText("おかえりなさい、田中さん").first()).toBeVisible();
+    await expect(
+      page.getByText("おかえりなさい、田中さん").first(),
+    ).toBeVisible();
     await expect(page.getByText("品川タワー新築工事").first()).toBeVisible();
     await expect(page.getByText("工事進捗").first()).toBeVisible();
   });
@@ -42,19 +47,25 @@ test.describe("CRUD — ダッシュボード(projects)", () => {
     await fillModal(page, "活動内容", "編集後のアクティビティ");
     await page.getByRole("button", { name: "保存" }).click();
     await page.waitForTimeout(800);
-    await expect(page.getByText("編集後のアクティビティ").first()).toBeVisible();
+    await expect(
+      page.getByText("編集後のアクティビティ").first(),
+    ).toBeVisible();
   });
 
   test("削除: 確認ダイアログ → 一覧から消える", async ({ page }) => {
     await page.goto("/");
     await page.waitForTimeout(2500);
     // 最初のアクティビティを削除 → 表示から消える
-    await expect(page.getByText("安全パトロール報告書が提出されました").first()).toBeVisible();
+    await expect(
+      page.getByText("安全パトロール報告書が提出されました").first(),
+    ).toBeVisible();
     await page.getByRole("button", { name: "削除" }).first().click();
     await expect(page.getByText("削除の確認").first()).toBeVisible();
     await page.getByRole("button", { name: "削除する" }).click();
     await page.waitForTimeout(800);
-    await expect(page.getByText("安全パトロール報告書が提出されました").first()).toBeHidden();
+    await expect(
+      page.getByText("安全パトロール報告書が提出されました").first(),
+    ).toBeHidden();
   });
 
   test("永続化: 作成したデータがリロード後も残る", async ({ page }) => {
@@ -86,9 +97,14 @@ test.describe("CRUD — ワークフロー(workflows)", () => {
   test("タブ切替: 稟議タブで稟議データが表示される", async ({ page }) => {
     await page.goto("/#/workflow/approval");
     await page.waitForTimeout(3500);
-    await page.locator("main").getByRole("button", { name: "稟議", exact: true }).click();
+    await page
+      .locator("main")
+      .getByRole("button", { name: "稟議", exact: true })
+      .click();
     await page.waitForTimeout(800);
-    await expect(page.getByText("施工計画書（躯体工事）承認依頼").first()).toBeVisible();
+    await expect(
+      page.getByText("施工計画書（躯体工事）承認依頼").first(),
+    ).toBeVisible();
   });
 });
 
@@ -123,5 +139,25 @@ test.describe("CRUD — 現場DX・文書・IoT", () => {
     await page.getByRole("button", { name: "保存" }).click();
     await page.waitForTimeout(800);
     await expect(page.getByText("E2Eテストセンサー").first()).toBeVisible();
+  });
+
+  test("CAD図面: 図面登録 → 一覧に追加される(DOC_FIELDS_CAD 未定義エラーの再発防止)", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/#/documents/cad");
+    await page.waitForTimeout(3500);
+    await expect(
+      page.getByText("構造図_7F_鉄骨配置図.dwg").first(),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "図面登録" }).click();
+    await fillModal(page, "ファイル名", "E2Eテスト図面.dwg");
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.waitForTimeout(800);
+    await expect(page.getByText("E2Eテスト図面.dwg").first()).toBeVisible();
+    expect(errors, `pageerror(s) detected: ${errors.join("; ")}`).toHaveLength(
+      0,
+    );
   });
 });
