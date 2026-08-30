@@ -1,5 +1,6 @@
 """認証ミドルウェア"""
 
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
 from ..models.base import get_db
 from ..schemas import TokenData
+from ..services.permission_service import user_has_permission
 from ..services.token_service import decode_token
 
 settings = get_settings()
@@ -93,25 +95,34 @@ async def get_optional_current_user(
 
 
 def require_permission(resource: str, action: str):
-    """権限チェック依存性"""
+    """権限チェック依存性。DB上の Permission/RolePermission/UserRole を参照して検証する"""
 
     async def permission_check(
         token_data: TokenData = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
     ) -> TokenData:
         required = f"{resource}:{action}"
-        # 管理者は全権限を持つ（簡易実装。本番ではロールベースでチェック）
+        # 管理者は全権限を持つ
         if "admin" in token_data.roles:
             return token_data
 
-        # TODO: DBからユーザーの権限を取得して検証
-        # 現状はロールベースの簡易チェック
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "code": "INSUFFICIENT_PERMISSION",
-                "message": f"この操作には '{required}' 権限が必要です。",
-            },
-        )
+        try:
+            user_id = uuid.UUID(token_data.sub)
+        except ValueError:
+            user_id = None
+
+        if user_id is None or not await user_has_permission(
+            db, user_id, resource, action
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "INSUFFICIENT_PERMISSION",
+                    "message": f"この操作には '{required}' 権限が必要です。",
+                },
+            )
+
+        return token_data
 
     return permission_check
 
