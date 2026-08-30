@@ -69,6 +69,9 @@ test.describe("CRUD — ダッシュボード(projects)", () => {
   });
 
   test("永続化: 作成したデータがリロード後も残る", async ({ page }) => {
+    // 約9MBの単一HTMLバンドル+実行時Babel変換のため、reload後の再初期化に
+    // デフォルトの45秒タイムアウトでは不足する場合がある。このテストのみ延長する。
+    test.setTimeout(90_000);
     await page.goto("/");
     await page.waitForTimeout(2500);
     await page.getByRole("button", { name: "新規工事" }).first().click();
@@ -77,8 +80,9 @@ test.describe("CRUD — ダッシュボード(projects)", () => {
     await page.waitForTimeout(800);
     await expect(page.getByText("永続化テスト工事").first()).toBeVisible();
     await page.reload();
-    await page.waitForTimeout(4000);
-    await expect(page.getByText("永続化テスト工事").first()).toBeVisible();
+    await expect(page.getByText("永続化テスト工事").first()).toBeVisible({
+      timeout: 60_000,
+    });
   });
 });
 
