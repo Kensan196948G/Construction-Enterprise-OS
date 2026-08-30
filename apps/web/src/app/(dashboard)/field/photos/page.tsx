@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Camera,
-  Image,
+  Image as ImageIcon,
   Tag,
   Upload,
   RefreshCw,
@@ -159,7 +159,7 @@ function PhotoCard({ photo }: { photo: SitePhoto }) {
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow">
       {/* Placeholder image area */}
       <div className="relative aspect-video bg-gray-200 flex items-center justify-center">
-        <Image className="h-10 w-10 text-gray-400" />
+        <ImageIcon className="h-10 w-10 text-gray-400" aria-hidden="true" />
         {photo.needs_review && (
           <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
             <AlertCircle className="h-3 w-3" />
