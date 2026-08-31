@@ -52,6 +52,14 @@ class NotificationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class NotificationSendRequest(BaseModel):
+    recipient_id: UUID
+    template_code: str = Field(min_length=1, max_length=100)
+    template_vars: dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
+    idempotency_key: str = Field(min_length=1, max_length=128)
+
+
 class NotificationListResponse(BaseModel):
     notifications: list[NotificationResponse]
     pagination: PaginationMeta

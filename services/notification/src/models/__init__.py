@@ -59,6 +59,7 @@ class Notification(Base):
         Index("ix_notifications_recipient_id", "recipient_id"),
         Index("ix_notifications_status", "status"),
         Index("ix_notifications_created_at", "created_at"),
+        Index("ix_notifications_idempotency_key", "idempotency_key", unique=True),
     )
 
     id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
@@ -68,6 +69,7 @@ class Notification(Base):
         nullable=True,
     )
     recipient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128))
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)

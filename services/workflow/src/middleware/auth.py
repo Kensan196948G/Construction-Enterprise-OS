@@ -1,10 +1,12 @@
 """JWT認証ミドルウェア"""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError as JWTError
 
 from ..config import get_settings
 
@@ -37,8 +39,15 @@ def decode_token(token: str) -> TokenData | None:
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
         )
+        subject = payload.get("sub")
+        if not isinstance(subject, str):
+            return None
+        try:
+            UUID(subject)
+        except ValueError:
+            return None
         return TokenData(
-            sub=payload.get("sub", ""),
+            sub=subject,
             type=payload.get("type", "user"),
             org=payload.get("org"),
             roles=payload.get("roles", []),

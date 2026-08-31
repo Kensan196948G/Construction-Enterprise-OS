@@ -60,6 +60,18 @@ class TestHealthCheck:
         data = response.json()
         assert data["status"] == "healthy"
         assert data["service"] == "notification-service"
+        assert data["integrations"]["neo"] == "disabled"
+
+    def test_health_reports_misconfigured_enabled_neo(self, client):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        settings = SimpleNamespace(NEO_ENABLED=True, NEO_API_URL="", NEO_API_KEY="")
+        with patch("src.api.health.get_settings", return_value=settings):
+            response = client.get("/health")
+        assert response.status_code == 200
+        assert response.json()["status"] == "degraded"
+        assert response.json()["integrations"]["neo"] == "misconfigured"
 
 
 class TestAuthRequired:
@@ -78,6 +90,28 @@ class TestAuthRequired:
     def test_notifications_mark_all_read_requires_auth(self, client):
         response = client.patch("/api/v1/notifications/read-all")
         assert response.status_code == 401
+
+    def test_internal_send_requires_internal_api_key(self, client):
+        response = client.post(
+            "/api/v1/notifications/send",
+            json={
+                "recipient_id": "00000000-0000-0000-0000-000000000001",
+                "template_code": "workflow.approved",
+                "idempotency_key": "workflow-1-approved",
+            },
+        )
+        assert response.status_code == 403
+
+    def test_neo_callback_requires_webhook_signature(self, client):
+        response = client.post(
+            "/api/v1/notification/webhooks/neo/callback",
+            json={
+                "notification_id": 1,
+                "idempotency_key": "event-1",
+                "event": "opened",
+            },
+        )
+        assert response.status_code == 403
 
     def test_templates_list_requires_auth(self, client):
         response = client.get("/api/v1/notification-templates")
@@ -149,6 +183,7 @@ class TestNotificationCreation:
         )
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute = AsyncMock()
 
         mock_result = MagicMock()
@@ -199,3 +234,28 @@ class TestNotificationCreation:
         )
 
         assert notification is None
+
+    @pytest.mark.asyncio
+    async def test_create_notification_idempotent_returns_existing(self):
+        from uuid import uuid4
+
+        from src.services.notification_service import create_notification_idempotent
+
+        existing = MagicMock()
+        mock_db = AsyncMock()
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = existing
+        mock_db.execute.return_value = result
+
+        notification, created = await create_notification_idempotent(
+            mock_db,
+            recipient_id=uuid4(),
+            template_code="workflow.approved",
+            template_vars={},
+            metadata={},
+            idempotency_key="workflow-1-approved",
+        )
+
+        assert notification is existing
+        assert created is False
+        mock_db.add.assert_not_called()
