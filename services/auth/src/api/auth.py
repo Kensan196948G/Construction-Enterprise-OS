@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 def _create_mfa_session_token(user_id: str, email: str) -> str:
     """MFA検証用の短命セッショントークン（JWT方式）"""
-    from jose import jwt
+    import jwt
     from ..config import get_settings
 
     settings = get_settings()
@@ -66,7 +66,8 @@ def _create_mfa_session_token(user_id: str, email: str) -> str:
 
 def _decode_mfa_session_token(token: str) -> dict | None:
     """MFAセッショントークン検証"""
-    from jose import JWTError, jwt
+    import jwt
+    from jwt import InvalidTokenError as JWTError
     from ..config import get_settings
 
     settings = get_settings()

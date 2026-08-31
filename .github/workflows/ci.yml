@@ -144,5 +144,8 @@ jobs:
       - name: Build auth service
         run: docker build -t construction-enterprise-os/auth:test services/auth/
 
+      - name: Build workflow service
+        run: docker build -t construction-enterprise-os/workflow:test services/workflow/
+
       - name: Build web app
         run: docker build -t construction-enterprise-os/web:test apps/web/

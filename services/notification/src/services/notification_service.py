@@ -4,7 +4,8 @@ import logging
 import math
 from uuid import UUID
 
-from sqlalchemy import select, func, update
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Notification, NotificationTemplate
@@ -46,6 +47,51 @@ async def create_notification(
     return notification
 
 
+async def create_notification_idempotent(
+    db: AsyncSession,
+    recipient_id: UUID,
+    template_code: str,
+    template_vars: dict | None,
+    metadata: dict | None,
+    idempotency_key: str,
+) -> tuple[Notification | None, bool]:
+    """Create one notification per caller-supplied event key.
+
+    The unique database index is the final concurrency guard. The initial lookup
+    makes retries cheap and returns the already-created notification unchanged.
+    """
+    existing_result = await db.execute(
+        select(Notification).where(Notification.idempotency_key == idempotency_key)
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        return existing, False
+
+    notification = await create_notification(
+        db,
+        recipient_id=recipient_id,
+        template_code=template_code,
+        template_vars=template_vars,
+        metadata=metadata,
+    )
+    if notification is not None:
+        notification.idempotency_key = idempotency_key
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            duplicate_result = await db.execute(
+                select(Notification).where(
+                    Notification.idempotency_key == idempotency_key
+                )
+            )
+            duplicate = duplicate_result.scalar_one_or_none()
+            if duplicate is None:
+                raise
+            return duplicate, False
+    return notification, True
+
+
 async def get_user_notifications(
     db: AsyncSession,
     user_id: UUID,
@@ -82,7 +128,9 @@ async def get_user_notifications(
     notifications = result.scalars().all()
 
     total_pages = math.ceil(total / per_page) if per_page > 0 else 0
-    meta = PaginationMeta(page=page, per_page=per_page, total=total, total_pages=total_pages)
+    meta = PaginationMeta(
+        page=page, per_page=per_page, total=total, total_pages=total_pages
+    )
 
     return list(notifications), meta
 

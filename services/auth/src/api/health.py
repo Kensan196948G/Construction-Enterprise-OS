@@ -1,10 +1,14 @@
 """システムヘルスチェックエンドポイント"""
 
 from datetime import datetime, timezone
+import asyncio
 from typing import Literal
 
 from fastapi import APIRouter
+import httpx
 from pydantic import BaseModel
+
+from ..config import get_settings
 
 router = APIRouter()
 
@@ -24,36 +28,44 @@ class ServicesHealthResponse(BaseModel):
 
 @router.get("/services", response_model=ServicesHealthResponse)
 async def get_services_health() -> ServicesHealthResponse:
-    """全マイクロサービスのヘルス状態を返す"""
+    """設定済みサービスの実HTTPヘルス状態を返す。"""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    settings = get_settings()
 
-    services: list[ServiceHealth] = [
-        ServiceHealth(name="auth", status="healthy", latency_ms=12, version="0.1.0"),
-        ServiceHealth(
-            name="document", status="healthy", latency_ms=18, version="0.1.0"
-        ),
-        ServiceHealth(
-            name="workflow", status="healthy", latency_ms=15, version="0.1.0"
-        ),
-        ServiceHealth(name="gis", status="healthy", latency_ms=22, version="0.1.0"),
-        ServiceHealth(name="iot", status="healthy", latency_ms=19, version="0.1.0"),
-        ServiceHealth(name="ai", status="healthy", latency_ms=45, version="0.1.0"),
-        ServiceHealth(name="bim", status="healthy", latency_ms=28, version="0.1.0"),
-        ServiceHealth(name="erp", status="healthy", latency_ms=31, version="0.1.0"),
-        ServiceHealth(
-            name="autonomous", status="healthy", latency_ms=24, version="0.1.0"
-        ),
-        ServiceHealth(
-            name="notification", status="healthy", latency_ms=9, version="0.1.0"
-        ),
-        ServiceHealth(
-            name="security", status="healthy", latency_ms=16, version="0.1.0"
-        ),
-        ServiceHealth(name="safety", status="healthy", latency_ms=21, version="0.1.0"),
+    async def probe(name: str, url: str) -> ServiceHealth:
+        try:
+            async with httpx.AsyncClient(timeout=settings.HEALTH_TIMEOUT_SECONDS) as client:
+                response = await client.get(url)
+            body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+            service_status = body.get("status")
+            if service_status not in {"healthy", "degraded", "unhealthy"}:
+                service_status = "healthy" if response.is_success else "unhealthy"
+            return ServiceHealth(
+                name=name,
+                status=service_status,
+                latency_ms=0,
+                version=str(body.get("version", "unknown")),
+            )
+        except (httpx.HTTPError, ValueError):
+            return ServiceHealth(
+                name=name, status="unhealthy", latency_ms=0, version="unknown"
+            )
+
+    services = [
+        ServiceHealth(name="auth", status="healthy", latency_ms=0, version="0.1.0")
     ]
+    services.extend(
+        await asyncio.gather(
+            *(probe(name, url) for name, url in settings.HEALTH_SERVICE_URLS.items())
+        )
+    )
+    statuses = {service.status for service in services}
+    overall: Literal["healthy", "degraded", "unhealthy"] = "unhealthy" if "unhealthy" in statuses else (
+        "degraded" if "degraded" in statuses else "healthy"
+    )
 
     return ServicesHealthResponse(
         services=services,
-        overall="healthy",
+        overall=overall,
         checked_at=now,
     )

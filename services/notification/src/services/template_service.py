@@ -130,6 +130,51 @@ async def ensure_default_templates(db: AsyncSession) -> None:
             "category": "workflow",
         },
         {
+            "code": "workflow.deadline",
+            "name": "期限通知",
+            "channels": ["in_app", "email"],
+            "title_template": "【期限通知】{{ document_name }}の期限が近づいています",
+            "body_template": "{{ document_name }}の期限は{{ deadline }}です。残り{{ days_remaining }}日です。",
+            "priority": "high",
+            "category": "workflow",
+        },
+        {
+            "code": "workflow.resubmitted",
+            "name": "再提出通知",
+            "channels": ["in_app", "email"],
+            "title_template": "【再提出】{{ document_name }}が再提出されました",
+            "body_template": "{{ document_name }}が再提出されました。確認してください。",
+            "priority": "high",
+            "category": "workflow",
+        },
+        {
+            "code": "workflow.inquiry",
+            "name": "問い合わせ通知",
+            "channels": ["in_app", "email"],
+            "title_template": "【問い合わせ】{{ document_name }}について問い合わせがあります",
+            "body_template": "{{ document_name }}について問い合わせがあります。\n内容: {{ comment }}",
+            "priority": "normal",
+            "category": "workflow",
+        },
+        {
+            "code": "workflow.load_alert",
+            "name": "処理集中アラート",
+            "channels": ["in_app", "email"],
+            "title_template": "【処理集中】{{ region }}の案件量が閾値を超えました",
+            "body_template": "{{ region }}の処理量が通常{{ normal_avg }}件に対し{{ current }}件（{{ ratio }}%）です。応援推奨人数: {{ recommend_staff }}人",
+            "priority": "urgent",
+            "category": "workflow",
+        },
+        {
+            "code": "workflow.support_request",
+            "name": "業務応援依頼",
+            "channels": ["in_app", "email"],
+            "title_template": "【応援依頼】{{ region }}の業務応援を手配してください",
+            "body_template": "{{ region }}の処理集中により応援が必要です。推奨人数: {{ recommend_staff }}人",
+            "priority": "high",
+            "category": "workflow",
+        },
+        {
             "code": "safety.alert",
             "name": "安全警告",
             "channels": ["in_app", "email"],
@@ -163,5 +208,7 @@ async def ensure_default_templates(db: AsyncSession) -> None:
         if not existing:
             template = NotificationTemplate(**tpl_data)
             db.add(template)
+        elif tpl_data["category"] == "workflow" and "neo" not in existing.channels:
+            existing.channels = [*existing.channels, "neo"]
 
     await db.flush()

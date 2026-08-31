@@ -210,6 +210,8 @@ services:
          "^/api/v1/api-clients": "http://auth:8000",
          "^/api/v1/audit-logs": "http://auth:8000",
          "^/api/v1/documents": "http://document:8000",
+         "^/api/v1/files": "http://document:8000",
+         "^/api/v1/cases": "http://workflow:8000",
          "^/api/v1/workflow": "http://workflow:8000",
          "^/api/v1/gis": "http://gis:8000",
          "^/api/v1/iot": "http://iot:8000",
@@ -256,6 +258,9 @@ services:
     container_name: construction-os-auth
     environment:
       <<: *db-env
+      INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-}
+      HEALTH_SERVICE_URLS: >-
+        {"document":"http://document:8000/health","workflow":"http://workflow:8000/health","notification":"http://notification:8000/health"}
     ports:
       - "8000:8000"
     depends_on:
@@ -302,6 +307,14 @@ services:
     container_name: construction-os-notification
     environment:
       <<: *db-env
+      INTERNAL_API_KEY: ${NOTIFICATION_INTERNAL_API_KEY:-}
+      NEO_ENABLED: ${NEO_ENABLED:-false}
+      NEO_API_URL: ${NEO_API_URL:-}
+      NEO_API_KEY: ${NEO_API_KEY:-}
+      NEO_TIMEOUT_SECONDS: ${NEO_TIMEOUT_SECONDS:-5}
+      NEO_WEBHOOK_SECRET: ${NEO_WEBHOOK_SECRET:-}
+      WORKFLOW_SERVICE_URL: http://workflow:8000
+      WORKFLOW_INTERNAL_JOB_API_KEY: ${WORKFLOW_INTERNAL_JOB_API_KEY:-}
     ports:
       - "8017:8000"
     depends_on:
@@ -329,6 +342,16 @@ services:
     container_name: construction-os-document
     environment:
       <<: *db-env
+      CANONICAL_STORAGE_ROOT: /var/lib/construction-os/canonical
+      INTERNAL_API_KEY: ${DOCUMENT_INTERNAL_API_KEY:-}
+      ONEDRIVE_ENABLED: ${ONEDRIVE_ENABLED:-false}
+      ONEDRIVE_TENANT_ID: ${ONEDRIVE_TENANT_ID:-}
+      ONEDRIVE_CLIENT_ID: ${ONEDRIVE_CLIENT_ID:-}
+      ONEDRIVE_CLIENT_SECRET: ${ONEDRIVE_CLIENT_SECRET:-}
+      ONEDRIVE_DRIVE_ID: ${ONEDRIVE_DRIVE_ID:-}
+      ONEDRIVE_ROOT_PATH: ${ONEDRIVE_ROOT_PATH:-Mirai-Site-Admin-Workflow}
+    volumes:
+      - document-canonical:/var/lib/construction-os/canonical
     ports:
       - "8001:8000"
     depends_on:
@@ -498,6 +521,13 @@ services:
     container_name: construction-os-workflow
     environment:
       <<: *db-env
+      NOTIFICATION_SERVICE_URL: http://notification:8000
+      NOTIFICATION_INTERNAL_API_KEY: ${NOTIFICATION_INTERNAL_API_KEY:-}
+      AUTH_SERVICE_URL: http://auth:8000
+      AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-}
+      INTERNAL_JOB_API_KEY: ${WORKFLOW_INTERNAL_JOB_API_KEY:-}
+      DOCUMENT_SERVICE_URL: http://document:8000
+      DOCUMENT_INTERNAL_API_KEY: ${DOCUMENT_INTERNAL_API_KEY:-}
     ports:
       - "8002:8000"
     depends_on:
@@ -821,3 +851,4 @@ volumes:
   esdata:
   miniodata:
   kafkadata:
+  document-canonical:
