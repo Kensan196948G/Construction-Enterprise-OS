@@ -74,7 +74,9 @@ class Settings(BaseSettings):
         # サービス稼働状況の集約。auth 側のエンドポイントは認証を要求しておらず、
         # WebUI の共通基盤ページと E2E もトークン無しで参照している。
         # (機密情報を含めない監視用エンドポイントという位置づけ)
-        "^/api/v1/health",
+        # パス境界を明示する(re.match のため "^/api/v1/health" だけだと
+        # "/api/v1/healthcheck" のような別パスまで公開扱いになる)
+        "^/api/v1/health(?:/|$)",
         "^/api/v1/auth/login$",
         "^/api/v1/auth/mfa/verify$",
         "^/api/v1/auth/refresh$",
