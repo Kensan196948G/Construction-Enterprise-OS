@@ -15,6 +15,7 @@ from src.main import create_app
 def test_default_templates_seeded_in_docker_environment(monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setenv("ENVIRONMENT", "docker")
+    monkeypatch.setenv("JWT_PUBLIC_KEY", "test-only-key")
     calls: list[bool] = []
 
     async def _record(db) -> None:
@@ -35,6 +36,7 @@ def test_startup_fails_when_templates_cannot_be_seeded(monkeypatch):
 
     get_settings.cache_clear()
     monkeypatch.setenv("ENVIRONMENT", "docker")
+    monkeypatch.setenv("JWT_PUBLIC_KEY", "test-only-key")
     monkeypatch.setattr("src.main._TEMPLATE_SEED_RETRY_SECONDS", 0)
 
     async def _always_fail(db) -> None:

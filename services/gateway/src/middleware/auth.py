@@ -78,7 +78,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
             payload = jwt.decode(
                 token,
-                settings.JWT_PUBLIC_KEY,
+                settings.jwt_public_key,
                 algorithms=[settings.JWT_ALGORITHM],
                 options={"verify_exp": True},
             )

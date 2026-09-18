@@ -109,7 +109,8 @@ def test_proxy_request_with_valid_token_format(client):
     settings = get_settings()
     token = jose_jwt.encode(
         {"sub": "test-user", "type": "user", "roles": [], "scopes": [], "exp": 9999999999},
-        settings.JWT_PUBLIC_KEY,
+        # ミドルウェアと同じ解決済み鍵で署名する(既定値ではなく)
+        settings.jwt_public_key,
         algorithm=settings.JWT_ALGORITHM,
     )
 

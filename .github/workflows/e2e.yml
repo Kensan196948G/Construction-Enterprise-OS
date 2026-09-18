@@ -38,6 +38,8 @@ jobs:
         run: npx playwright test --reporter=line
         env:
           E2E_BASE_URL: https://construction-os-mvp.mirai-dx-platform.com
+          # e2e/api.spec.ts は E2E_API_BASE_URL を参照する(ブラウザ用の E2E_BASE_URL とは別)
+          E2E_API_BASE_URL: https://construction-os-mvp.mirai-dx-platform.com
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
