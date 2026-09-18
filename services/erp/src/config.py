@@ -22,7 +22,13 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = 10
 
     JWT_ALGORITHM: str = "HS256"
-    JWT_PUBLIC_KEY: str = "dev-only-do-not-use-in-production"
+    JWT_PUBLIC_KEY: str = ""
+
+    @property
+    def jwt_public_key(self) -> str:
+        if self.JWT_PUBLIC_KEY:
+            return self.JWT_PUBLIC_KEY
+        return "dev-only-do-not-use-in-production"
 
 
 @lru_cache()
