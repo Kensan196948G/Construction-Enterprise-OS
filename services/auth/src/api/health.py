@@ -2,13 +2,17 @@
 
 from datetime import datetime, timezone
 import asyncio
+import time
 from typing import Literal, cast
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 import httpx
 from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_settings
+from ..models.base import get_db
 
 router = APIRouter()
 
@@ -27,12 +31,15 @@ class ServicesHealthResponse(BaseModel):
 
 
 @router.get("/services", response_model=ServicesHealthResponse)
-async def get_services_health() -> ServicesHealthResponse:
-    """設定済みサービスの実HTTPヘルス状態を返す。"""
+async def get_services_health(
+    db: AsyncSession = Depends(get_db),
+) -> ServicesHealthResponse:
+    """設定済みサービスの実HTTPヘルス状態と、自身のDB到達性を返す。"""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     settings = get_settings()
 
     async def probe(name: str, url: str) -> ServiceHealth:
+        started = time.perf_counter()
         try:
             async with httpx.AsyncClient(
                 timeout=settings.HEALTH_TIMEOUT_SECONDS
@@ -60,16 +67,34 @@ async def get_services_health() -> ServicesHealthResponse:
             return ServiceHealth(
                 name=name,
                 status=service_status,
-                latency_ms=0,
+                latency_ms=int((time.perf_counter() - started) * 1000),
                 version=str(body.get("version", "unknown")),
             )
         except (httpx.HTTPError, ValueError):
             return ServiceHealth(
-                name=name, status="unhealthy", latency_ms=0, version="unknown"
+                name=name,
+                status="unhealthy",
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                version="unknown",
             )
 
+    # auth 自身を無条件 healthy と自己申告すると、DB 障害時も overall が
+    # healthy になり監視が機能しない。自分の DB で判定する。
+    started = time.perf_counter()
+    try:
+        await db.execute(text("SELECT 1"))
+        auth_status: Literal["healthy", "degraded", "unhealthy"] = "healthy"
+    except Exception:
+        auth_status = "unhealthy"
+    auth_latency = int((time.perf_counter() - started) * 1000)
+
     services = [
-        ServiceHealth(name="auth", status="healthy", latency_ms=0, version="0.1.0")
+        ServiceHealth(
+            name="auth",
+            status=auth_status,
+            latency_ms=auth_latency,
+            version="0.1.0",
+        )
     ]
     services.extend(
         await asyncio.gather(
