@@ -54,7 +54,6 @@ class Settings(BaseSettings):
         # Analytics / Platform / Integrations
         "^/api/v1/analytics": "http://localhost:8014",
         "^/api/v1/integrations": "http://localhost:8012",
-        "^/api/v1/platform": "http://localhost:8012",
         # Business — ERP / Construction / Safety / Partner / Maintenance
         "^/api/v1/erp": "http://localhost:8020",
         "^/api/v1/construction": "http://localhost:8016",
