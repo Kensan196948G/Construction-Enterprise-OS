@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Key, Webhook, Activity, Shield } from "lucide-react";
 
 type ApiClient = {
@@ -105,7 +106,7 @@ export default function ApiClientsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/api-clients?per_page=50");
+      const res = await fetch("/api/v1/api-clients?per_page=50", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const data = json?.data?.items ?? json?.items ?? json?.data ?? [];

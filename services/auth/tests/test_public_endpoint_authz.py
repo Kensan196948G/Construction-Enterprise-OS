@@ -29,3 +29,8 @@ def test_auth_ad_groups_requires_authentication(client):
 def test_auth_entra_policies_requires_authentication(client):
     response = client.get("/api/v1/auth/entra/policies")
     assert response.status_code in (401, 403)
+
+
+def test_api_clients_requires_authentication(client):
+    response = client.get("/api/v1/api-clients")
+    assert response.status_code in (401, 403)

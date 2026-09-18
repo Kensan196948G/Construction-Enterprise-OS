@@ -21,7 +21,10 @@ router = APIRouter()
 
 
 @router.get("/ledger/summary")
-async def get_ledger_overall_summary():
+async def get_ledger_overall_summary(
+    # 全社の財務サマリー。同一ファイルの他ルート同様に認証を要求する
+    _user: TokenData = Depends(get_current_user),
+):
     """全工事台帳の財務サマリー（フロントエンドダッシュボード用スタブ）"""
     return {
         "total_revenue": 850000000,

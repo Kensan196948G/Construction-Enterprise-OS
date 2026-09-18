@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { BarChart3, TrendingUp, Banknote, FileText } from "lucide-react";
 
 // Mock data — 建設業規模（億単位）
@@ -135,7 +136,7 @@ export default function FinancePage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/erp/ledger/summary");
+      const res = await fetch("/api/v1/erp/ledger/summary", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const summary: FinancialSummary =
