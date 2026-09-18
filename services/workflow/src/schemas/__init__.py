@@ -134,7 +134,9 @@ class WorkflowInstanceResponse(BaseModel):
     priority: str
     reference_type: str | None
     reference_id: UUID | None
-    metadata: dict
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict = Field(validation_alias="metadata_")
     submitted_by: UUID
     submitted_at: datetime | None
     completed_at: datetime | None

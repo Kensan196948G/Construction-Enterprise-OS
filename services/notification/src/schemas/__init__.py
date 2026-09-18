@@ -43,7 +43,9 @@ class NotificationResponse(BaseModel):
     recipient_id: UUID
     title: str
     body: str
-    metadata: dict | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict | None = Field(default=None, validation_alias="metadata_")
     channels: list[str]
     status: str
     read_at: datetime | None

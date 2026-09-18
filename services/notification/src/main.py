@@ -5,6 +5,7 @@ Construction-Enterprise-OS 統合通知基盤 (Notification Service)
 全サービスからの通知を集約し、各種チャネル（アプリ内・メール等）で配信する。
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -21,6 +22,10 @@ from .models.base import async_session
 from .services.template_service import ensure_default_templates
 
 logger = logging.getLogger(__name__)
+
+# 起動時のテンプレート投入リトライ (DB がまだ起動していない場合に備える)
+_TEMPLATE_SEED_ATTEMPTS = 3
+_TEMPLATE_SEED_RETRY_SECONDS = 2.0
 
 
 @asynccontextmanager
@@ -43,17 +48,38 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except ImportError:
         pass  # Auth package not installed, using local middleware
 
-    if settings.ENVIRONMENT == "development":
-        async with async_session() as db:
-            try:
+    # 既定テンプレートは環境を問わず用意する (ensure_default_templates は冪等)。
+    # development 限定にすると docker compose (ENVIRONMENT=docker) で
+    # テンプレートが未投入のままになり、通知送信が常に 422 で失敗する。
+    #
+    # シードに失敗したまま起動を続けると、/health は healthy を返すのに
+    # 通知だけが TEMPLATE_NOT_FOUND で失敗し続ける。上限付きで再試行し、
+    # それでも失敗する場合は起動自体を失敗させる (fail-fast)。
+    last_error: Exception | None = None
+    for attempt in range(_TEMPLATE_SEED_ATTEMPTS):
+        try:
+            async with async_session() as db:
                 await ensure_default_templates(db)
                 await db.commit()
-                logger.info("Default notification templates seeded")
-            except Exception:
-                await db.rollback()
-                logger.exception(
-                    "Failed to seed default templates — DB may not be ready"
-                )
+            logger.info("Default notification templates seeded")
+            last_error = None
+            break
+        except Exception as exc:  # noqa: BLE001 - 起動失敗として扱う
+            last_error = exc
+            logger.exception(
+                "Failed to seed default templates (attempt %d/%d)",
+                attempt + 1,
+                _TEMPLATE_SEED_ATTEMPTS,
+            )
+            if attempt < _TEMPLATE_SEED_ATTEMPTS - 1:
+                await asyncio.sleep(_TEMPLATE_SEED_RETRY_SECONDS * (attempt + 1))
+
+    if last_error is not None:
+        raise RuntimeError(
+            "既定テンプレートを投入できませんでした。通知は TEMPLATE_NOT_FOUND で"
+            "失敗するため起動を中止します。DB と notification スキーマの"
+            "マイグレーション適用状況を確認してください。"
+        ) from last_error
 
     yield
 

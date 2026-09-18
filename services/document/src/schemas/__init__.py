@@ -74,7 +74,9 @@ class DocumentResponse(BaseModel):
     mime_type: str
     storage_key: str
     tags: list[str]
-    metadata: dict | None
+    # SQLAlchemy 宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict | None = Field(default=None, validation_alias="metadata_")
     created_by: UUID
     created_at: datetime
     updated_at: datetime

@@ -118,7 +118,9 @@ class TwinResponse(BaseModel):
     sync_interval_seconds: int
     data_sources: dict
     current_state: dict
-    metadata: dict
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict = Field(validation_alias="metadata_")
     created_at: datetime
     updated_at: datetime
 

@@ -51,6 +51,7 @@ class Document(Base):
             "spreadsheet",
             "other",
             name="document_type",
+            schema="document",
         ),
         nullable=False,
     )
@@ -63,6 +64,7 @@ class Document(Base):
             "obsolete",
             "deleted",
             name="document_status",
+            schema="document",
         ),
         default="draft",
         nullable=False,
@@ -86,10 +88,22 @@ class Document(Base):
     canonical_stored_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    canonical_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     work_area_receipt_no: Mapped[str | None] = mapped_column(String(30), nullable=True)
     work_area_stored_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    work_area_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # 保存結果は操作ごとに分離する。共有カラムだと後の成功が前の失敗を
+    # 上書きしてしまい、失敗の記録が失われる。
+    canonical_storage_backend: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    canonical_storage_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    work_area_storage_backend: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    work_area_storage_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     versions: Mapped[list["DocumentVersion"]] = relationship(
         "DocumentVersion",

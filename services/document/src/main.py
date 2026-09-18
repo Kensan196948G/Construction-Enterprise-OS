@@ -42,14 +42,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except ImportError:
         pass  # Auth package not installed, using local middleware
 
-    if _settings.ENVIRONMENT == "development":
-        try:
-            initialize_bucket()
-            logger.info("MinIO bucket initialized")
-        except Exception:
-            logger.exception(
-                "Failed to initialize MinIO bucket — storage may not be ready"
+    # バケットは環境を問わず起動時に用意する。docker compose は
+    # ENVIRONMENT=docker を渡すため、development 限定にすると
+    # バケットが作られずアップロードが必ず失敗する。
+    try:
+        if initialize_bucket():
+            logger.info("MinIO bucket ready: %s", _settings.MINIO_BUCKET)
+        else:
+            logger.error(
+                "MinIO bucket is not available: %s — uploads will fail",
+                _settings.MINIO_BUCKET,
             )
+    except Exception:
+        logger.exception(
+            "Failed to initialize MinIO bucket — storage may not be ready"
+        )
 
     yield
 
