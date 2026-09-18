@@ -20,7 +20,7 @@
 
 | 環境 | URL | 内容 | 状態 |
 |---|---|---|---|
-| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | WebUI `webui/Construction-Enterprise-OS---CRUD.html`(正本スタイル+全ページCRUD) | ✅ 稼働・E2E 38/38 PASS 予定 |
+| MVP プロトタイプ | https://construction-os-mvp.mirai-dx-platform.com | WebUI `webui/Construction-Enterprise-OS---CRUD.html`(正本スタイル+全ページCRUD) | ✅ 稼働・E2E は `e2e/*.spec.ts` 計28テスト(desktop/mobile の2プロジェクト) |
 | 本番 | https://construction-os.mirai-dx-platform.com | 同上(同一コンテンツ) | ✅ 稼働 |
 | DB | Neon `construction-enterprise-os` | auth スキーマ(Migration+Seed 適用) | ✅ 空DB再実行可能 |
 
@@ -29,7 +29,7 @@
   データは localStorage 永続化ストア(シード: 工事/ワークフロー/文書/センサー/原価/安全/協力会社/ユーザー/重機/作業員/契約/請求/GIS/AI/IoT 等 30 コレクション)。
   auth API(`/api/v1/health`・`/api/v1/auth/*`)は実接続。他サービス API 未稼働のため同一インターフェースのローカルストアで代替(将来差し替え可)。
 - 設計正本: `webui/`(OpenDesign ハンドオフ、プロトタイプは `standalone-prototype.html` として保全)+ `docs/design/opendesign-spec.md`
-- 検証: `e2e/mvp.spec.ts`(既存 18)+ `e2e/crud.spec.ts`(CRUD 26)= **44 テスト**(Playwright、desktop + mobile)
+- 検証: `e2e/mvp.spec.ts`(9)+ `e2e/crud.spec.ts`(11)+ `e2e/api.spec.ts`(8)= **28 テスト**(Playwright、desktop/mobile の2プロジェクトで実行)
 - 運用: `docs/operations/deployment.md`・`docs/operations/neon-database.md`・`docs/operations/production-deploy-record.md`
 
 ```mermaid
@@ -138,7 +138,6 @@ graph LR
 construction-enterprise-os/
 ├── 📱 apps/                        🖥️ デプロイ可能アプリ
 │   ├── web/                        Next.js フロントエンド
-│   ├── admin/                      管理画面
 │   └── mobile/                     PWA / モバイル
 ├── ⚙️ services/                    バックエンド マイクロサービス (22)
 │   ├── 🔐 auth/                    統合認証基盤
@@ -163,13 +162,12 @@ construction-enterprise-os/
 │   ├── 🔔 notification/            統合通知
 │   ├── 🏗️ bim/                     BIM/CIM基盤
 │   └── 🏗️ construction/            施工管理
-├── 📦 packages/                    共有パッケージ (7)
+├── 📦 packages/                    共有パッケージ (5)
 │   ├── 🎨 ui/                      共通UIコンポーネント
 │   ├── 🧬 core/                    共通型定義・定数
 │   ├── 🔐 auth-core/               認証共通ロジック
 │   ├── 📨 event-core/              イベント共通定義
-│   ├── 📊 logging/                 統合ログ基盤
-│   └── 🔧 eslint/                  ESLint設定
+│   └── 📊 logging/                 統合ログ基盤
 ├── ☸️ infra/                        IaC
 │   ├── terraform/                  Terraform設定
 │   ├── kubernetes/                 K8sマニフェスト
@@ -446,7 +444,7 @@ make test
 | 🔐 項目      | 🛠️ 方式              | 📋 詳細                |
 | ------------ | -------------------- | ---------------------- |
 | パスワード   | bcrypt               | cost >= 12             |
-| JWT          | RS256 非対称鍵       | 開発環境: HS256        |
+| JWT          | HS256 共有鍵          | ⚠️ 実装は HS256。鍵未設定時は公開された開発用既定値にフォールバックするため、本番前に `JWT_SECRET_KEY` の注入と RS256 化が必要(未実施) |
 | MFA          | TOTP (RFC 6238)      | バックアップコード付き |
 | ロックアウト | 5回連続失敗          | 15分ロック             |
 | レート制限   | `/auth/login`        | 10回/分/IP             |
