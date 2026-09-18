@@ -37,12 +37,25 @@ from ..services.notification_adapter import (
     send_workflow_notification,
     send_workflow_notifications,
 )
-from ..services.document_adapter import store_workflow_documents, store_workflow_work_area
+from ..services.document_adapter import (
+    store_workflow_documents,
+    store_workflow_work_area,
+)
 from ..config import get_settings
 from ..jobs.deadline_notifications import notify_deadlines
 from ..jobs.workload_notifications import notify_workload_alerts
 
 router = APIRouter()
+
+MANAGEMENT_ROLES = {"admin", "management"}
+
+
+def _require_management(current_user: TokenData) -> None:
+    if not MANAGEMENT_ROLES.intersection(current_user.roles):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "FORBIDDEN", "message": "管理部権限が必要です。"},
+        )
 
 
 class NotificationCallback(BaseModel):
@@ -256,6 +269,7 @@ async def create_definition(
     current_user: TokenData = Depends(get_current_user),
 ):
     organization_id = _organization_id(current_user)
+    _require_management(current_user)
     if body.organization_id != organization_id:
         raise HTTPException(
             status_code=403,
@@ -273,7 +287,9 @@ async def create_definition(
         created_by=UUID(current_user.sub),
     )
     workflow_service.record_audit_log(
-        db, user_id=UUID(current_user.sub), event_type="workflow.definition.create",
+        db,
+        user_id=UUID(current_user.sub),
+        event_type="workflow.definition.create",
         event_data={"definition_id": str(definition.id)},
     )
     await db.commit()
@@ -311,6 +327,7 @@ async def update_definition(
     current_user: TokenData = Depends(get_current_user),
 ):
     organization_id = _organization_id(current_user)
+    _require_management(current_user)
     try:
         definition = await workflow_service.update_definition(
             db,
@@ -326,7 +343,9 @@ async def update_definition(
             },
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.definition.update",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.definition.update",
             event_data={"definition_id": str(definition_id)},
         )
         await db.commit()
@@ -344,12 +363,15 @@ async def deactivate_definition(
     current_user: TokenData = Depends(get_current_user),
 ):
     organization_id = _organization_id(current_user)
+    _require_management(current_user)
     try:
         definition = await workflow_service.update_definition(
             db, definition_id, organization_id, {"is_active": False}
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.definition.deactivate",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.definition.deactivate",
             event_data={"definition_id": str(definition_id)},
         )
         await db.commit()
@@ -392,8 +414,13 @@ async def create_instance(
             db, instance.id, organization_id
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.instance.create",
-            event_data={"instance_id": str(instance.id), "receipt_no": instance.receipt_no},
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.instance.create",
+            event_data={
+                "instance_id": str(instance.id),
+                "receipt_no": instance.receipt_no,
+            },
         )
         await db.commit()
         data = _instance_to_response(instance_full)
@@ -413,10 +440,15 @@ async def list_instances(
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    organization_id = _organization_id(current_user)
+    authenticated_org = _organization_id(current_user)
+    if organization_id is not None and organization_id != authenticated_org:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "ORG_FORBIDDEN", "message": "組織が一致しません。"},
+        )
     instances = await workflow_service.get_instances(
         db,
-        organization_id=organization_id,
+        organization_id=authenticated_org,
         status=status,
         category=category,
         submitted_by=submitted_by,
@@ -497,7 +529,9 @@ async def update_instance(
             metadata=body.metadata,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.instance.update",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.instance.update",
             event_data={"instance_id": str(instance_id)},
         )
         await db.commit()
@@ -564,7 +598,9 @@ async def create_instance_inquiry(
             body.channel,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.inquiry.create",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.inquiry.create",
             event_data={"instance_id": str(instance_id)},
         )
         await db.commit()
@@ -643,7 +679,9 @@ async def answer_instance_inquiry(
             body.answer,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.inquiry.answer",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.inquiry.answer",
             event_data={"instance_id": str(instance_id), "inquiry_id": str(inquiry_id)},
         )
         await db.commit()
@@ -675,8 +713,13 @@ async def submit_instance(
             db, instance_id, UUID(current_user.sub)
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.instance.submit",
-            event_data={"instance_id": str(instance_id), "receipt_no": instance.receipt_no},
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.instance.submit",
+            event_data={
+                "instance_id": str(instance_id),
+                "receipt_no": instance.receipt_no,
+            },
         )
         await db.commit()
         document_ids = (
@@ -702,7 +745,7 @@ async def submit_instance(
         background_tasks.add_task(
             send_workflow_notifications,
             recipient_ids=recipients,
-            template_code="workflow.resubmitted",
+            template_code="workflow.approval_requested",
             instance_id=instance.id,
             transition="submitted",
             actor_id=UUID(current_user.sub),
@@ -748,8 +791,13 @@ async def resubmit_instance(
             db, instance_id, UUID(current_user.sub)
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.instance.resubmit",
-            event_data={"instance_id": str(instance_id), "receipt_no": instance.receipt_no},
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.instance.resubmit",
+            event_data={
+                "instance_id": str(instance_id),
+                "receipt_no": instance.receipt_no,
+            },
         )
         await db.commit()
         recipients = await resolve_notification_recipients(
@@ -759,7 +807,7 @@ async def resubmit_instance(
         background_tasks.add_task(
             send_workflow_notifications,
             recipient_ids=recipients,
-            template_code="workflow.approval_requested",
+            template_code="workflow.resubmitted",
             instance_id=instance.id,
             transition="resubmitted",
             actor_id=UUID(current_user.sub),
@@ -799,7 +847,9 @@ async def approve_step(
             organization_id=organization_id,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.approval.approve",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.approval.approve",
             event_data={"instance_id": str(instance_id), "step_order": step_order},
         )
         await db.commit()
@@ -855,7 +905,9 @@ async def reject_step(
             organization_id=organization_id,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.approval.reject",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.approval.reject",
             event_data={"instance_id": str(instance_id), "step_order": step_order},
         )
         await db.commit()
@@ -895,7 +947,9 @@ async def cancel_instance(
             db, instance_id, UUID(current_user.sub)
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="workflow.instance.cancel",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="workflow.instance.cancel",
             event_data={"instance_id": str(instance_id)},
         )
         await db.commit()

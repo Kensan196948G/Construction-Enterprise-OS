@@ -157,9 +157,13 @@ def _attachment_names(metadata: dict) -> set[str]:
     return names
 
 
-def _duplicate_score(candidate: WorkflowInstance, instance: WorkflowInstance) -> int | None:
+def _duplicate_score(
+    candidate: WorkflowInstance, instance: WorkflowInstance
+) -> int | None:
     """共通キーで候補を絞り、仕様書の類似度スコアを算出する。"""
-    current_metadata = instance.metadata_ if isinstance(instance.metadata_, dict) else {}
+    current_metadata = (
+        instance.metadata_ if isinstance(instance.metadata_, dict) else {}
+    )
     candidate_metadata = (
         candidate.metadata_ if isinstance(candidate.metadata_, dict) else {}
     )
@@ -169,25 +173,43 @@ def _duplicate_score(candidate: WorkflowInstance, instance: WorkflowInstance) ->
     candidate_doc_type = candidate_metadata.get("doc_type_code") or candidate.category
     current_month = current_metadata.get("target_year_month")
     candidate_month = candidate_metadata.get("target_year_month")
-    if not all(isinstance(value, str) and value for value in (
-        current_code, candidate_code, current_doc_type, candidate_doc_type,
-        current_month, candidate_month,
-    )):
+    if not all(
+        isinstance(value, str) and value
+        for value in (
+            current_code,
+            candidate_code,
+            current_doc_type,
+            candidate_doc_type,
+            current_month,
+            candidate_month,
+        )
+    ):
         return None
     if (current_code, current_doc_type, current_month) != (
-        candidate_code, candidate_doc_type, candidate_month
+        candidate_code,
+        candidate_doc_type,
+        candidate_month,
     ):
         return None
 
     score = 2 if candidate.submitted_by == instance.submitted_by else 0
     current_amount = current_metadata.get("amount")
     candidate_amount = candidate_metadata.get("amount")
-    if current_amount is not None and candidate_amount is not None and current_amount == candidate_amount:
+    if (
+        current_amount is not None
+        and candidate_amount is not None
+        and current_amount == candidate_amount
+    ):
         score += 1
     if _attachment_names(current_metadata) & _attachment_names(candidate_metadata):
         score += 1
-    if isinstance(candidate.created_at, datetime) and isinstance(instance.created_at, datetime):
-        if abs((candidate.created_at - instance.created_at).total_seconds()) <= 3 * 86400:
+    if isinstance(candidate.created_at, datetime) and isinstance(
+        instance.created_at, datetime
+    ):
+        if (
+            abs((candidate.created_at - instance.created_at).total_seconds())
+            <= 3 * 86400
+        ):
             score += 1
     return score
 
@@ -673,11 +695,20 @@ async def cancel_workflow(
 def _get_current_approval(
     approvals: list[WorkflowApproval], user_roles: list[str] | None = None
 ) -> WorkflowApproval | None:
-    sorted_approvals = sorted(approvals, key=lambda a: a.step_order)
-    for approval in sorted_approvals:
-        if approval.status == "pending" and (
-            user_roles is None or approval.approver_role in user_roles
-        ):
+    """現在アクション可能な承認を返す。
+
+    先行する未承認ステップを飛び越えて後続ステップに一致させないよう、
+    まず最小の pending step_order（=現在のステップ）を確定してから、
+    そのステップ内でのみロール一致を判定する。
+    """
+    pending = [a for a in approvals if a.status == "pending"]
+    if not pending:
+        return None
+    current_step_order = min(a.step_order for a in pending)
+    for approval in pending:
+        if approval.step_order != current_step_order:
+            continue
+        if user_roles is None or approval.approver_role in user_roles:
             return approval
     return None
 

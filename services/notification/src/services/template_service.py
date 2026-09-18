@@ -206,6 +206,8 @@ async def ensure_default_templates(db: AsyncSession) -> None:
     for tpl_data in defaults:
         existing = await get_template_by_code(db, tpl_data["code"])
         if not existing:
+            if tpl_data["category"] == "workflow" and "neo" not in tpl_data["channels"]:
+                tpl_data = {**tpl_data, "channels": [*tpl_data["channels"], "neo"]}
             template = NotificationTemplate(**tpl_data)
             db.add(template)
         elif tpl_data["category"] == "workflow" and "neo" not in existing.channels:

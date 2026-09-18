@@ -7,9 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..middleware.auth import TokenData, get_current_user
 from ..models.base import get_db
-from ..schemas import APIResponse, CaseAction, DuplicateJudgement, WorkflowInstanceCreate
+from ..schemas import (
+    APIResponse,
+    CaseAction,
+    DuplicateJudgement,
+    WorkflowInstanceCreate,
+)
 from ..services.approval_service import approve_step
-from ..services.document_adapter import store_workflow_documents, store_workflow_work_area
+from ..services.document_adapter import (
+    store_workflow_documents,
+    store_workflow_work_area,
+)
 from ..services import workflow_service
 from ..services.check_service import SubmissionValidationError
 from ..services.notification_adapter import (
@@ -17,19 +25,9 @@ from ..services.notification_adapter import (
     send_workflow_notification,
     send_workflow_notifications,
 )
-from .workflows import _instance_to_response, _organization_id
+from .workflows import _instance_to_response, _organization_id, _require_management
 
 router = APIRouter()
-
-MANAGEMENT_ROLES = {"admin", "management"}
-
-
-def _require_management(current_user: TokenData) -> None:
-    if not MANAGEMENT_ROLES.intersection(current_user.roles):
-        raise HTTPException(
-            status_code=403,
-            detail={"code": "FORBIDDEN", "message": "管理部権限が必要です。"},
-        )
 
 
 def _deadline_value(instance) -> str:
@@ -37,9 +35,7 @@ def _deadline_value(instance) -> str:
     return due_date.isoformat() if due_date is not None else ""
 
 
-async def _get_case(
-    db: AsyncSession, receipt_no: str, current_user: TokenData
-):
+async def _get_case(db: AsyncSession, receipt_no: str, current_user: TokenData):
     instance = await workflow_service.get_instance_by_receipt(
         db, receipt_no, _organization_id(current_user)
     )
@@ -86,7 +82,9 @@ async def create_case(
             metadata=body.metadata,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.create",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.create",
             event_data={"receipt_no": created_instance.receipt_no},
         )
         await db.commit()
@@ -96,11 +94,16 @@ async def create_case(
         if instance is None:
             raise HTTPException(
                 status_code=404,
-                detail={"code": "NOT_FOUND", "message": "作成した案件が見つかりません。"},
+                detail={
+                    "code": "NOT_FOUND",
+                    "message": "作成した案件が見つかりません。",
+                },
             )
         return APIResponse(data=_instance_to_response(instance))
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail={"code": "BAD_REQUEST", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=400, detail={"code": "BAD_REQUEST", "message": str(exc)}
+        ) from exc
 
 
 @router.get("/cases")
@@ -144,7 +147,9 @@ async def submit_case(
             db, instance.id, UUID(current_user.sub)
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.submit",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.submit",
             event_data={"receipt_no": instance.receipt_no},
         )
         await db.commit()
@@ -153,7 +158,7 @@ async def submit_case(
             if isinstance(instance.metadata_, dict)
             else []
         )
-        if isinstance(document_ids, list) and document_ids:
+        if isinstance(document_ids, list) and document_ids and instance.receipt_no:
             background_tasks.add_task(
                 store_workflow_work_area,
                 document_ids=document_ids,
@@ -194,7 +199,9 @@ async def submit_case(
             },
         ) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail={"code": "BAD_REQUEST", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=400, detail={"code": "BAD_REQUEST", "message": str(exc)}
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/confirm")
@@ -209,11 +216,18 @@ async def confirm_case(
     instance = await _get_case(db, receipt_no, current_user)
     try:
         instance = await workflow_service.transition_case(
-            db, instance.id, _organization_id(current_user), UUID(current_user.sub),
-            "forwarded", {"in_progress"}, body.comment if body else None,
+            db,
+            instance.id,
+            _organization_id(current_user),
+            UUID(current_user.sub),
+            "forwarded",
+            {"in_progress"},
+            body.comment if body else None,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.confirm",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.confirm",
             event_data={"receipt_no": receipt_no},
         )
         await db.commit()
@@ -241,7 +255,10 @@ async def confirm_case(
         )
         return APIResponse(data=_instance_to_response(instance))
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)},
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/forward")
@@ -256,11 +273,18 @@ async def forward_case(
     instance = await _get_case(db, receipt_no, current_user)
     try:
         instance = await workflow_service.transition_case(
-            db, instance.id, _organization_id(current_user), UUID(current_user.sub),
-            "pending_approval", {"forwarded"}, body.comment if body else None,
+            db,
+            instance.id,
+            _organization_id(current_user),
+            UUID(current_user.sub),
+            "pending_approval",
+            {"forwarded"},
+            body.comment if body else None,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.forward",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.forward",
             event_data={"receipt_no": receipt_no},
         )
         await db.commit()
@@ -288,7 +312,10 @@ async def forward_case(
         )
         return APIResponse(data=_instance_to_response(instance))
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)},
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/return")
@@ -301,15 +328,25 @@ async def return_case(
 ):
     _require_management(current_user)
     if not body.comment or not body.comment.strip():
-        raise HTTPException(status_code=422, detail={"code": "VALIDATION_ERROR", "message": "差戻し理由は必須です。"})
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "VALIDATION_ERROR", "message": "差戻し理由は必須です。"},
+        )
     instance = await _get_case(db, receipt_no, current_user)
     try:
         instance = await workflow_service.transition_case(
-            db, instance.id, _organization_id(current_user), UUID(current_user.sub),
-            "rejected", {"in_progress", "forwarded", "pending_approval"}, body.comment,
+            db,
+            instance.id,
+            _organization_id(current_user),
+            UUID(current_user.sub),
+            "rejected",
+            {"in_progress", "forwarded", "pending_approval"},
+            body.comment,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.return",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.return",
             event_data={"receipt_no": receipt_no, "comment": body.comment},
         )
         await db.commit()
@@ -328,7 +365,10 @@ async def return_case(
         )
         return APIResponse(data=_instance_to_response(instance))
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)},
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/resubmit")
@@ -396,18 +436,27 @@ async def approve_case(
                 raise ValueError("承認待ちのステップがありません。")
             step_order = min(pending_steps)
         result = await approve_step(
-            db, instance.id, step_order, UUID(current_user.sub),
-            body.comment if body else None, current_user.roles,
+            db,
+            instance.id,
+            step_order,
+            UUID(current_user.sub),
+            body.comment if body else None,
+            current_user.roles,
             _organization_id(current_user),
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.approve",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.approve",
             event_data={"receipt_no": receipt_no, "step_order": step_order},
         )
         await db.commit()
         return APIResponse(data=_instance_to_response(result))
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)},
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/judge-duplicate")
@@ -421,17 +470,25 @@ async def judge_case_duplicate(
     instance = await _get_case(db, receipt_no, current_user)
     try:
         result = await workflow_service.judge_duplicate(
-            db, instance.id, _organization_id(current_user), UUID(current_user.sub),
-            body.decision, body.comment,
+            db,
+            instance.id,
+            _organization_id(current_user),
+            UUID(current_user.sub),
+            body.decision,
+            body.comment,
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.judge_duplicate",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.judge_duplicate",
             event_data={"receipt_no": receipt_no, "decision": body.decision},
         )
         await db.commit()
         return APIResponse(data=_instance_to_response(result))
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=404, detail={"code": "NOT_FOUND", "message": str(exc)}
+        ) from exc
 
 
 @router.post("/cases/{receipt_no}/store")
@@ -444,28 +501,52 @@ async def store_case(
     metadata = instance.metadata_ if isinstance(instance.metadata_, dict) else {}
     document_ids = metadata.get("attachment_document_ids", [])
     if not isinstance(document_ids, list) or not document_ids:
-        raise HTTPException(status_code=422, detail={"code": "FILE_UPLOAD_FAILED", "message": "正本保存対象の添付ファイルがありません。"})
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "FILE_UPLOAD_FAILED",
+                "message": "正本保存対象の添付ファイルがありません。",
+            },
+        )
     stored, failed = await store_workflow_documents(
         document_ids=document_ids, organization_id=_organization_id(current_user)
     )
     if failed:
         instance.canonical_error = f"{failed}件の正本保存に失敗しました。"
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.store",
-            event_data={"receipt_no": receipt_no, "failed": failed}, success=False,
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.store",
+            event_data={"receipt_no": receipt_no, "failed": failed},
+            success=False,
         )
         await db.commit()
-        raise HTTPException(status_code=502, detail={"code": "FILE_UPLOAD_FAILED", "message": instance.canonical_error})
+        raise HTTPException(
+            status_code=502,
+            detail={"code": "FILE_UPLOAD_FAILED", "message": instance.canonical_error},
+        )
     try:
         result = await workflow_service.transition_case(
-            db, instance.id, _organization_id(current_user), UUID(current_user.sub),
-            "stored", {"approved", "completed"}, "正本保存完了",
+            db,
+            instance.id,
+            _organization_id(current_user),
+            UUID(current_user.sub),
+            "stored",
+            {"approved", "completed"},
+            "正本保存完了",
         )
         workflow_service.record_audit_log(
-            db, user_id=UUID(current_user.sub), event_type="case.store",
+            db,
+            user_id=UUID(current_user.sub),
+            event_type="case.store",
             event_data={"receipt_no": receipt_no, "stored": stored},
         )
         await db.commit()
-        return APIResponse(data={**_instance_to_response(result), "stored_document_ids": stored})
+        return APIResponse(
+            data={**_instance_to_response(result), "stored_count": stored}
+        )
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": str(exc)},
+        ) from exc

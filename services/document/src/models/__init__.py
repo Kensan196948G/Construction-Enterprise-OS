@@ -43,14 +43,25 @@ class Document(Base):
     description: Mapped[str | None] = mapped_column(Text)
     document_type: Mapped[str] = mapped_column(
         Enum(
-            "pdf", "cad", "bim", "photo", "video", "spreadsheet", "other",
+            "pdf",
+            "cad",
+            "bim",
+            "photo",
+            "video",
+            "spreadsheet",
+            "other",
             name="document_type",
         ),
         nullable=False,
     )
     status: Mapped[str] = mapped_column(
         Enum(
-            "draft", "under_review", "approved", "rejected", "obsolete", "deleted",
+            "draft",
+            "under_review",
+            "approved",
+            "rejected",
+            "obsolete",
+            "deleted",
             name="document_status",
         ),
         default="draft",
@@ -72,9 +83,18 @@ class Document(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    canonical_stored_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    work_area_receipt_no: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    work_area_stored_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     versions: Mapped[list["DocumentVersion"]] = relationship(
-        "DocumentVersion", back_populates="document", order_by="DocumentVersion.version_number.desc()"
+        "DocumentVersion",
+        back_populates="document",
+        order_by="DocumentVersion.version_number.desc()",
     )
 
 
@@ -82,7 +102,12 @@ class DocumentVersion(Base):
     __tablename__ = "document_versions"
     __table_args__ = (
         Index("ix_document_versions_document_id", "document_id"),
-        Index("ix_document_versions_document_id_version", "document_id", "version_number", unique=True),
+        Index(
+            "ix_document_versions_document_id_version",
+            "document_id",
+            "version_number",
+            unique=True,
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -104,6 +129,4 @@ class DocumentVersion(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    document: Mapped["Document"] = relationship(
-        "Document", back_populates="versions"
-    )
+    document: Mapped["Document"] = relationship("Document", back_populates="versions")

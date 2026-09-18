@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .api import documents
+from .api import documents, internal
 from .api.health import router as health_router
 from .models.base import engine
 from .services.storage_service import initialize_bucket
@@ -30,9 +30,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(_settings, 'jwt_public_key', getattr(_settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(_settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                _settings,
+                "jwt_public_key",
+                getattr(_settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(_settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -42,7 +47,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             initialize_bucket()
             logger.info("MinIO bucket initialized")
         except Exception:
-            logger.exception("Failed to initialize MinIO bucket — storage may not be ready")
+            logger.exception(
+                "Failed to initialize MinIO bucket — storage may not be ready"
+            )
 
     yield
 
@@ -72,6 +79,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, tags=["health"])
     app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
+    app.include_router(
+        internal.router, prefix="/api/v1/documents/internal", tags=["internal"]
+    )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

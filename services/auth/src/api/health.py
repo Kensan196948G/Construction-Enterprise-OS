@@ -34,12 +34,23 @@ async def get_services_health() -> ServicesHealthResponse:
 
     async def probe(name: str, url: str) -> ServiceHealth:
         try:
-            async with httpx.AsyncClient(timeout=settings.HEALTH_TIMEOUT_SECONDS) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.HEALTH_TIMEOUT_SECONDS
+            ) as client:
                 response = await client.get(url)
-            body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
-            service_status = body.get("status")
-            if service_status not in {"healthy", "degraded", "unhealthy"}:
-                service_status = "healthy" if response.is_success else "unhealthy"
+            body = (
+                response.json()
+                if response.headers.get("content-type", "").startswith(
+                    "application/json"
+                )
+                else {}
+            )
+            if response.is_success:
+                service_status = body.get("status")
+                if service_status not in {"healthy", "degraded", "unhealthy"}:
+                    service_status = "healthy"
+            else:
+                service_status = "unhealthy"
             return ServiceHealth(
                 name=name,
                 status=service_status,
@@ -60,8 +71,10 @@ async def get_services_health() -> ServicesHealthResponse:
         )
     )
     statuses = {service.status for service in services}
-    overall: Literal["healthy", "degraded", "unhealthy"] = "unhealthy" if "unhealthy" in statuses else (
-        "degraded" if "degraded" in statuses else "healthy"
+    overall: Literal["healthy", "degraded", "unhealthy"] = (
+        "unhealthy"
+        if "unhealthy" in statuses
+        else ("degraded" if "degraded" in statuses else "healthy")
     )
 
     return ServicesHealthResponse(

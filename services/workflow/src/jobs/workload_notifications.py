@@ -1,7 +1,7 @@
 """地域別の処理量を集計し、負荷超過時に管理部へ通知するジョブ。"""
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 from sqlalchemy import select
@@ -31,7 +31,12 @@ async def notify_workload_alerts(
     today = today or date.today()
     settings = get_settings()
     threshold = settings.WORKLOAD_ALERT_RATIO
-    result = await db.execute(select(WorkflowInstance))
+    # 当月比較には直近12か月分の実績があれば十分なため、無制限の全件取得を避ける。
+    start_year, start_month = _month_delta(today.year, today.month, -12)
+    window_start = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
+    result = await db.execute(
+        select(WorkflowInstance).where(WorkflowInstance.created_at >= window_start)
+    )
     instances = list(result.scalars().all())
     counts: defaultdict[tuple[UUID, str, int, int], int] = defaultdict(int)
     for instance in instances:
@@ -39,14 +44,18 @@ async def notify_workload_alerts(
         if created_at is None:
             continue
         counts[
-            (instance.organization_id, _region(instance), created_at.year, created_at.month)
+            (
+                instance.organization_id,
+                _region(instance),
+                created_at.year,
+                created_at.month,
+            )
         ] += 1
 
     sent = 0
     skipped = 0
-    for organization_id, region, year, month in {
-        (org_id, region, y, m) for org_id, region, y, m in counts
-    }:
+    # counts はこの後 history 参照で新規キーが挿入されるため、反復前にキーを固定する。
+    for organization_id, region, year, month in list(counts):
         if (year, month) != (today.year, today.month):
             continue
         current = counts[(organization_id, region, year, month)]
@@ -58,7 +67,13 @@ async def notify_workload_alerts(
         if baseline <= 0 or current < baseline * threshold:
             skipped += 1
             continue
-        recommended_staff = max(1, int((current - baseline + settings.WORKLOAD_CAPACITY_PER_STAFF - 1) // settings.WORKLOAD_CAPACITY_PER_STAFF))
+        recommended_staff = max(
+            1,
+            int(
+                (current - baseline + settings.WORKLOAD_CAPACITY_PER_STAFF - 1)
+                // settings.WORKLOAD_CAPACITY_PER_STAFF
+            ),
+        )
         recipients = await resolve_notification_recipients(
             organization_id=organization_id, roles={"management", "admin"}
         )

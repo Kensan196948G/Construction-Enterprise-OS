@@ -45,3 +45,39 @@ alembic downgrade -1
 ```
 
 `alembic downgrade -1`は直前のMigrationだけを戻します。`workflow004`のRollbackは案件期限列のみ、`workflow003`のRollbackは定義チェックルール列のみを削除します。Workflow Schema全体を戻す場合は全RevisionのRollbackとなるため、Workflowデータが存在する環境では実行前承認が必要です。
+
+### workflow006 / workflow009 / workflow010 のRollback時の注意
+
+これら3件のRollbackは、`upgrade`後に追加された状態を持つ運用データが存在する場合、
+データを無断で削除・統合せず**Rollbackを中断**する設計です。中断時は`RuntimeError`で
+該当データの件数・内容を明示します。
+
+- **workflow006**（並列承認roleの許可）: Rollback前に`workflow.workflow_approvals`を
+  `(instance_id, step_order)`で集計し、複数行(=複数role)が存在する組み合わせがないか
+  検証します。重複がある場合、旧一意制約`uq_workflow_approvals_instance_step`を
+  再作成できずRollbackは失敗（例外送出）します。
+  - **手動復旧手順**: 例外メッセージに出力された`instance_id`/`step_order`ごとに、
+    `SELECT * FROM workflow.workflow_approvals WHERE instance_id = ? AND step_order = ?`
+    で該当承認行を確認してください。複数roleでの並列承認を今後使わないと判断し、
+    意図的に1行へ統合・削除する場合は、業務担当者の承認を得たうえで、どの承認行を
+    正とするかを個別に判断し、削除対象を明示したSQLを別途実行してから
+    再度`alembic downgrade`を実行してください（本migrationは統合ロジックを自動実行しません）。
+
+- **workflow010**（案件ステータス拡張）: Rollback前に`workflow.workflow_instances`を
+  旧status集合（`draft`, `in_progress`, `approved`, `rejected`, `cancelled`）に
+  含まれないstatusで検索します。該当案件がある場合、旧CHECK制約を再作成できず
+  Rollbackは失敗します。
+  - **手動復旧手順**: 例外メッセージに出力されたstatusごとに、
+    `SELECT id, status FROM workflow.workflow_instances WHERE status = ?`
+    で該当案件を確認してください。旧status集合へ意図的にマッピングする場合
+    （例: `submitted`→`in_progress`）は、業務上の妥当性を個別に判断したうえで
+    `UPDATE`文を実行し、その後に`alembic downgrade`を再実行してください。
+
+- **workflow009**（提出時受付番号採番・下書きのNULL許容）: Rollbackは
+  `receipt_no`が`NULL`の下書き案件を**自動的にバックフィル**してからNOT NULL制約を
+  復元します。採番は`workflow005`と同じ形式（`SAW-YYYY-NNNNNN`、
+  `row_number() OVER (ORDER BY created_at, id)`）を用い、既存の(NULLでない)最大の
+  受付番号の次の値から採番するため、`uq_workflow_instances_receipt_no`
+  （`workflow005`で作成、本migrationでは変更しない）との衝突はありません。
+  中断は発生しませんが、Rollback後は下書き案件にも受付番号が付与される点に
+  注意してください（再度`upgrade`すると当該番号はそのまま残ります）。

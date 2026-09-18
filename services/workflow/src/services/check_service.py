@@ -66,7 +66,7 @@ def validate_submission(
     construction_master = rules.get("construction_master", {})
     master = (
         construction_master.get(construction_code)
-        if isinstance(construction_master, dict)
+        if isinstance(construction_master, dict) and isinstance(construction_code, str)
         else None
     )
     if construction_code and isinstance(master, dict):

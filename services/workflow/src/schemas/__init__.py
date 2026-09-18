@@ -1,7 +1,7 @@
 """API リクエスト/レスポンス スキーマ"""
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -23,7 +23,9 @@ class APIResponse(BaseModel):
 class WorkflowStepSchema(BaseModel):
     order: int = Field(gt=0)
     role: str | None = Field(default=None, min_length=1, max_length=100)
-    roles: list[str] = Field(default_factory=list)
+    roles: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
+        default_factory=list
+    )
     required: bool = True
 
     @model_validator(mode="after")
