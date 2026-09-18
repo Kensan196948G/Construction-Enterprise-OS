@@ -414,10 +414,12 @@ make test
 
 ### 🔑 開発用ログイン情報
 
-```
-📧 Email:    admin@construction-enterprise-os.local
-🔒 Password: AdminPass123!
-```
+資格情報はコードに埋め込んでいません。環境変数で渡します。
+
+| 変数 | 用途 |
+| --- | --- |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `python -m src.seed` での管理ユーザ作成 |
+| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | Playwright E2E（`e2e/api.spec.ts`、CI では GitHub Secrets） |
 
 ---
 

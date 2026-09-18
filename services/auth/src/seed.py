@@ -5,6 +5,7 @@
 
 # mypy: ignore-errors
 import asyncio
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -191,13 +192,21 @@ ROLE_PERMISSION_MAP = {
 
 # ── 管理ユーザ ──────────────────────────────────────────────────────
 # 注: EmailStr 検証は特殊用途TLD(.local 等)を拒否するため、実在ドメイン形式を使用する
-ADMIN_EMAIL = "admin@mirai-dx-platform.com"
-ADMIN_PASSWORD = "AdminPass123!"
+# 資格情報はコードに埋め込まず、環境変数で必ず渡す（平文の既定値は廃止）
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 ADMIN_DISPLAY_NAME = "システム管理者"
 
 
 async def run_seed() -> None:
     """シード実行（冪等）"""
+    admin_email = ADMIN_EMAIL
+    admin_password = ADMIN_PASSWORD
+    if not admin_email or not admin_password:
+        raise SystemExit(
+            "[seed] 環境変数 ADMIN_EMAIL / ADMIN_PASSWORD を設定してください"
+            "（資格情報のコード埋め込みは廃止しました）"
+        )
     async with async_session() as db:
         # --- 1. 組織 ---
         result = await db.execute(
@@ -306,9 +315,9 @@ async def run_seed() -> None:
             admin = User(
                 id=ADMIN_USER_ID,
                 organization_id=ADMIN_ORG_ID,
-                email=ADMIN_EMAIL,
+                email=admin_email,
                 username="admin",
-                hashed_password=pwd_context.hash(ADMIN_PASSWORD),
+                hashed_password=pwd_context.hash(admin_password),
                 display_name=ADMIN_DISPLAY_NAME,
                 phone="03-0000-0001",
                 locale="ja",
@@ -321,9 +330,9 @@ async def run_seed() -> None:
             )
             db.add(admin)
             await db.flush()
-            print(f"[seed] admin user created: {ADMIN_EMAIL}")
+            print(f"[seed] admin user created: {admin_email}")
         else:
-            print(f"[seed] admin user already exists: {ADMIN_EMAIL}")
+            print(f"[seed] admin user already exists: {admin_email}")
 
         # --- 6. 管理ユーザに admin ロールを割当 ---
         admin_role = role_map["admin"]

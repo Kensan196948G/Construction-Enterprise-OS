@@ -7,7 +7,14 @@
 
 ### 1. 稼働中の admin 資格情報が平文でコミットされている
 
-**所在**(同じ値が 4 箇所):
+> **進捗 (2026-09-18)**: リポジトリ内の平文記載は**全4箇所から削除済み**（`git grep` で 0 件を確認）。
+> `seed.py` は環境変数必須化、`e2e/api.spec.ts` は未設定時に該当テストをスキップ、
+> `e2e.yml` は GitHub Secrets を参照するよう変更済み。
+> **残作業: 実際のパスワードのローテーション（運用操作）と GitHub Secrets
+> `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` の設定**。Secrets 未設定の間は
+> 認証系E2Eがスキップされる（CI は green のまま）。
+
+**元の所在**(同じ値が 4 箇所):
 
 - `README.md`(ログイン手順の記載)
 - `docs/operations/api-auth-db-verification.md`
@@ -58,6 +65,28 @@
 4. git 履歴への混入有無は未確認(`git log --diff-filter=A` による確認を推奨)
 
 **ロールバック**: ファイル削除は可逆(内容は`.env`とほぼ同じ)。ローテーションは不可逆。
+
+### 4. auth サービスの systemd ユニットが旧パスを指している(運用障害)
+
+**症状**: `construction-os-auth.service` が環境ファイルの読み込み失敗と
+起動コマンドの不在で crash-loop 状態(再起動失敗 272,517 回以上)。
+トンネル `construction-os-api.mirai-dx-platform.com` は `127.0.0.1:18002` を参照するため、
+**MVP の `/api/v1/*` が 502 になる**(2026-09-18 に実際に発生。手動起動で復旧済み)。
+
+**原因**: ユニット定義の `WorkingDirectory` / `EnvironmentFile` / `ExecStart` が
+移転前のパス `/home/kensan/Projects/Mirai-DX-Project/...` を指している
+(現パスは `/home/kensan/Projects/Mirai-Admin-Platform/...`)。
+
+**対応手順(root権限が必要)**: ユニット定義を編集して上記3箇所を現行パスへ置換し、
+デーモンの設定を再読込してからユニットを再起動する。その後 `systemctl is-active`
+で active を確認する。
+
+修正までの間は手動起動で運用継続中(作業ディレクトリ `services/auth` で
+`.venv/bin/uvicorn src.main:app --host 127.0.0.1 --port 18002` を detached 起動し、
+ログを `services/logs/auth-18002.log` へ出力)。
+
+> 注意: 手動起動はセッション終了後も継続するが、OS再起動後は自動起動しない。
+> systemd ユニットの修正を推奨。
 
 ## 対応済み(2026-09-18 のセッションで修正済み)
 

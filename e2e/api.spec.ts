@@ -16,8 +16,11 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 
 const BASE = process.env.E2E_API_BASE_URL || "https://construction-os-mvp.mirai-dx-platform.com";
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@mirai-dx-platform.com";
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "AdminPass123!";
+// 資格情報はコードに埋め込まず、環境変数（CI では GitHub Secrets）で渡す。
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "";
+const HAS_ADMIN_CREDENTIALS = ADMIN_EMAIL !== "" && ADMIN_PASSWORD !== "";
+const HAS_KNOWN_EMAIL = ADMIN_EMAIL !== "";
 
 async function login(request: APIRequestContext, email: string, password: string) {
   return request.post(`${BASE}/api/v1/auth/login`, {
@@ -51,6 +54,7 @@ test.describe("Construction Enterprise OS API (HTTPS)", () => {
   });
 
   test("認証: 正しい資格情報で JWT が発行される", async ({ request }) => {
+    test.skip(!HAS_ADMIN_CREDENTIALS, "E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD が未設定のためスキップ");
     const res = await login(request, ADMIN_EMAIL, ADMIN_PASSWORD);
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -60,12 +64,13 @@ test.describe("Construction Enterprise OS API (HTTPS)", () => {
   });
 
   test("認証エラー: 誤パスワードで 401 が返る", async ({ request }) => {
+    test.skip(!HAS_KNOWN_EMAIL, "E2E_ADMIN_EMAIL が未設定のためスキップ");
     const res = await login(request, ADMIN_EMAIL, "WrongPassword123!");
     expect(res.status()).toBe(401);
   });
 
   test("認証エラー: 存在しないメールで 401 が返る", async ({ request }) => {
-    const res = await login(request, "nobody@mirai-dx-platform.com", "AdminPass123!");
+    const res = await login(request, "nobody@mirai-dx-platform.com", "irrelevant-password");
     expect(res.status()).toBe(401);
   });
 
@@ -75,6 +80,7 @@ test.describe("Construction Enterprise OS API (HTTPS)", () => {
   });
 
   test("認可: JWT で users が取得できる(Neon DB 接続)", async ({ request }) => {
+    test.skip(!HAS_ADMIN_CREDENTIALS, "E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD が未設定のためスキップ");
     const loginRes = await login(request, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { access_token } = (await loginRes.json()).data;
     const res = await request.get(`${BASE}/api/v1/users`, {
@@ -89,6 +95,7 @@ test.describe("Construction Enterprise OS API (HTTPS)", () => {
   });
 
   test("認可: JWT で roles が取得できる(7ロール・Neon DB 接続)", async ({ request }) => {
+    test.skip(!HAS_ADMIN_CREDENTIALS, "E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD が未設定のためスキップ");
     const loginRes = await login(request, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { access_token } = (await loginRes.json()).data;
     const res = await request.get(
