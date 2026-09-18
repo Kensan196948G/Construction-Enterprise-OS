@@ -1,6 +1,7 @@
 """自律施工エラーログ管理エンドポイント"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from ..schemas import APIResponse, ErrorLogListResponse, ErrorLogResponse
 
 router = APIRouter()
@@ -66,6 +67,8 @@ async def list_error_logs(
     severity: str | None = Query(None),
     status: str | None = Query(None),
     machine_no: str | None = Query(None),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_ERROR_LOGS
     if severity:

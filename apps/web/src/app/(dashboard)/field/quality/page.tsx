@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   CheckSquare,
   XSquare,
@@ -369,10 +370,10 @@ export default function FieldQualityPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const [catRes, caRes] = await Promise.allSettled([
-      fetch("/api/v1/field/quality/checks").then((r) =>
+      fetch("/api/v1/field/quality/checks", { headers: authHeaders() }).then((r) =>
         r.ok ? r.json() : null,
       ),
-      fetch("/api/v1/field/quality/corrective").then((r) =>
+      fetch("/api/v1/field/quality/corrective", { headers: authHeaders() }).then((r) =>
         r.ok ? r.json() : null,
       ),
     ]);

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from ..middleware.auth import TokenData, get_current_user
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -147,6 +148,8 @@ async def list_webhooks(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str | None = Query(None),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_WEBHOOKS
     if status:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Link,
   RefreshCw,
@@ -217,8 +218,8 @@ export default function IntegrationsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const results = await Promise.allSettled([
-      fetch("/api/v1/integrations?per_page=50"),
-      fetch("/api/v1/integrations/logs?per_page=50"),
+      fetch("/api/v1/integrations?per_page=50", { headers: authHeaders() }),
+      fetch("/api/v1/integrations/logs?per_page=50", { headers: authHeaders() }),
     ]);
 
     const [systemsResult, logsResult] = results;

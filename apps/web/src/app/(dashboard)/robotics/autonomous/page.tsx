@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Bot,
   Cpu,
@@ -192,8 +193,8 @@ export default function AutonomousPage() {
     setLoading(true);
     try {
       const [machinesResult, errorLogsResult] = await Promise.allSettled([
-        fetch("/api/v1/autonomous/machines?per_page=50").then((r) => r.json()),
-        fetch("/api/v1/autonomous/error-logs?per_page=50").then((r) =>
+        fetch("/api/v1/autonomous/machines?per_page=50", { headers: authHeaders() }).then((r) => r.json()),
+        fetch("/api/v1/autonomous/error-logs?per_page=50", { headers: authHeaders() }).then((r) =>
           r.json(),
         ),
       ]);

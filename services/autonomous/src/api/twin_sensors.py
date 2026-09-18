@@ -1,6 +1,7 @@
 """デジタルツインセンサー管理エンドポイント"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from ..schemas import APIResponse, TwinSensorListResponse, TwinSensorResponse
 
 router = APIRouter()
@@ -104,6 +105,8 @@ async def list_twin_sensors(
     sensor_type: str | None = Query(None),
     status: str | None = Query(None),
     twin_id: str | None = Query(None),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_TWIN_SENSORS
     if sensor_type:

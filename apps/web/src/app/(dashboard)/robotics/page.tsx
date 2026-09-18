@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Plane,
   Bot,
@@ -195,7 +196,7 @@ export default function RoboticsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/autonomous/activities?per_page=20");
+      const res = await fetch("/api/v1/autonomous/activities?per_page=20", { headers: authHeaders() });
       if (!res.ok) throw new Error("fetch failed");
       const json = await res.json();
       const items: Record<string, unknown>[] =

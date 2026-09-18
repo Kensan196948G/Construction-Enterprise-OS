@@ -1,6 +1,7 @@
 """自律施工機械管理エンドポイント"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from ..schemas import APIResponse, MachineListResponse, MachineResponse
 
 router = APIRouter()
@@ -74,6 +75,8 @@ async def list_machines(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str | None = Query(None),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_MACHINES
     if status:
