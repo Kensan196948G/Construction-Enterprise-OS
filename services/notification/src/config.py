@@ -35,6 +35,18 @@ class Settings(BaseSettings):
     JWT_PUBLIC_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
 
+    # Service-to-service API. Empty means the internal send endpoint is disabled.
+    INTERNAL_API_KEY: str = ""
+
+    # desknet's NEO（または社内NEO APIゲートウェイ）連携
+    NEO_ENABLED: bool = False
+    NEO_API_URL: str = ""
+    NEO_API_KEY: str = ""
+    NEO_TIMEOUT_SECONDS: float = 5.0
+    NEO_WEBHOOK_SECRET: str = ""
+    WORKFLOW_SERVICE_URL: str = ""
+    WORKFLOW_INTERNAL_JOB_API_KEY: str = ""
+
     @property
     def jwt_public_key(self) -> str:
         if self.JWT_PUBLIC_KEY:

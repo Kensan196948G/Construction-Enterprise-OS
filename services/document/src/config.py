@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     JWT_PUBLIC_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
 
+    INTERNAL_API_KEY: str = ""
+    CANONICAL_STORAGE_ROOT: str = ""
+
     @property
     def jwt_public_key(self) -> str:
         if self.JWT_PUBLIC_KEY:

@@ -2,7 +2,9 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import secrets
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..middleware.auth import TokenData, get_current_user
@@ -12,6 +14,7 @@ from ..schemas import (
     MetaInfo,
     NotificationListResponse,
     NotificationResponse,
+    NotificationSendRequest,
     UnreadCountResponse,
 )
 from ..services.notification_service import (
@@ -19,13 +22,68 @@ from ..services.notification_service import (
     get_user_notifications,
     mark_all_as_read,
     mark_as_read,
+    create_notification_idempotent,
 )
+from ..config import get_settings
+from ..services.neo_adapter import deliver_to_neo
 
 router = APIRouter()
 
 
+async def require_internal_api_key(
+    x_internal_api_key: str | None = Header(default=None),
+) -> None:
+    configured_key = get_settings().INTERNAL_API_KEY
+    if (
+        not configured_key
+        or not x_internal_api_key
+        or not secrets.compare_digest(x_internal_api_key, configured_key)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "INTERNAL_AUTH_REQUIRED",
+                "message": "内部認証が必要です。",
+            },
+        )
+
+
 def _api_response(data=None, meta=None, error=None, success=True):
     return APIResponse(success=success, data=data, error=error, meta=meta)
+
+
+@router.post("/send", dependencies=[Depends(require_internal_api_key)])
+async def send_notification(
+    request: NotificationSendRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    notification, created = await create_notification_idempotent(
+        db,
+        recipient_id=request.recipient_id,
+        template_code=request.template_code,
+        template_vars=request.template_vars,
+        metadata=request.metadata,
+        idempotency_key=request.idempotency_key,
+    )
+    if notification is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "TEMPLATE_NOT_FOUND",
+                "message": "通知テンプレートが見つかりません。",
+            },
+        )
+    neo_delivery = await deliver_to_neo(notification)
+    if neo_delivery is True:
+        notification.status = "sent"
+        await db.flush()
+    elif neo_delivery is False:
+        notification.status = "failed"
+        await db.flush()
+    return _api_response(
+        data=NotificationResponse.model_validate(notification).model_dump(),
+        meta={"created": created, "neo_delivery": neo_delivery},
+    )
 
 
 @router.get("")

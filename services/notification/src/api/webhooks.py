@@ -1,7 +1,19 @@
-"""Webhook管理エンドポイント"""
+"""Webhook管理とNEO callbackエンドポイント"""
 
-from fastapi import APIRouter, Query
+import hashlib
+import hmac
+from datetime import datetime, timezone
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..config import get_settings
+from ..models import Notification
+from ..models.base import get_db
+from ..services.workflow_callback import reflect_neo_callback
 
 router = APIRouter()
 
@@ -20,6 +32,14 @@ class WebhookResponse(BaseModel):
 class WebhookListResponse(BaseModel):
     items: list[WebhookResponse]
     total: int
+
+
+class NeoNotificationCallback(BaseModel):
+    notification_id: int
+    idempotency_key: str
+    event: Literal["opened", "read", "responded", "acknowledged"]
+    response: str | None = None
+    occurred_at: datetime | None = None
 
 
 MOCK_WEBHOOKS = [
@@ -74,6 +94,52 @@ MOCK_WEBHOOKS = [
         status="active",
     ),
 ]
+
+
+@router.post("/neo/callback")
+async def neo_callback(
+    request: Request,
+    payload: NeoNotificationCallback,
+    x_neo_signature: str | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """NEOの開封・応答結果を署名検証して通知レコードへ反映する。"""
+    secret = get_settings().NEO_WEBHOOK_SECRET
+    body = await request.body()
+    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    if not secret or not x_neo_signature or not hmac.compare_digest(
+        x_neo_signature, expected
+    ):
+        raise HTTPException(status_code=403, detail="NEO callback authentication required")
+
+    result = await db.execute(
+        select(Notification).where(
+            Notification.id == payload.notification_id,
+            Notification.idempotency_key == payload.idempotency_key,
+        )
+    )
+    notification = result.scalar_one_or_none()
+    if notification is None:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    metadata = dict(notification.metadata_ or {})
+    metadata["neo_callback"] = {
+        "event": payload.event,
+        "response": payload.response,
+        "occurred_at": (payload.occurred_at or datetime.now(timezone.utc)).isoformat(),
+    }
+    notification.metadata_ = metadata
+    if payload.event in {"opened", "read", "responded", "acknowledged"}:
+        notification.status = "read"
+        notification.read_at = payload.occurred_at or datetime.now(timezone.utc)
+    workflow_reflected = await reflect_neo_callback(notification, payload)
+    if workflow_reflected is False:
+        raise HTTPException(status_code=502, detail="Workflow callback unavailable")
+    await db.flush()
+    return {
+        "success": True,
+        "notification_id": notification.id,
+        "workflow_reflected": workflow_reflected,
+    }
 
 
 @router.get("", response_model=WebhookListResponse)

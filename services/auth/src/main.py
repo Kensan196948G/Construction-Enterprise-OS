@@ -25,6 +25,7 @@ from .api import (
     entra,
     health,
     organizations,
+    internal,
 )
 from .models.base import engine
 
@@ -99,6 +100,9 @@ def create_app() -> FastAPI:
     app.include_router(
         organizations.router, prefix="/api/v1/users", tags=["organizations"]
     )
+    app.include_router(
+        internal.router, prefix="/api/v1/internal", tags=["internal"]
+    )
 
     # ヘルスチェック
     @app.get("/health")
@@ -108,15 +112,7 @@ def create_app() -> FastAPI:
     # グローバルエラーハンドラ
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        # R6対策: どのエンドポイントで発生したかを特定できるよう
-        # リクエストのメソッド・パス・クライアントをログに含める
-        logger.exception(
-            "Unhandled exception: %s %s (client=%s): %s",
-            request.method,
-            request.url.path,
-            request.client.host if request.client else None,
-            exc,
-        )
+        logger.exception(f"Unhandled exception: {exc}")
         return JSONResponse(
             status_code=500,
             content={

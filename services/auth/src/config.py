@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    HEALTH_SERVICE_URLS: dict[str, str] = {}
+    HEALTH_TIMEOUT_SECONDS: float = 2.0
 
     # データベース
     DATABASE_URL: str = "postgresql+asyncpg://construction-os:construction-os_dev@localhost:5432/construction-os"
@@ -45,6 +47,7 @@ class Settings(BaseSettings):
     BCRYPT_ROUNDS: int = 12
     MAX_LOGIN_ATTEMPTS: int = 5
     LOGIN_LOCKOUT_MINUTES: int = 15
+    INTERNAL_API_KEY: str = ""
 
     # 開発用JWT秘密鍵 (本番では絶対に使わないこと)
     @property

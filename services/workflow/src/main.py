@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import health, workflows
+from .api import cases, health, workflows
 from .config import get_settings
 from .models.base import engine
 
@@ -61,6 +61,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(workflows.router, prefix="/api/v1/workflow", tags=["workflow"])
+    app.include_router(cases.router, prefix="/api/v1", tags=["cases"])
     app.include_router(health.router, tags=["health"])
 
     @app.exception_handler(Exception)
