@@ -74,6 +74,11 @@ jobs:
       - name: Test (Pytest)
         run: pytest tests/ --cov=src --cov-report=xml -p no:flask
 
+      # models と migrations/000_base_schema.sql の乖離を検出する
+      # (乖離したまま配置すると、空DBでテーブルが作られず実行時に全滅する)
+      - name: Base schema DDL is in sync with models
+        run: python ../../scripts/db/generate_base_schema.py --check "$(basename "$PWD")"
+
   # ============================================
   # TypeScript フロントエンド / 共有パッケージ
   # ============================================

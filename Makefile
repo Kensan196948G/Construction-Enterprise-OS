@@ -1,6 +1,6 @@
 # Construction-Enterprise-OS 開発用 Makefile
 
-.PHONY: help dev up down build test lint clean
+.PHONY: help dev up down build test lint clean schema-bootstrap schema-generate schema-check
 
 help: ## ヘルプ表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -55,6 +55,15 @@ db-rollback: ## マイグレーションを1つ戻す
 
 db-seed: ## シードデータ投入
 	@echo "シードデータは Docker起動時に自動投入されます"
+
+schema-bootstrap: ## 空DBへ全SQLマイグレーションを適用 (DATABASE_URL 必須)
+	@scripts/db/bootstrap_schema.sh "$${DATABASE_URL:?DATABASE_URL を設定してください}"
+
+schema-generate: ## ORMモデルから各サービスの基盤DDL(000_base_schema.sql)を再生成
+	python3 scripts/db/generate_base_schema.py
+
+schema-check: ## 基盤DDLがORMモデルと一致するか検証(乖離があれば失敗)
+	python3 scripts/db/generate_base_schema.py --check
 
 # ============================================
 # コード品質
