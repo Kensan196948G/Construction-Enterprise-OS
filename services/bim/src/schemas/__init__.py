@@ -101,7 +101,9 @@ class BIMModelResponse(BaseModel):
     discipline: str | None = None
     lod: str | None = None
     tags: list[str] | None = None
-    metadata: dict[str, Any] | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict[str, Any] | None = Field(default=None, validation_alias="metadata_")
     uploaded_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
@@ -216,7 +218,9 @@ class PointCloudResponse(BaseModel):
     accuracy_mm: float | None = None
     is_colorized: bool = False
     is_classified: bool = False
-    metadata: dict[str, Any] | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict[str, Any] | None = Field(default=None, validation_alias="metadata_")
     uploaded_by: UUID | None = None
     created_at: datetime
 

@@ -43,17 +43,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except ImportError:
         pass  # Auth package not installed, using local middleware
 
-    if settings.ENVIRONMENT == "development":
-        async with async_session() as db:
-            try:
-                await ensure_default_templates(db)
-                await db.commit()
-                logger.info("Default notification templates seeded")
-            except Exception:
-                await db.rollback()
-                logger.exception(
-                    "Failed to seed default templates — DB may not be ready"
-                )
+    # 既定テンプレートは環境を問わず用意する (ensure_default_templates は冪等)。
+    # development 限定にすると docker compose (ENVIRONMENT=docker) で
+    # テンプレートが未投入のままになり、通知送信が常に 422 で失敗する。
+    async with async_session() as db:
+        try:
+            await ensure_default_templates(db)
+            await db.commit()
+            logger.info("Default notification templates seeded")
+        except Exception:
+            await db.rollback()
+            logger.exception(
+                "Failed to seed default templates — DB may not be ready"
+            )
 
     yield
 

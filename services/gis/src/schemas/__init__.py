@@ -102,7 +102,9 @@ class SiteResponse(BaseModel):
     area_sqm: float | None = None
     start_date: date | None = None
     end_date: date | None = None
-    metadata: dict[str, Any] | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict[str, Any] | None = Field(default=None, validation_alias="metadata_")
     created_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
@@ -142,7 +144,9 @@ class InfrastructureResponse(BaseModel):
     name: str
     infra_type: str
     status: str
-    metadata: dict[str, Any] | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict[str, Any] | None = Field(default=None, validation_alias="metadata_")
     created_at: datetime
     updated_at: datetime
 
@@ -188,7 +192,9 @@ class HazardZoneResponse(BaseModel):
     description: str | None = None
     valid_from: date | None = None
     valid_to: date | None = None
-    metadata: dict[str, Any] | None = None
+    # SQLAlchemy の宣言的Baseでは `metadata` が MetaData 予約属性になるため、
+    # ORM の実属性名 `metadata_` から読み取る(直すと読み取りAPIが500になる)。
+    metadata: dict[str, Any] | None = Field(default=None, validation_alias="metadata_")
     created_at: datetime
 
     model_config = {"from_attributes": True}

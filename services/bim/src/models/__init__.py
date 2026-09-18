@@ -10,6 +10,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Float,
+    ForeignKey,
     Index,
     String,
     Text,
@@ -85,8 +86,12 @@ class BIMElement(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    # model_id に ForeignKey が無いと relationship の join 条件を解決できず、
+    # mapper 構成時に NoForeignKeysError となり BIM サービスのDBアクセスが全て失敗する。
     model_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("bim.bim_models.id", ondelete="CASCADE"),
+        nullable=False,
     )
     element_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     name: Mapped[str | None] = mapped_column(String(500), nullable=True)

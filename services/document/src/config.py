@@ -34,7 +34,21 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
 
     INTERNAL_API_KEY: str = ""
+
+    # 正本・作業領域の保存先。docker-compose.yml の同名環境変数と一致させる。
+    # 未設定の場合、正本保存は fail-closed で 503 を返す(保存したことにしない)。
     CANONICAL_STORAGE_ROOT: str = ""
+    CANONICAL_STORAGE_MAX_FILE_MB: int = 500
+
+    # OneDrive (Microsoft Graph) 連携。ONEDRIVE_ENABLED=true の場合は
+    # 4項目すべてが必須で、1つでも欠ければ fail-closed で 503 を返す。
+    ONEDRIVE_ENABLED: bool = False
+    ONEDRIVE_TENANT_ID: str = ""
+    ONEDRIVE_CLIENT_ID: str = ""
+    ONEDRIVE_CLIENT_SECRET: str = ""
+    ONEDRIVE_DRIVE_ID: str = ""
+    ONEDRIVE_ROOT_PATH: str = "Mirai-Site-Admin-Workflow"
+    ONEDRIVE_GRAPH_TIMEOUT_SECONDS: float = 60.0
 
     @property
     def jwt_public_key(self) -> str:
