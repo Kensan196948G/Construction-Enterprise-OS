@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Truck, Fuel, MapPin, Activity } from "lucide-react";
 
 type MachineStatus = "running" | "idle" | "stopped" | "maintenance";
@@ -187,7 +188,7 @@ export default function MachinesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/iot/machines?per_page=50");
+      const res = await fetch("/api/v1/iot/machines?per_page=50", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const data: Record<string, unknown>[] =

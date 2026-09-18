@@ -110,6 +110,15 @@ export async function apiRequest<T>(
   return res.json() as Promise<T>;
 }
 
+/**
+ * 生の `fetch` を使う箇所でも認証ヘッダを付けられるようにする。
+ * apiRequest と違い URL の前置・401 リトライは行わない。
+ */
+export function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export function get<T>(path: string) {
   return apiRequest<T>(path);
 }

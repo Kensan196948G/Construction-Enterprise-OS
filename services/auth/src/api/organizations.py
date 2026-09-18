@@ -1,7 +1,10 @@
-"""組織管理 API — stub"""
+"""組織管理 API"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
+
+from ..middleware.auth_middleware import require_permission
+from ..schemas import TokenData
 
 router = APIRouter()
 
@@ -70,6 +73,8 @@ _MOCK_ORGS = [
 async def list_organizations(
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
+    # 組織一覧は他エンドポイント同様に権限を要求する(未認証で取得できていた)
+    current_user: TokenData = Depends(require_permission("organizations", "read")),
 ):
     start = (page - 1) * per_page
     items = _MOCK_ORGS[start : start + per_page]
