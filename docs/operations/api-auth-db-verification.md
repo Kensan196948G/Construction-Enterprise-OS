@@ -47,6 +47,10 @@
 | 確認項目 | 結果 |
 |---|---|
 | `GET /api/v1/health/services`(HTTPS) | ✅ 全サービス healthy |
+
+> **注 (2026-09-18)**: 当時の `/health` は DB 到達性を確認せず常に 200 を返していた。
+> 現在は DB へ到達できない場合 503 を返す。詳細は [`health-checks.md`](./health-checks.md) を参照。
+
 | `POST /api/v1/auth/login`(HTTPS) | ✅ JWT 発行(roles: admin) |
 | `GET /api/v1/users`(Bearer・HTTPS) | ✅ シード済みユーザーを Neon から返却 |
 | `GET /api/v1/roles`(Bearer・HTTPS) | ✅ 7ロール返却 |

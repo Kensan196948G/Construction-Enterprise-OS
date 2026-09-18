@@ -9,9 +9,12 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_settings
 from .api import (
@@ -27,7 +30,7 @@ from .api import (
     organizations,
     internal,
 )
-from .models.base import engine
+from .models.base import engine, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +108,16 @@ def create_app() -> FastAPI:
     )
 
     # ヘルスチェック
+    # DB へ到達できない場合は 503 を返す。到達性を確認せずに常に 200 を返すと
+    # healthcheck が DB 断を検知できず、監視が機能しない。
     @app.get("/health")
-    async def health_check():
+    async def health_check(db: AsyncSession = Depends(get_db)):
+        try:
+            await db.execute(text("SELECT 1"))
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503, detail="database unavailable"
+            ) from exc
         return {"status": "healthy", "service": "auth-service"}
 
     # グローバルエラーハンドラ

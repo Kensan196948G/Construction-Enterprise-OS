@@ -104,7 +104,15 @@ unexpected keyword argument ...` となり **DB アクセスが全滅する**。
 - 正: `postgresql+asyncpg://<user>:<pw>@<host>/neondb?ssl=require`
 - 誤: `...?sslmode=require` / `...?channel_binding=require`
 
-**発覚しにくい理由**: `/health` と `/api/v1/health/services` は DB に触れず
-200 を返し、`POST /api/v1/auth/login` もバリデーション段階(422)までは通る。
-DB 断を検知するには **実在しないユーザーでログインを試行し 401 を確認**する
-(500 なら DB 接続失敗)。稼働確認はこの経路で行うこと。
+**発覚しにくい理由**(2026-09-18 更新): 以前は `/health` と
+`/api/v1/health/services` が DB に触れず 200 を返していたため、DB 断を
+ヘルスチェックで検知できなかった。現在は **全サービスの `/health` が
+`SELECT 1` を実行し、DB へ到達できなければ 503 を返す**ため、
+`/health` で DB 断を検知できる。`/api/v1/health/services` も auth 自身の
+状態を実 DB で判定する。
+
+なお DB への到達性とスキーマの有無は別である。テーブル未作成でも
+`SELECT 1` は成功するため、スキーマ適用状況は
+[`schema-bootstrap.md`](./schema-bootstrap.md) の手順で確認すること。
+接続文字列の誤り(上記 `sslmode` 等)は `/health` の 503 として現れる。
+
