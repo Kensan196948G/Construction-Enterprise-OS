@@ -19,3 +19,8 @@ def client():
 def test_erp_materials_requires_authentication(client):
     response = client.get("/api/v1/erp/materials")
     assert response.status_code in (401, 403)
+
+
+def test_erp_ledger_summary_requires_authentication(client):
+    response = client.get("/api/v1/erp/ledger/summary")
+    assert response.status_code in (401, 403)
