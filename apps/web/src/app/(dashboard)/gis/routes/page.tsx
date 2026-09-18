@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Route, Truck, MapPin, AlertTriangle } from "lucide-react";
 
 type RouteStatus = "通常" | "工事中" | "通行止め" | "迂回推奨";
@@ -119,7 +120,7 @@ export default function RoutesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/gis/routes?per_page=50");
+      const res = await fetch("/api/v1/gis/routes?per_page=50", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const data: Record<string, unknown>[] =

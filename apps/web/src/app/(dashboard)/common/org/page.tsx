@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Building, Users, Network, TreePine } from "lucide-react";
 
 type Department = {
@@ -131,7 +132,7 @@ export default function OrgPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/users/organizations?per_page=20");
+      const res = await fetch("/api/v1/users/organizations?per_page=20", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const data = json?.data?.items ?? json?.items ?? json?.data ?? [];

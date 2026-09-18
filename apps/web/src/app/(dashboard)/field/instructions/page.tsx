@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   ClipboardCheck,
   AlertCircle,
@@ -179,7 +180,7 @@ export default function FieldInstructionsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/v1/field/instructions").catch(() => null);
+    const res = await fetch("/api/v1/field/instructions", { headers: authHeaders() }).catch(() => null);
     if (res?.ok) {
       const json = await res.json().catch(() => null);
       if (Array.isArray(json?.data))

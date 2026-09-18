@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Camera,
   Image as ImageIcon,
@@ -204,7 +205,7 @@ export default function FieldPhotosPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/v1/field/photos").catch(() => null);
+    const res = await fetch("/api/v1/field/photos", { headers: authHeaders() }).catch(() => null);
     if (res?.ok) {
       const json = await res.json().catch(() => null);
       if (Array.isArray(json?.data)) setPhotos(json.data as SitePhoto[]);

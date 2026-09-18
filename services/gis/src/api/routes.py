@@ -1,6 +1,7 @@
 """輸送ルート管理 API — stub"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -81,6 +82,7 @@ _MOCK_ROUTES = [
 async def list_routes(
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
+    _user: TokenData = Depends(get_current_user),
 ):
     start = (page - 1) * per_page
     items = _MOCK_ROUTES[start : start + per_page]
