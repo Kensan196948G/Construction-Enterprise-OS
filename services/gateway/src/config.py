@@ -71,6 +71,10 @@ class Settings(BaseSettings):
 
     PUBLIC_PATHS: list[str] = [
         "^/health$",
+        # サービス稼働状況の集約。auth 側のエンドポイントは認証を要求しておらず、
+        # WebUI の共通基盤ページと E2E もトークン無しで参照している。
+        # (機密情報を含めない監視用エンドポイントという位置づけ)
+        "^/api/v1/health",
         "^/api/v1/auth/login$",
         "^/api/v1/auth/mfa/verify$",
         "^/api/v1/auth/refresh$",

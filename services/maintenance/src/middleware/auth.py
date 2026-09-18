@@ -34,7 +34,7 @@ def decode_token(token: str) -> TokenData | None:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET_KEY,
+            settings.jwt_public_key,
             algorithms=[settings.JWT_ALGORITHM],
         )
         return TokenData(
