@@ -35,18 +35,23 @@
 ### 2. JWT 検証鍵が未設定の場合、公開された開発用既定値へフォールバックする
 
 > **進捗 (2026-09-18)**: 全 22 サービスに **fail-fast を実装済み**。
-> `ENVIRONMENT` が development/test 以外で鍵が未設定(または開発用既定値)の場合、
+> `ENVIRONMENT` が development/test 以外で鍵が未設定(または開発用既定値・空白のみ)の場合、
 > 起動時に明示的に中止する。`docker-compose.yml` は `JWT_PUBLIC_KEY` を
 > 必須変数として配線済み(未設定なら compose 起動が中止する)。
 > なお gateway の既定値も空へ変更し、`jwt_public_key` プロパティ経由で解決するよう統一。
 >
+> **進捗 (2026-09-18)**: 稼働中の auth サービスに生成した鍵を設定し、再起動済み。
+> 鍵の値は `services/auth/.env`(`JWT_PUBLIC_KEY` / `JWT_PRIVATE_KEY`。リポジトリ外の
+> 秘密管理機構にも保管すること)。MVP 経由で health 200・未認証 401・誤パスワード 401 を
+> 確認済み。鍵を変更したため既存のログインセッションは失効しています。
+>
 > **残作業(運用側)**:
 >
-> 1. **稼働中サービスの鍵設定**(services/auth/.env 等に `JWT_PUBLIC_KEY` /
->    `JWT_PRIVATE_KEY` を設定。HS256 のため両方に同じ値を設定する)
-> 2. `ENVIRONMENT` の明示(未設定のままでは development 扱いになりフォールバックが許容される)
-> 3. 中長期: HS256 共有鍵から **RS256 / EdDSA + `kid` ローテーション**へ移行
-> 4. `require_permission` の `admin_bypass` 既定を、機密リソースでは `False` にする
+> 1. `ENVIRONMENT` の明示(未設定のままでは development 扱いになりフォールバックが許容される)
+> 2. 中長期: HS256 共有鍵から **RS256 / EdDSA + `kid` ローテーション**へ移行
+> 3. `require_permission` の `admin_bypass` 既定を、機密リソースでは `False` にする
+> 4. GitHub Secrets(`E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`)の設定と実パスワードの
+>    ローテーション(S-1 の残作業)
 
 **対応手順(実装済みの詳細)**:
 
