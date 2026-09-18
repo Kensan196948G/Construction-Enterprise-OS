@@ -28,6 +28,7 @@ def _make_document(org_id) -> Document:
         file_size=100,
         mime_type="application/pdf",
         storage_key="key",
+        tags=[],
         created_by=uuid4(),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
@@ -306,3 +307,29 @@ class TestInternalStorageFailure:
         assert storage.resolve() in target.parents
         assert target.exists()
 
+
+
+class TestStorageStatusIsObservable:
+    """保存状態が API レスポンスから確認できること(DB を見ないと分からない状態を避ける)。"""
+
+    def test_detail_response_exposes_storage_status(self, app, internal_api_key, storage):
+        document = _make_document(uuid4())
+        client, _ = _client_with_document(app, document)
+        headers = {
+            "X-Internal-API-Key": internal_api_key,
+            "X-Organization-ID": str(document.organization_id),
+        }
+
+        stored = client.post(
+            f"/api/v1/documents/internal/{document.id}/store-canonical", headers=headers
+        )
+        assert stored.status_code == 200
+
+        from src.schemas import DocumentResponse
+
+        payload = DocumentResponse.model_validate(document).model_dump()
+        assert payload["canonical_stored_at"] is not None
+        assert payload["canonical_storage_backend"] == "filesystem"
+        assert payload["canonical_path"] == document.canonical_path
+        assert payload["canonical_storage_error"] is None
+        assert payload["work_area_stored_at"] is None
