@@ -13,6 +13,10 @@ from src.schemas import DeviceResponse
 
 
 def test_DeviceResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = DeviceResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = Device()
     instance.metadata_ = {"regression": True}
 

@@ -236,6 +236,18 @@ def _contained_target(root: Path, relative_path: str) -> Path:
     return target
 
 
+def _limited_chunks(
+    document: Document, max_bytes: int, code: str, message: str
+) -> Iterator[bytes]:
+    """転送量の上限を超えたら中断する。保存領域の枯渇を防ぐ。"""
+    total = 0
+    for chunk in _iter_source_chunks(document):
+        total += len(chunk)
+        if total > max_bytes:
+            raise StorageTransferError(code, message, status_code=413)
+        yield chunk
+
+
 def _write_stream_atomically(target: Path, chunks: Iterator[bytes]) -> int:
     """一時ファイルへ書いてから os.replace で原子的に差し替える。"""
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
@@ -252,6 +264,7 @@ def _write_stream_atomically(target: Path, chunks: Iterator[bytes]) -> int:
             os.fsync(handle.fileno())
         os.chmod(temp_name, 0o640)
         os.replace(temp_name, target)
+        _fsync_directory(target.parent)
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(temp_name)
@@ -259,11 +272,42 @@ def _write_stream_atomically(target: Path, chunks: Iterator[bytes]) -> int:
     return written
 
 
+def _fsync_directory(directory: Path) -> None:
+    """ディレクトリエントリを永続化する。
+
+    ``os.replace`` の後にディレクトリを fsync しないと、電源断で
+    エントリが失われ「成功を返したのにファイルが無い」状態になり得る。
+    ディレクトリを開けない環境では致命的ではないため握りつぶす。
+    """
+    try:
+        directory_fd = os.open(directory, os.O_RDONLY)
+    except OSError:
+        logger.debug("Could not open directory for fsync: %s", directory)
+        return
+    try:
+        os.fsync(directory_fd)
+    except OSError:
+        logger.debug("Could not fsync directory: %s", directory)
+    finally:
+        os.close(directory_fd)
+
+
+def _filesystem_size_limit_bytes() -> int:
+    settings = get_settings()
+    return max(1, settings.CANONICAL_STORAGE_MAX_FILE_MB) * 1024 * 1024
+
+
 def _store_to_filesystem(document: Document, relative_path: str) -> StorageResult:
     root = _storage_root()
     target = _contained_target(root, relative_path)
+    chunks = _limited_chunks(
+        document,
+        _filesystem_size_limit_bytes(),
+        "FILE_TOO_LARGE",
+        "ファイルサイズが上限を超えています。",
+    )
     try:
-        size = _write_stream_atomically(target, _iter_source_chunks(document))
+        size = _write_stream_atomically(target, chunks)
     except StorageTransferError:
         raise
     except OSError as exc:
@@ -274,6 +318,7 @@ def _store_to_filesystem(document: Document, relative_path: str) -> StorageResul
     return StorageResult(
         backend=BACKEND_FILESYSTEM, relative_path=relative_path, size_bytes=size
     )
+
 
 
 def _onedrive_token(client: httpx.Client) -> str:
@@ -321,43 +366,62 @@ def _store_to_onedrive(document: Document, relative_path: str) -> StorageResult:
         _GRAPH_SIMPLE_UPLOAD_LIMIT_BYTES,
     )
 
-    content = bytearray()
-    for chunk in _iter_source_chunks(document):
-        content.extend(chunk)
-        if len(content) > max_bytes:
-            raise StorageTransferError(
-                "FILE_TOO_LARGE_FOR_ONEDRIVE",
-                "OneDriveの単純アップロード上限を超えています。分割アップロードは未対応です。",
-                status_code=413,
-            )
-
-    with httpx.Client(timeout=settings.ONEDRIVE_GRAPH_TIMEOUT_SECONDS) as client:
-        token = _onedrive_token(client)
-        url = (
-            "https://graph.microsoft.com/v1.0/drives/"
-            f"{quote(settings.ONEDRIVE_DRIVE_ID, safe='')}"
-            f"/root:/{quote(item_path, safe='/')}:/content"
+    # ファイル全体をメモリに載せない。一度一時ファイルへ落としてから
+    # ストリームとして送る(並行転送時のメモリ枯渇を防ぐ)。
+    file_descriptor, temp_name = tempfile.mkstemp(prefix=".onedrive-", suffix=".part")
+    size = 0
+    try:
+        chunks = _limited_chunks(
+            document,
+            max_bytes,
+            "FILE_TOO_LARGE_FOR_ONEDRIVE",
+            "OneDriveの単純アップロード上限を超えています。分割アップロードは未対応です。",
         )
-        try:
-            response = client.put(
-                url,
-                content=bytes(content),
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": document.mime_type
-                    or "application/octet-stream",
-                },
+        with os.fdopen(file_descriptor, "wb") as handle:
+            for chunk in chunks:
+                handle.write(chunk)
+                size += len(chunk)
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with httpx.Client(timeout=settings.ONEDRIVE_GRAPH_TIMEOUT_SECONDS) as client:
+            token = _onedrive_token(client)
+            url = (
+                "https://graph.microsoft.com/v1.0/drives/"
+                f"{quote(settings.ONEDRIVE_DRIVE_ID, safe='')}"
+                f"/root:/{quote(item_path, safe='/')}:/content"
             )
+            with open(temp_name, "rb") as payload:
+                response = client.put(
+                    url,
+                    content=payload,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": document.mime_type
+                        or "application/octet-stream",
+                    },
+                )
             response.raise_for_status()
-        except httpx.HTTPError as exc:
-            logger.exception("OneDrive upload failed: %s", item_path)
-            raise StorageTransferError(
-                "TRANSFER_FAILED", "OneDriveへのアップロードに失敗しました。"
-            ) from exc
+    except StorageTransferError:
+        raise
+    except httpx.HTTPError as exc:
+        logger.exception("OneDrive upload failed: %s", item_path)
+        raise StorageTransferError(
+            "TRANSFER_FAILED", "OneDriveへのアップロードに失敗しました。"
+        ) from exc
+    except OSError as exc:
+        logger.exception("OneDrive staging failed: %s", item_path)
+        raise StorageTransferError(
+            "TRANSFER_FAILED", "OneDriveアップロード用の一時ファイル作成に失敗しました。"
+        ) from exc
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(temp_name)
 
     return StorageResult(
-        backend=BACKEND_ONEDRIVE, relative_path=item_path, size_bytes=len(content)
+        backend=BACKEND_ONEDRIVE, relative_path=item_path, size_bytes=size
     )
+
 
 
 def _transfer(document: Document, relative_path: str) -> StorageResult:

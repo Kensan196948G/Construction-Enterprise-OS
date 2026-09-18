@@ -13,6 +13,10 @@ from src.schemas import TwinResponse
 
 
 def test_TwinResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = TwinResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = DigitalTwin()
     instance.metadata_ = {"regression": True}
 

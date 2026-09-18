@@ -49,8 +49,10 @@ CREATE TABLE IF NOT EXISTS document.documents (
 	work_area_receipt_no VARCHAR(30), 
 	work_area_stored_at TIMESTAMP WITH TIME ZONE, 
 	work_area_path VARCHAR(1000), 
-	storage_backend VARCHAR(20), 
-	storage_error TEXT, 
+	canonical_storage_backend VARCHAR(20), 
+	canonical_storage_error TEXT, 
+	work_area_storage_backend VARCHAR(20), 
+	work_area_storage_error TEXT, 
 	PRIMARY KEY (id)
 );
 

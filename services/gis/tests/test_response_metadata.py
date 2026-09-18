@@ -13,6 +13,10 @@ from src.schemas import HazardZoneResponse, InfrastructureResponse, SiteResponse
 
 
 def test_SiteResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = SiteResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = ConstructionSite()
     instance.metadata_ = {"regression": True}
 
@@ -30,6 +34,10 @@ def test_SiteResponse_reads_orm_metadata_attribute():
 
 
 def test_InfrastructureResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = InfrastructureResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = Infrastructure()
     instance.metadata_ = {"regression": True}
 
@@ -47,6 +55,10 @@ def test_InfrastructureResponse_reads_orm_metadata_attribute():
 
 
 def test_HazardZoneResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = HazardZoneResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = HazardZone()
     instance.metadata_ = {"regression": True}
 

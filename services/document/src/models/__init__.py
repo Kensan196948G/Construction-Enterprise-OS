@@ -94,8 +94,16 @@ class Document(Base):
         DateTime(timezone=True), nullable=True
     )
     work_area_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    storage_backend: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    storage_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 保存結果は操作ごとに分離する。共有カラムだと後の成功が前の失敗を
+    # 上書きしてしまい、失敗の記録が失われる。
+    canonical_storage_backend: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    canonical_storage_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    work_area_storage_backend: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    work_area_storage_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     versions: Mapped[list["DocumentVersion"]] = relationship(
         "DocumentVersion",

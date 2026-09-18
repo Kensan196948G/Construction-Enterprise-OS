@@ -13,6 +13,10 @@ from src.schemas import DocumentResponse
 
 
 def test_DocumentResponse_reads_orm_metadata_attribute():
+    # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
+    field = DocumentResponse.model_fields["metadata"]
+    assert str(field.validation_alias) == "metadata_"
+
     instance = Document()
     instance.metadata_ = {"regression": True}
 

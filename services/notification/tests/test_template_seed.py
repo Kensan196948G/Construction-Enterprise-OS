@@ -27,3 +27,22 @@ def test_default_templates_seeded_in_docker_environment(monkeypatch):
     get_settings.cache_clear()
 
     assert calls == [True], "ENVIRONMENT=docker でもシードが呼ばれること"
+
+
+def test_startup_fails_when_templates_cannot_be_seeded(monkeypatch):
+    """シードできないまま healthy を返し続けないこと (fail-fast)。"""
+    import pytest
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("ENVIRONMENT", "docker")
+    monkeypatch.setattr("src.main._TEMPLATE_SEED_RETRY_SECONDS", 0)
+
+    async def _always_fail(db) -> None:
+        raise RuntimeError("db unavailable")
+
+    with patch("src.main.ensure_default_templates", side_effect=_always_fail):
+        app = create_app()
+        with pytest.raises(RuntimeError):
+            with TestClient(app):
+                pass
+    get_settings.cache_clear()

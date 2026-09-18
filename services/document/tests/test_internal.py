@@ -155,14 +155,14 @@ class TestInternalSuccess:
         body = response.json()
         assert body["success"] is True
         assert document.canonical_stored_at is not None
-        assert document.storage_backend == "filesystem"
+        assert document.canonical_storage_backend == "filesystem"
         assert body["data"]["stored"] is True
 
         # 実体ファイルが本当に保存されていること
         stored_file = storage / document.canonical_path
         assert stored_file.exists()
         assert stored_file.read_bytes() == b"hello world"
-        assert document.storage_error is None
+        assert document.canonical_storage_error is None
         mock_db.flush.assert_awaited()
 
     def test_store_work_area_success(self, app, internal_api_key, storage):
@@ -229,7 +229,7 @@ class TestInternalStorageFailure:
         assert response.json()["detail"]["code"] == "STORAGE_NOT_CONFIGURED"
         # 「保存した」と記録していないこと
         assert document.canonical_stored_at is None
-        assert document.storage_error is not None
+        assert document.canonical_storage_error is not None
         # 失敗記録がロールバックされないよう明示的にコミットしていること
         mock_db.commit.assert_awaited()
 
@@ -251,8 +251,43 @@ class TestInternalStorageFailure:
         assert response.status_code == 502
         assert response.json()["detail"]["code"] == "SOURCE_FILE_NOT_FOUND"
         assert document.work_area_stored_at is None
-        assert document.storage_error is not None
+        assert document.work_area_storage_error is not None
+        # 作業領域の失敗が正本の記録を汚さないこと(操作別カラム)
+        assert document.canonical_storage_error is None
         mock_db.commit.assert_awaited()
+
+    def test_work_area_success_does_not_clear_canonical_failure(
+        self, app, internal_api_key, storage, monkeypatch
+    ):
+        """正本保存の失敗記録が、後続の作業領域保存の成功で消えないこと。"""
+        document = _make_document(uuid4())
+        client, _ = _client_with_document(app, document)
+        headers = {
+            "X-Internal-API-Key": internal_api_key,
+            "X-Organization-ID": str(document.organization_id),
+        }
+
+        monkeypatch.setattr(storage_service, "get_file_stream", lambda key: None)
+        first = client.post(
+            f"/api/v1/documents/internal/{document.id}/store-canonical",
+            headers=headers,
+        )
+        assert first.status_code == 502
+        assert document.canonical_storage_error is not None
+
+        monkeypatch.setattr(
+            storage_service, "get_file_stream", lambda key: io.BytesIO(b"hello world")
+        )
+        second = client.post(
+            f"/api/v1/documents/internal/{document.id}/store-work-area",
+            headers=headers,
+            data={"receipt_no": "R-2026-0003"},
+        )
+        assert second.status_code == 200
+
+        assert document.canonical_storage_error is not None
+        assert document.work_area_storage_error is None
+        assert document.work_area_storage_backend == "filesystem"
 
     def test_receipt_number_cannot_escape_storage_root(self, app, internal_api_key, storage):
         document = _make_document(uuid4())

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# storage_error カラム(Text)へ入れる最大長。異常に長い例外文字列での肥大を防ぐ。
+# storage_error 系カラム(Text)へ入れる最大長。異常に長い例外文字列での肥大を防ぐ。
 _MAX_STORAGE_ERROR_LENGTH = 1000
 
 
@@ -80,13 +80,16 @@ async def _get_authorized_document(
     return document
 
 
-async def _persist_storage_failure(db: AsyncSession, document: Document, exc) -> None:
+async def _persist_storage_failure(
+    db: AsyncSession, document: Document, field: str, exc
+) -> None:
     """転送失敗を DB へ記録してから 5xx を返すための確定処理。
 
     例外を送出すると get_db 依存がロールバックするため、ここで明示的に
-    コミットして失敗記録を残す。
+    コミットして失敗記録を残す。操作ごとのカラムに記録するので、後続の
+    別操作が成功しても失敗の記録は失われない。
     """
-    document.storage_error = f"{exc.code}: {exc.message}"[:_MAX_STORAGE_ERROR_LENGTH]
+    setattr(document, field, f"{exc.code}: {exc.message}"[:_MAX_STORAGE_ERROR_LENGTH])
     await db.commit()
 
 
@@ -106,13 +109,13 @@ async def store_canonical(
         logger.warning(
             "Canonical storage failed: document=%s code=%s", document_id, exc.code
         )
-        await _persist_storage_failure(db, document, exc)
+        await _persist_storage_failure(db, document, "canonical_storage_error", exc)
         raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
 
     document.canonical_stored_at = datetime.now(timezone.utc)
     document.canonical_path = result.relative_path
-    document.storage_backend = result.backend
-    document.storage_error = None
+    document.canonical_storage_backend = result.backend
+    document.canonical_storage_error = None
     await db.flush()
     return _api_response(
         data={
@@ -142,14 +145,14 @@ async def store_work_area(
         logger.warning(
             "Work area storage failed: document=%s code=%s", document_id, exc.code
         )
-        await _persist_storage_failure(db, document, exc)
+        await _persist_storage_failure(db, document, "work_area_storage_error", exc)
         raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
 
     document.work_area_receipt_no = receipt_no
     document.work_area_stored_at = datetime.now(timezone.utc)
     document.work_area_path = result.relative_path
-    document.storage_backend = result.backend
-    document.storage_error = None
+    document.work_area_storage_backend = result.backend
+    document.work_area_storage_error = None
     await db.flush()
     return _api_response(
         data={
