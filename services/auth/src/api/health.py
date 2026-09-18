@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 import asyncio
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter
 import httpx
@@ -38,16 +38,22 @@ async def get_services_health() -> ServicesHealthResponse:
                 timeout=settings.HEALTH_TIMEOUT_SECONDS
             ) as client:
                 response = await client.get(url)
-            body = (
+            payload = (
                 response.json()
                 if response.headers.get("content-type", "").startswith(
                     "application/json"
                 )
                 else {}
             )
+            body = payload if isinstance(payload, dict) else {}
+            service_status: Literal["healthy", "degraded", "unhealthy"]
             if response.is_success:
-                service_status = body.get("status")
-                if service_status not in {"healthy", "degraded", "unhealthy"}:
+                raw_status = body.get("status")
+                if raw_status in ("healthy", "degraded", "unhealthy"):
+                    service_status = cast(
+                        Literal["healthy", "degraded", "unhealthy"], raw_status
+                    )
+                else:
                     service_status = "healthy"
             else:
                 service_status = "unhealthy"

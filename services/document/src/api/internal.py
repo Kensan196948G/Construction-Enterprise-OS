@@ -90,7 +90,7 @@ async def store_canonical(
 )
 async def store_work_area(
     document_id: UUID,
-    receipt_no: str = Form(...),
+    receipt_no: str = Form(..., max_length=30),
     x_organization_id: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ):

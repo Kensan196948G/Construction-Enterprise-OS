@@ -48,9 +48,10 @@ alembic downgrade -1
 
 ### workflow006 / workflow009 / workflow010 のRollback時の注意
 
-これら3件のRollbackは、`upgrade`後に追加された状態を持つ運用データが存在する場合、
-データを無断で削除・統合せず**Rollbackを中断**する設計です。中断時は`RuntimeError`で
-該当データの件数・内容を明示します。
+`workflow006`と`workflow010`のRollbackは、`upgrade`後に追加された状態を持つ運用データが
+存在する場合、データを無断で削除・統合せず**Rollbackを中断**する設計です。中断時は
+`RuntimeError`で該当データの件数・内容を明示します。`workflow009`は`NULL`の`receipt_no`を
+既存の採番方式と衝突しない値で自動補完してから`NOT NULL`制約を復元し、Rollbackを継続します。
 
 - **workflow006**（並列承認roleの許可）: Rollback前に`workflow.workflow_approvals`を
   `(instance_id, step_order)`で集計し、複数行(=複数role)が存在する組み合わせがないか

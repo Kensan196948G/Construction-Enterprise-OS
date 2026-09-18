@@ -35,12 +35,18 @@ def _deadline_value(instance) -> str:
     return due_date.isoformat() if due_date is not None else ""
 
 
-async def _get_case(db: AsyncSession, receipt_no: str, current_user: TokenData):
+async def _get_case(
+    db: AsyncSession,
+    receipt_no: str,
+    current_user: TokenData,
+    *,
+    allow_internal_id: bool = False,
+):
     instance = await workflow_service.get_instance_by_receipt(
         db, receipt_no, _organization_id(current_user)
     )
     # 下書きは受付番号未発行のため、提出操作だけ内部IDでも受け付ける。
-    if instance is None:
+    if instance is None and allow_internal_id:
         try:
             instance = await workflow_service.get_instance_with_chain(
                 db, UUID(receipt_no), _organization_id(current_user)
@@ -141,7 +147,7 @@ async def submit_case(
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    instance = await _get_case(db, receipt_no, current_user)
+    instance = await _get_case(db, receipt_no, current_user, allow_internal_id=True)
     try:
         instance = await workflow_service.submit_workflow(
             db, instance.id, UUID(current_user.sub)
