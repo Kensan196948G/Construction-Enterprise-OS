@@ -66,4 +66,23 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    # 開発用既定鍵での起動を防止する。ENVIRONMENT が development/test の場合は
+    # ローカル開発を妨げないようフォールバックを許容する。
+    if settings.ENVIRONMENT not in ("development", "test"):
+        insecure = [
+            name
+            for name, key in (
+                ("JWT_PRIVATE_KEY", settings.jwt_private_key),
+                ("JWT_PUBLIC_KEY", settings.jwt_public_key),
+            )
+            if not key or "dev-only" in key
+        ]
+        if insecure:
+            raise RuntimeError(
+                f"{', '.join(insecure)} が未設定のため起動を中止します"
+                f" (ENVIRONMENT={settings.ENVIRONMENT})。"
+                "環境変数で鍵を設定してください。"
+            )
+    return settings
+

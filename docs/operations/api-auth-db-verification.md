@@ -20,7 +20,7 @@
 
 ## ログイン資格情報(シード)
 
-- メール: `admin@mirai-dx-platform.com`
+- メール: 環境変数 `ADMIN_EMAIL` で管理（2026-09-18 に平文記載を廃止）
 - パスワード: 環境変数で管理（2026-09-18 に平文記載を廃止）
 
 ## 発見・修正した問題
@@ -28,7 +28,7 @@
 1. **シード管理ユーザーのメールアドレスが `.local` ドメイン**のため、
    `EmailStr` 検証(Pydantic)でログイン API が 422 を返す不具合を発見。
    - 修正: `services/auth/src/seed.py` の `ADMIN_EMAIL` を
-     `admin@mirai-dx-platform.com` へ変更、既存 DB のレコードも UPDATE 済み
+     環境変数 `ADMIN_EMAIL` の値へ変更し、既存 DB のレコードも UPDATE 済み（現行値は本書に記載しない）
    - auth サービス pytest 30件 PASS で回帰なし
 
 ## 残課題(次フェーズ)

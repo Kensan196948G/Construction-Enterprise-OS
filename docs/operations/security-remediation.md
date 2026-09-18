@@ -7,7 +7,7 @@
 
 ### 1. 稼働中の admin 資格情報が平文でコミットされている
 
-> **進捗 (2026-09-18)**: リポジトリ内の平文記載は**全4箇所から削除済み**（`git grep` で 0 件を確認）。
+> **進捗 (2026-09-18)**: リポジトリ内の平文記載（メール/パスワード）を削除し、環境変数参照へ変更済み（`git grep` で 0 件を確認）。
 > `seed.py` は環境変数必須化、`e2e/api.spec.ts` は未設定時に該当テストをスキップ、
 > `e2e.yml` は GitHub Secrets を参照するよう変更済み。
 > **残作業: 実際のパスワードのローテーション（運用操作）と GitHub Secrets
@@ -34,37 +34,43 @@
 
 ### 2. JWT 検証鍵が未設定の場合、公開された開発用既定値へフォールバックする
 
-**所在**: 全 22 サービスの `src/config.py`(例: `services/auth/src/config.py:52-64`)と
-`services/*/src/middleware/auth.py`。既定値は `.env.example` のプレースホルダと同一文字列。
-`docker-compose.yml` はどのサービスにも `JWT_*` を注入していない。
+> **進捗 (2026-09-18)**: 全 22 サービスに **fail-fast を実装済み**。
+> `ENVIRONMENT` が development/test 以外で鍵が未設定(または開発用既定値)の場合、
+> 起動時に明示的に中止する。`docker-compose.yml` は `JWT_PUBLIC_KEY` を
+> 必須変数として配線済み(未設定なら compose 起動が中止する)。
+> なお gateway の既定値も空へ変更し、`jwt_public_key` プロパティ経由で解決するよう統一。
+>
+> **残作業(運用側)**:
+>
+> 1. **稼働中サービスの鍵設定**(services/auth/.env 等に `JWT_PUBLIC_KEY` /
+>    `JWT_PRIVATE_KEY` を設定。HS256 のため両方に同じ値を設定する)
+> 2. `ENVIRONMENT` の明示(未設定のままでは development 扱いになりフォールバックが許容される)
+> 3. 中長期: HS256 共有鍵から **RS256 / EdDSA + `kid` ローテーション**へ移行
+> 4. `require_permission` の `admin_bypass` 既定を、機密リソースでは `False` にする
 
-**影響**: 鍵を設定しないまま起動すると、第三者が既知の値で署名した JWT を受け入れる。
+**対応手順(実装済みの詳細)**:
 
-**対応手順**:
+1. ~~ENVIRONMENT != development で鍵が空なら起動を拒否~~ → 実装済み(全22サービスの `get_settings()`)
+2. ~~compose への配線~~ → 実装済み(`x-db-env` で `JWT_PUBLIC_KEY` を必須変数化)
+3. ~~鍵名の二重管理~~ → 両対応済み(2026-09-18)
+4. RS256 化は未着手(承認済み・次の作業)
 
-1. `ENVIRONMENT != development` のとき `JWT_PUBLIC_KEY` / `JWT_SECRET_KEY` が空なら**起動を拒否**する(fail-fast)を全サービスへ追加
-2. `docker-compose.yml` の `x-db-env` 相当に `JWT_PUBLIC_KEY` を配線し、Secrets から注入する
-3. 鍵名の二重管理を解消する(`JWT_PUBLIC_KEY` に統一。※ `workflow` / `maintenance` / `security` / `safety` / `vision` の 5 サービスは両対応済み — 2026-09-18)
-4. 中長期: HS256 共有鍵から **RS256 / EdDSA + `kid` ローテーション**へ移行
-5. `require_permission` の `admin_bypass` 既定を、機密リソースでは `False` にする
+**ロールバック**: revert 可能。fail-fast により鍵未注入の非開発環境は起動しなくなる(意図した挙動)。
 
-**ロールバック**: revert 可能。ただし fail-fast 化は鍵未注入の環境でサービスが起動しなくなる。
+### 3. 稼働ツリーに生きた DB 資格情報ファイルが存在した
 
-### 3. 稼働ツリーに生きた DB 資格情報ファイルが存在する
+> **進捗 (2026-09-18)**: `services/auth/.env.bak-20260829`(**Neon オーナーロール**の
+> 接続文字列を含むバックアップ)は**削除済み**。稼働中の `services/auth/.env`
+> はローカル PostgreSQL の専用ロール(`construction_os_app`)を参照しており、
+> サービス稼働に必要なため保持している。
 
-**所在**(git 未追跡・`.gitignore` 済み):
+**残作業(運用側)**:
 
-- `services/auth/.env`(ローカル PostgreSQL のアプリ用ロール)
-- `services/auth/.env.bak-20260829`(**Neon クラウド DB のオーナーロール**接続文字列)
+1. **Neon オーナーパスワードのローテーション**(バックアップファイル経由で共有された可能性を考慮)
+2. 本番(Neon)接続が必要になった場合の**最小権限の専用ロール**分離(owner を使わない)
+3. git 履歴への混入有無は未確認(`git log --diff-filter=A` による確認を推奨)
 
-**対応手順**:
-
-1. `.env.bak-20260829` を削除する
-2. Neon のオーナーパスワードをローテーションする(バックアップファイル経由で共有された可能性を考慮)
-3. 本番は**最小権限の専用ロール**へ分離する(owner ロールを使わない)
-4. git 履歴への混入有無は未確認(`git log --diff-filter=A` による確認を推奨)
-
-**ロールバック**: ファイル削除は可逆(内容は`.env`とほぼ同じ)。ローテーションは不可逆。
+**ロールバック**: ファイル削除は不可逆(内容は上記の通り Neon オーナー接続文字列)。ローテーションも不可逆。
 
 ### 4. auth サービスの systemd ユニットが旧パスを指している(運用障害)
 

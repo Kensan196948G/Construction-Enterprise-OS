@@ -15,6 +15,7 @@ from src.main import create_app
 def test_bucket_is_initialised_in_docker_environment(monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setenv("ENVIRONMENT", "docker")
+    monkeypatch.setenv("JWT_PUBLIC_KEY", "test-only-key")
     called: list[bool] = []
 
     def _record() -> bool:

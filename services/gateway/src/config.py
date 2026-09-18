@@ -25,7 +25,7 @@ class Settings(BaseSettings):
         "http://0.0.0.0:3101",
     ]
 
-    JWT_PUBLIC_KEY: str = "dev-only-do-not-use-in-production"
+    JWT_PUBLIC_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
 
     RATE_LIMIT_PER_MINUTE: int = 100
@@ -84,7 +84,25 @@ class Settings(BaseSettings):
         "^/redoc$",
     ]
 
+    @property
+    def jwt_public_key(self) -> str:
+        if self.JWT_PUBLIC_KEY:
+            return self.JWT_PUBLIC_KEY
+        return "dev-only-do-not-use-in-production"
+
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    # 開発用既定鍵での起動を防止する。ENVIRONMENT が development/test の場合は
+    # ローカル開発を妨げないようフォールバックを許容する。
+    if settings.ENVIRONMENT not in ("development", "test"):
+        resolved = settings.jwt_public_key
+        if not resolved or "dev-only" in resolved:
+            raise RuntimeError(
+                f"JWT_PUBLIC_KEY が未設定のため起動を中止します"
+                f" (ENVIRONMENT={settings.ENVIRONMENT})。"
+                "環境変数 JWT_PUBLIC_KEY を設定してください。"
+            )
+    return settings
+
