@@ -54,7 +54,6 @@ class Settings(BaseSettings):
         # Analytics / Platform / Integrations
         "^/api/v1/analytics": "http://localhost:8014",
         "^/api/v1/integrations": "http://localhost:8012",
-        "^/api/v1/platform": "http://localhost:8012",
         # Business — ERP / Construction / Safety / Partner / Maintenance
         "^/api/v1/erp": "http://localhost:8020",
         "^/api/v1/construction": "http://localhost:8016",
@@ -74,7 +73,9 @@ class Settings(BaseSettings):
         # サービス稼働状況の集約。auth 側のエンドポイントは認証を要求しておらず、
         # WebUI の共通基盤ページと E2E もトークン無しで参照している。
         # (機密情報を含めない監視用エンドポイントという位置づけ)
-        "^/api/v1/health",
+        # パス境界を明示する(re.match のため "^/api/v1/health" だけだと
+        # "/api/v1/healthcheck" のような別パスまで公開扱いになる)
+        "^/api/v1/health(?:/|$)",
         "^/api/v1/auth/login$",
         "^/api/v1/auth/mfa/verify$",
         "^/api/v1/auth/refresh$",
