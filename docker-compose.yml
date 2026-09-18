@@ -203,7 +203,8 @@ services:
       <<: *db-env
       GATEWAY_PORT: 9000
       UPSTREAM_SERVICES: >-
-        {"^/api/v1/auth": "http://auth:8000",
+        {"^/api/v1/health": "http://auth:8000",
+         "^/api/v1/auth": "http://auth:8000",
          "^/api/v1/users": "http://auth:8000",
          "^/api/v1/roles": "http://auth:8000",
          "^/api/v1/permissions": "http://auth:8000",
@@ -217,6 +218,8 @@ services:
          "^/api/v1/iot": "http://iot:8000",
          "^/api/v1/ai": "http://ai:8000",
          "^/api/v1/construction": "http://construction:8000",
+         "^/api/v1/analytics": "http://analytics:8000",
+         "^/api/v1/integrations": "http://platform:8000",
          "^/api/v1/search": "http://analytics:8000",
          "^/api/v1/erp": "http://erp:8000",
          "^/api/v1/safety": "http://safety:8000",
