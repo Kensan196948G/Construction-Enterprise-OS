@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Globe,
   Layers,
@@ -213,7 +214,7 @@ export default function DigitalTwinPage() {
         fetch("/api/v1/autonomous/digital-twins?per_page=50").then((r) =>
           r.json(),
         ),
-        fetch("/api/v1/autonomous/twin-sensors?per_page=50").then((r) =>
+        fetch("/api/v1/autonomous/twin-sensors?per_page=50", { headers: authHeaders() }).then((r) =>
           r.json(),
         ),
       ]);

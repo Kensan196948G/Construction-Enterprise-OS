@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authHeaders } from "@/lib/api-client";
 import {
   Bot,
   Zap,
@@ -137,7 +138,7 @@ export default function RpaPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/autonomous/rpa-tasks?per_page=50");
+      const res = await fetch("/api/v1/autonomous/rpa-tasks?per_page=50", { headers: authHeaders() });
       const json = await res.json();
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];

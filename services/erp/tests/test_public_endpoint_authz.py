@@ -16,16 +16,6 @@ def client():
     return TestClient(create_app())
 
 
-def test_users_organizations_requires_authentication(client):
-    response = client.get("/api/v1/users/organizations")
-    assert response.status_code in (401, 403)
-
-
-def test_auth_ad_groups_requires_authentication(client):
-    response = client.get("/api/v1/auth/ad/groups")
-    assert response.status_code in (401, 403)
-
-
-def test_auth_entra_policies_requires_authentication(client):
-    response = client.get("/api/v1/auth/entra/policies")
+def test_erp_materials_requires_authentication(client):
+    response = client.get("/api/v1/erp/materials")
     assert response.status_code in (401, 403)

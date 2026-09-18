@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Plane, Camera, Map, Wind, Clock, Plus } from "lucide-react";
 
 interface FlightRecord {
@@ -105,7 +106,7 @@ export default function DronePage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/autonomous/drone-flights?per_page=50");
+      const res = await fetch("/api/v1/autonomous/drone-flights?per_page=50", { headers: authHeaders() });
       const json = await res.json();
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];

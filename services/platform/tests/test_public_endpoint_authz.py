@@ -16,16 +16,11 @@ def client():
     return TestClient(create_app())
 
 
-def test_users_organizations_requires_authentication(client):
-    response = client.get("/api/v1/users/organizations")
+def test_integrations_requires_authentication(client):
+    response = client.get("/api/v1/integrations")
     assert response.status_code in (401, 403)
 
 
-def test_auth_ad_groups_requires_authentication(client):
-    response = client.get("/api/v1/auth/ad/groups")
-    assert response.status_code in (401, 403)
-
-
-def test_auth_entra_policies_requires_authentication(client):
-    response = client.get("/api/v1/auth/entra/policies")
+def test_integrations_logs_requires_authentication(client):
+    response = client.get("/api/v1/integrations/logs")
     assert response.status_code in (401, 403)

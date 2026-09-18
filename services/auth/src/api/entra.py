@@ -1,6 +1,8 @@
 """Entra ID (Azure AD) 統合エンドポイント"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth_middleware import get_current_user
+from ..schemas import TokenData
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -68,6 +70,8 @@ MOCK_POLICIES = [
 async def list_entra_policies(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     start = (page - 1) * per_page
     return ConditionalPolicyListResponse(

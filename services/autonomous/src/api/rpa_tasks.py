@@ -1,6 +1,7 @@
 """RPAタスク管理エンドポイント"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from ..schemas import APIResponse, RpaTaskListResponse, RpaTaskResponse
 
 router = APIRouter()
@@ -80,6 +81,8 @@ async def list_rpa_tasks(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     is_active: bool | None = Query(None),
+
+    _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_RPA_TASKS
     if is_active is not None:

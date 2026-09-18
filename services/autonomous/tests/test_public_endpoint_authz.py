@@ -16,31 +16,31 @@ def client():
     return TestClient(create_app())
 
 
-def test_field_photos_requires_authentication(client):
-    response = client.get("/api/v1/field/photos")
+def test_autonomous_activities_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/activities")
     assert response.status_code in (401, 403)
 
 
-def test_field_instructions_requires_authentication(client):
-    response = client.get("/api/v1/field/instructions")
+def test_autonomous_drone_flights_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/drone-flights")
     assert response.status_code in (401, 403)
 
 
-def test_field_progress_zones_requires_authentication(client):
-    response = client.get("/api/v1/field/progress/zones")
+def test_autonomous_error_logs_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/error-logs")
     assert response.status_code in (401, 403)
 
 
-def test_field_progress_reports_today_requires_authentication(client):
-    response = client.get("/api/v1/field/progress/reports/today")
+def test_autonomous_machines_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/machines")
     assert response.status_code in (401, 403)
 
 
-def test_field_quality_checks_requires_authentication(client):
-    response = client.get("/api/v1/field/quality/checks")
+def test_autonomous_rpa_tasks_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/rpa-tasks")
     assert response.status_code in (401, 403)
 
 
-def test_field_quality_corrective_requires_authentication(client):
-    response = client.get("/api/v1/field/quality/corrective")
+def test_autonomous_twin_sensors_requires_authentication(client):
+    response = client.get("/api/v1/autonomous/twin-sensors")
     assert response.status_code in (401, 403)

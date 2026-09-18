@@ -118,12 +118,16 @@ _MOCK_TODAY_REPORTS = [
 
 
 @router.get("/progress/zones")
-async def get_progress_zones():
+async def get_progress_zones(
+    _user: TokenData = Depends(get_current_user),
+):
     return {"data": [z.model_dump() for z in _MOCK_ZONES]}
 
 
 @router.get("/progress/reports/today")
-async def get_today_reports():
+async def get_today_reports(
+    _user: TokenData = Depends(get_current_user),
+):
     return {"data": [r.model_dump() for r in _MOCK_TODAY_REPORTS]}
 
 

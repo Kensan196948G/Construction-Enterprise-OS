@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Layers, Clock, CheckSquare } from "lucide-react";
 
 type WorkType = {
@@ -153,7 +154,7 @@ export default function WorkTypesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/construction/work-types?per_page=50");
+      const res = await fetch("/api/v1/construction/work-types?per_page=50", { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const data = json?.data?.items ?? json?.items ?? json?.data ?? [];

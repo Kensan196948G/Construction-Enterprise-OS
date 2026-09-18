@@ -1,6 +1,7 @@
 """工種マスタ API — 建設工事で使用する工種・作業種別の一覧を提供する。"""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..middleware.auth import TokenData, get_current_user
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -103,6 +104,8 @@ async def list_work_types(
     per_page: int = Query(20, ge=1, le=100),
     category: str | None = Query(None, description="工種カテゴリでフィルタ"),
     is_active: bool | None = Query(None, description="有効/無効フィルタ"),
+
+    _user: TokenData = Depends(get_current_user),
 ) -> WorkTypeListResponse:
     """工種マスタ一覧を返す。"""
     items: list[WorkTypeResponse] = MOCK_WORK_TYPES

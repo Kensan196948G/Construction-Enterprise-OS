@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Package, Boxes, DollarSign, RefreshCw } from "lucide-react";
 
 type Material = {
@@ -166,9 +167,9 @@ export default function MaterialsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/construction/materials?per_page=50");
+      const res = await fetch("/api/v1/construction/materials?per_page=50", { headers: authHeaders() });
       if (!res.ok) {
-        const res2 = await fetch("/api/v1/erp/materials?per_page=50");
+        const res2 = await fetch("/api/v1/erp/materials?per_page=50", { headers: authHeaders() });
         if (res2.ok) {
           const json = await res2.json();
           const data = json?.data?.items ?? json?.items ?? json?.data ?? [];

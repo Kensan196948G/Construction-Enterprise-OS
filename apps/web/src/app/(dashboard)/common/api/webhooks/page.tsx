@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { authHeaders } from "@/lib/api-client";
 import { Webhook, Bell, CheckCircle, Activity } from "lucide-react";
 
 type WebhookStatus = "active" | "inactive" | "error";
@@ -105,7 +106,7 @@ export default function WebhooksPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/notification/webhooks?per_page=50");
+      const res = await fetch("/api/v1/notification/webhooks?per_page=50", { headers: authHeaders() });
       if (!res.ok) throw new Error("fetch failed");
       const json = await res.json();
       const items: Record<string, unknown>[] =
