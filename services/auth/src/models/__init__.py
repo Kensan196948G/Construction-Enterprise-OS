@@ -52,6 +52,11 @@ class Organization(Base):
     # リレーション
     parent = relationship("Organization", remote_side=[id], backref="children")
     users: Mapped[list["User"]] = relationship("User", back_populates="organization")
+    # relationship が無いと Organization と ApiClient を同一 flush で
+    # 追加したときに挿入順が保証されず FK 違反になる。
+    api_clients: Mapped[list["ApiClient"]] = relationship(
+        "ApiClient", back_populates="organization"
+    )
 
 
 class User(Base):
@@ -211,6 +216,10 @@ class ApiClient(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    organization: Mapped["Organization"] = relationship(
+        "Organization", back_populates="api_clients"
     )
 
 
