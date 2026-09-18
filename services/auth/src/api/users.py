@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..middleware.auth_middleware import get_current_user, require_permission
+from ..middleware.auth_middleware import require_permission
 from ..models.base import get_db
 from ..schemas import (
     APIResponse,
@@ -117,7 +117,10 @@ async def get_user(
     request: Request,
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user),
+    # 詳細取得だけ get_current_user のままだと、認証さえ通れば
+    # users:read を持たない利用者でも任意のユーザー情報を読めてしまう。
+    # 兄弟エンドポイント(list/create/update/delete)と同じ権限チェックに揃える。
+    current_user: TokenData = Depends(require_permission("users", "read")),
 ):
     """ユーザー詳細取得"""
     user = await get_user_by_id(db, user_id)
