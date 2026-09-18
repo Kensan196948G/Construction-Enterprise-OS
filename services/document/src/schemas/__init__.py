@@ -80,6 +80,17 @@ class DocumentResponse(BaseModel):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
+    # 正本・作業領域への実体保存の状態。workflow からの内部要求で更新され、
+    # API から確認できないと「保存済みか」を DB を見ないと判断できない。
+    canonical_stored_at: datetime | None = None
+    canonical_path: str | None = None
+    canonical_storage_backend: str | None = None
+    canonical_storage_error: str | None = None
+    work_area_receipt_no: str | None = None
+    work_area_stored_at: datetime | None = None
+    work_area_path: str | None = None
+    work_area_storage_backend: str | None = None
+    work_area_storage_error: str | None = None
 
     model_config = {"from_attributes": True}
 
