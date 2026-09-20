@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from src.main import create_app
 from src.middleware.auth_middleware import get_current_user
+from src.api.auth import _create_mfa_session_token
 from src.models.base import get_db
 from src.schemas import TokenData
 from src.services.auth_service import hash_backup_code
@@ -137,7 +138,63 @@ def test_mfa_setup_persists_hashed_backup_codes():
     assert res.status_code == 200
     plain_codes = res.json()["data"]["backup_codes"]
     assert len(plain_codes) == 10
+    assert all(len(code) == 16 for code in plain_codes)
     assert user.mfa_backup_codes is not None
     assert len(user.mfa_backup_codes) == 10
     assert all(code not in user.mfa_backup_codes for code in plain_codes)
     assert user.mfa_backup_codes == [hash_backup_code(c) for c in plain_codes]
+
+
+def _session_token(user):
+    return _create_mfa_session_token(str(user.id), user.email)
+
+
+def test_mfa_verify_refuses_when_not_enabled():
+    user = FakeUser(mfa_secret=SECRET, mfa_enabled=False)
+    client, _ = _client(user)
+
+    res = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": "123456"},
+    )
+
+    assert res.status_code == 400
+    assert res.json()["detail"]["code"] == "MFA_NOT_ENABLED"
+
+
+def test_mfa_verify_consumes_backup_code():
+    code = "a1b2c3d4e5f60708"
+    user = FakeUser(
+        mfa_secret=SECRET, mfa_enabled=True, mfa_backup_codes=[hash_backup_code(code)]
+    )
+    client, _ = _client(user)
+
+    res = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": code},
+    )
+
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+    assert user.mfa_backup_codes == []
+
+
+def test_mfa_verify_rejects_replayed_backup_code():
+    code = "0011223344556677"
+    user = FakeUser(
+        mfa_secret=SECRET, mfa_enabled=True, mfa_backup_codes=[hash_backup_code(code)]
+    )
+    client, _ = _client(user)
+
+    first = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": code},
+    )
+    second = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": code},
+    )
+
+    assert first.json()["success"] is True
+    assert second.status_code == 200
+    assert second.json()["success"] is False

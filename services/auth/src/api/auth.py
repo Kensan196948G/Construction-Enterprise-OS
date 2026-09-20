@@ -27,6 +27,7 @@ from ..schemas import (
 )
 from ..services.auth_service import (
     check_login_attempts,
+    consume_backup_code,
     create_audit_log,
     generate_backup_codes,
     generate_mfa_qr_url,
@@ -504,7 +505,7 @@ async def mfa_verify(
     from uuid import UUID
 
     user_id = UUID(payload["sub"])
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(User).where(User.id == user_id).with_for_update())
     user = result.scalar_one_or_none()
     if not user or user.status != "active":
         raise HTTPException(
@@ -527,19 +528,20 @@ async def mfa_verify(
             },
         )
 
-    hashed_codes = user.mfa_backup_codes or []
-    code_hash = hash_backup_code(body.code)
     if verify_mfa_code(user.mfa_secret, body.code):
         pass
-    elif code_hash in hashed_codes:
-        user.mfa_backup_codes = [h for h in hashed_codes if h != code_hash]
     else:
-        return APIResponse(
-            error=ErrorDetail(
-                code="INVALID_MFA_CODE", message="認証コードが無効です。"
-            ),
-            success=False,
+        consumed, remaining = consume_backup_code(
+            user.mfa_backup_codes or [], body.code
         )
+        if not consumed:
+            return APIResponse(
+                error=ErrorDetail(
+                    code="INVALID_MFA_CODE", message="認証コードが無効です。"
+                ),
+                success=False,
+            )
+        user.mfa_backup_codes = remaining
 
     roles = await _get_user_roles(db, user)
     access_token = create_access_token(
