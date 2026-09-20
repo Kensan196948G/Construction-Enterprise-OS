@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Camera, Brain, AlertCircle, CheckCircle, Search } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface InspectionItem {
   id: string;
@@ -177,13 +178,13 @@ export default function AIInspectionPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/advanced/inspections?per_page=20");
-      if (res.ok) {
-        const json: { items: InspectionResult[] } | InspectionResult[] =
-          await res.json();
+      const json = await get<
+        InspectionResult[] | { items: InspectionResult[] }
+      >("/advanced/inspections?per_page=20").catch(() => null);
+      if (json) {
         const apiItems: InspectionResult[] = Array.isArray(json)
           ? json
-          : ((json as { items: InspectionResult[] }).items ?? []);
+          : (json.items ?? []);
         if (apiItems.length > 0) {
           setItems(apiItems.map((r, i) => toInspectionItem(r, i)));
         }

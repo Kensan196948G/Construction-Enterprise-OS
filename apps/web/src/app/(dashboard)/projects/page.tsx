@@ -15,6 +15,7 @@ import {
   Filter,
   MoreVertical,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 // Mock data (fallback)
 const MOCK_PROJECTS = [
@@ -155,20 +156,21 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch("/api/v1/construction/schedules?per_page=20")
-      .then((res) => (res.ok ? res.json() : null))
+    get<{
+      items?: {
+        id: string;
+        name: string;
+        status?: string;
+        progress?: number;
+        start_date?: string;
+        end_date?: string;
+      }[];
+    }>("/construction/schedules?per_page=20")
+      .catch(() => null)
       .then((data) => {
-        if (data?.items?.length > 0) {
-          const mapped: Project[] = (
-            data.items as {
-              id: string;
-              name: string;
-              status?: string;
-              progress?: number;
-              start_date?: string;
-              end_date?: string;
-            }[]
-          ).map((s, i) => ({
+        const items = data?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: Project[] = items.map((s, i) => ({
             id: i + 1,
             name: s.name,
             code: s.id.slice(0, 12).toUpperCase(),

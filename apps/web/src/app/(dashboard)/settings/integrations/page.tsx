@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import {
   Link,
   RefreshCw,
@@ -218,15 +218,21 @@ export default function IntegrationsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const results = await Promise.allSettled([
-      fetch("/api/v1/integrations?per_page=50", { headers: authHeaders() }),
-      fetch("/api/v1/integrations/logs?per_page=50", { headers: authHeaders() }),
+      get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/integrations?per_page=50").catch(() => null),
+      get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/integrations/logs?per_page=50").catch(() => null),
     ]);
 
     const [systemsResult, logsResult] = results;
 
     try {
-      if (systemsResult.status === "fulfilled" && systemsResult.value.ok) {
-        const json = await systemsResult.value.json();
+      if (systemsResult.status === "fulfilled" && systemsResult.value) {
+        const json = systemsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
         if (Array.isArray(items) && items.length > 0) {
@@ -256,8 +262,8 @@ export default function IntegrationsPage() {
     }
 
     try {
-      if (logsResult.status === "fulfilled" && logsResult.value.ok) {
-        const json = await logsResult.value.json();
+      if (logsResult.status === "fulfilled" && logsResult.value) {
+        const json = logsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
         if (Array.isArray(items) && items.length > 0) {

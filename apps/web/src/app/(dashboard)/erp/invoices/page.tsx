@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type Invoice = {
   id: string;
@@ -134,9 +135,10 @@ export default function InvoicesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/erp/invoices?per_page=50");
-      if (!res.ok) throw new Error("fetch failed");
-      const json = await res.json();
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/erp/invoices?per_page=50");
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
       if (Array.isArray(items) && items.length > 0) {

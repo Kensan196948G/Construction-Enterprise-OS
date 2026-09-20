@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, HardHat, Sun, Calendar } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface FieldProgress {
   id: string;
@@ -140,45 +141,43 @@ export default function FieldDashboardPage() {
     setLoading(true);
     try {
       // Fetch field progress reports
-      const progressRes = await fetch("/api/v1/field/progress?per_page=20");
-      if (progressRes.ok) {
-        const json = await progressRes.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setFieldProgress(
-            data.map((item) => ({
-              id: String(item.id ?? ""),
-              site_id: String(item.site_id ?? ""),
-              site_name: String(item.site_name ?? ""),
-              progress_rate: Number(item.progress_rate ?? 0),
-              worker_count: Number(item.worker_count ?? 0),
-              status: String(item.status ?? ""),
-              reported_at: String(item.reported_at ?? ""),
-            })),
-          );
-        }
+      const progressJson = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/field/progress?per_page=20").catch(() => null);
+      const progressData: Record<string, unknown>[] =
+        progressJson?.data?.items ?? progressJson?.items ?? [];
+      if (Array.isArray(progressData) && progressData.length > 0) {
+        setFieldProgress(
+          progressData.map((item) => ({
+            id: String(item.id ?? ""),
+            site_id: String(item.site_id ?? ""),
+            site_name: String(item.site_name ?? ""),
+            progress_rate: Number(item.progress_rate ?? 0),
+            worker_count: Number(item.worker_count ?? 0),
+            status: String(item.status ?? ""),
+            reported_at: String(item.reported_at ?? ""),
+          })),
+        );
       }
 
       // Fetch construction schedule as sub-data
-      const scheduleRes = await fetch(
-        "/api/v1/construction/schedule?per_page=20",
-      );
-      if (scheduleRes.ok) {
-        const json = await scheduleRes.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setScheduleItems(
-            data.map((item) => ({
-              id: String(item.id ?? ""),
-              time: String(item.start_time ?? item.time ?? ""),
-              task: String(item.task ?? item.name ?? item.title ?? ""),
-              workers: Number(item.workers ?? item.worker_count ?? 0),
-              status: normalizeScheduleStatus(String(item.status ?? "")),
-            })),
-          );
-        }
+      const scheduleJson = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/construction/schedule?per_page=20").catch(() => null);
+      const scheduleData: Record<string, unknown>[] =
+        scheduleJson?.data?.items ?? scheduleJson?.items ?? [];
+      if (Array.isArray(scheduleData) && scheduleData.length > 0) {
+        setScheduleItems(
+          scheduleData.map((item) => ({
+            id: String(item.id ?? ""),
+            time: String(item.start_time ?? item.time ?? ""),
+            task: String(item.task ?? item.name ?? item.title ?? ""),
+            workers: Number(item.workers ?? item.worker_count ?? 0),
+            status: normalizeScheduleStatus(String(item.status ?? "")),
+          })),
+        );
       }
     } catch {
       // fallback to mock data

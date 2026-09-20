@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Package, Boxes, DollarSign, RefreshCw } from "lucide-react";
 
 type Material = {
@@ -167,31 +167,16 @@ export default function MaterialsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/construction/materials?per_page=50", { headers: authHeaders() });
-      if (!res.ok) {
-        const res2 = await fetch("/api/v1/erp/materials?per_page=50", { headers: authHeaders() });
-        if (res2.ok) {
-          const json = await res2.json();
-          const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-          if (Array.isArray(data) && data.length > 0) {
-            setMaterials(
-              data.map((item: Record<string, unknown>) => ({
-                id: Number(item.id ?? 0),
-                code: String(item.code ?? item.material_code ?? ""),
-                name: String(item.name ?? ""),
-                spec: String(item.spec ?? item.specification ?? ""),
-                unit: String(item.unit ?? ""),
-                price: Number(item.unit_price ?? item.price ?? 0),
-                stock: Number(item.stock_quantity ?? item.stock ?? 0),
-                category: String(item.material_type ?? item.category ?? ""),
-                updated: String(item.updated_at ?? item.created_at ?? ""),
-              })),
-            );
-          }
-        }
-        return;
-      }
-      const json = await res.json();
+      const primary = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/construction/materials?per_page=50").catch(() => null);
+      const json =
+        primary ??
+        (await get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/erp/materials?per_page=50").catch(() => null));
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
       if (Array.isArray(data) && data.length > 0) {
         setMaterials(

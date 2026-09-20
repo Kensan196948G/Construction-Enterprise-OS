@@ -20,6 +20,7 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
+import { authHeaders } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/auth";
 
 type SectionId =
@@ -270,6 +271,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(ep.path, {
         method: "GET",
+        headers: authHeaders(),
         signal: AbortSignal.timeout(5000),
       });
       const latency = Date.now() - start;

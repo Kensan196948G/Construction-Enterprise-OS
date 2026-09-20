@@ -11,6 +11,7 @@ import {
   Clock,
   Plus,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface InspectionStats {
   total: number;
@@ -153,20 +154,38 @@ const MOCK_INSPECTIONS: Inspection[] = [
 ];
 
 const riskLevelStyle: Record<string, { label: string; className: string }> = {
-  critical: { label: "最高リスク", className: "bg-red-100 text-red-700 border-red-200" },
-  high: { label: "高リスク", className: "bg-orange-100 text-orange-700 border-orange-200" },
-  medium: { label: "中リスク", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  low: { label: "低リスク", className: "bg-green-100 text-green-700 border-green-200" },
+  critical: {
+    label: "最高リスク",
+    className: "bg-red-100 text-red-700 border-red-200",
+  },
+  high: {
+    label: "高リスク",
+    className: "bg-orange-100 text-orange-700 border-orange-200",
+  },
+  medium: {
+    label: "中リスク",
+    className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  },
+  low: {
+    label: "低リスク",
+    className: "bg-green-100 text-green-700 border-green-200",
+  },
 };
 
-const incidentSeverityStyle: Record<string, { label: string; className: string }> = {
+const incidentSeverityStyle: Record<
+  string,
+  { label: string; className: string }
+> = {
   critical: { label: "重大", className: "bg-red-100 text-red-700" },
   serious: { label: "深刻", className: "bg-orange-100 text-orange-700" },
   moderate: { label: "中程度", className: "bg-yellow-100 text-yellow-700" },
   minor: { label: "軽微", className: "bg-green-100 text-green-700" },
 };
 
-const incidentStatusStyle: Record<string, { label: string; className: string }> = {
+const incidentStatusStyle: Record<
+  string,
+  { label: string; className: string }
+> = {
   open: { label: "未対応", className: "bg-red-50 text-red-700" },
   investigating: { label: "調査中", className: "bg-yellow-50 text-yellow-700" },
   resolved: { label: "解決済", className: "bg-green-50 text-green-700" },
@@ -183,22 +202,21 @@ export default function SafetyPage() {
   const [stats, setStats] = useState<InspectionStats>(MOCK_STATS);
   const [hazards, setHazards] = useState<Hazard[]>(MOCK_HAZARDS);
   const [incidents, setIncidents] = useState<Incident[]>(MOCK_INCIDENTS);
-  const [inspections, setInspections] = useState<Inspection[]>(MOCK_INSPECTIONS);
+  const [inspections, setInspections] =
+    useState<Inspection[]>(MOCK_INSPECTIONS);
 
   const loadSafetyData = useCallback(async () => {
     const [statsRes, hazardsRes, incidentsRes, inspectionsRes] =
       await Promise.allSettled([
-        fetch("/api/v1/safety/inspections/stats").then((r) =>
-          r.ok ? r.json() : null,
+        get<{ data?: InspectionStats }>("/safety/inspections/stats").catch(
+          () => null,
         ),
-        fetch("/api/v1/safety/hazards/open").then((r) =>
-          r.ok ? r.json() : null,
+        get<{ data?: Hazard[] }>("/safety/hazards/open").catch(() => null),
+        get<{ data?: Incident[] }>("/safety/incidents?limit=10").catch(
+          () => null,
         ),
-        fetch("/api/v1/safety/incidents?limit=10").then((r) =>
-          r.ok ? r.json() : null,
-        ),
-        fetch("/api/v1/safety/inspections?limit=5").then((r) =>
-          r.ok ? r.json() : null,
+        get<{ data?: Inspection[] }>("/safety/inspections?limit=5").catch(
+          () => null,
         ),
       ]);
 
@@ -239,7 +257,9 @@ export default function SafetyPage() {
   const statCards = [
     {
       label: "未解決ヒヤリハット",
-      value: hazards.filter((h) => h.status === "open" || h.status === "in_progress").length,
+      value: hazards.filter(
+        (h) => h.status === "open" || h.status === "in_progress",
+      ).length,
       icon: FileWarning,
       color: "danger",
       note: "要対応",
@@ -329,7 +349,15 @@ export default function SafetyPage() {
               <FileWarning className="h-4 w-4 text-danger-500" />
               ヒヤリハット報告
             </h2>
-            <span className="text-xs text-gray-500">未解決 {hazards.filter(h => h.status !== "resolved" && h.status !== "closed").length}件</span>
+            <span className="text-xs text-gray-500">
+              未解決{" "}
+              {
+                hazards.filter(
+                  (h) => h.status !== "resolved" && h.status !== "closed",
+                ).length
+              }
+              件
+            </span>
           </div>
           <div className="divide-y divide-gray-100">
             {hazards.length === 0 ? (
@@ -338,7 +366,8 @@ export default function SafetyPage() {
               </div>
             ) : (
               hazards.map((hazard) => {
-                const risk = riskLevelStyle[hazard.risk_level] ?? riskLevelStyle.medium;
+                const risk =
+                  riskLevelStyle[hazard.risk_level] ?? riskLevelStyle.medium;
                 return (
                   <div
                     key={hazard.id}
@@ -378,7 +407,9 @@ export default function SafetyPage() {
               <AlertTriangle className="h-4 w-4 text-safety-500" />
               インシデント報告
             </h2>
-            <span className="text-xs text-gray-500">直近 {incidents.length}件</span>
+            <span className="text-xs text-gray-500">
+              直近 {incidents.length}件
+            </span>
           </div>
           <div className="divide-y divide-gray-100">
             {incidents.length === 0 ? (
@@ -473,7 +504,10 @@ export default function SafetyPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {inspections.map((insp) => (
-                <tr key={insp.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={insp.id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
                   <td className="px-5 py-3.5 font-medium text-gray-900">
                     {insp.title}
                   </td>

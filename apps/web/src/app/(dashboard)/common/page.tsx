@@ -12,6 +12,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 const CATEGORIES = [
   {
@@ -134,9 +135,10 @@ export default function CommonPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/health/services");
-      if (!res.ok) throw new Error("fetch failed");
-      const json = await res.json();
+      const json = await get<{
+        services?: Record<string, unknown>[];
+        data?: Record<string, unknown>[];
+      }>("/health/services");
       const rawServices: Record<string, unknown>[] =
         json?.services ?? json?.data ?? [];
       if (Array.isArray(rawServices) && rawServices.length > 0) {

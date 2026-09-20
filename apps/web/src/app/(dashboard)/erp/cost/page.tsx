@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Calculator, TrendingDown, BarChart2 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 // Mock data (fallback)
 const MOCK_COST_WORK_TYPES = [
@@ -52,22 +53,22 @@ export default function CostPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/erp/costs?per_page=50");
-      if (res.ok) {
-        const json = await res.json();
-        const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setCostWorkTypes(
-            items.map((item) => ({
-              id: Number(item.id ?? 0),
-              name: String(
-                item.cost_type ?? item.project_name ?? item.name ?? "",
-              ),
-              planned: Number(item.planned ?? item.budget_amount ?? 0),
-              actual: Number(item.amount ?? item.actual_amount ?? 0),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/erp/costs?per_page=50").catch(() => null);
+      const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setCostWorkTypes(
+          items.map((item) => ({
+            id: Number(item.id ?? 0),
+            name: String(
+              item.cost_type ?? item.project_name ?? item.name ?? "",
+            ),
+            planned: Number(item.planned ?? item.budget_amount ?? 0),
+            actual: Number(item.amount ?? item.actual_amount ?? 0),
+          })),
+        );
       }
     } catch {
       // fallback to mock data

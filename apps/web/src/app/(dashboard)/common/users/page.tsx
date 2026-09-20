@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, UserPlus, UserCheck, Shield } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type User = {
   id: number;
@@ -170,23 +171,23 @@ export default function UsersPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/users?per_page=50");
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setUsers(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.full_name ?? item.username ?? ""),
-              email: String(item.email ?? ""),
-              title: String(item.title ?? item.role ?? ""),
-              role: String(item.role ?? "field"),
-              lastLogin: String(item.last_login_at ?? item.updated_at ?? ""),
-              status: String(item.status ?? "active"),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/users?per_page=50").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setUsers(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.full_name ?? item.username ?? ""),
+            email: String(item.email ?? ""),
+            title: String(item.title ?? item.role ?? ""),
+            role: String(item.role ?? "field"),
+            lastLogin: String(item.last_login_at ?? item.updated_at ?? ""),
+            status: String(item.status ?? "active"),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

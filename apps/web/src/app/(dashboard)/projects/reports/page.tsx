@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { FileText, BarChart3, Send, Eye } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type Report = {
   id: number;
@@ -133,23 +134,23 @@ export default function ReportsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/analytics/reports?per_page=20");
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setReports(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.title ?? item.name ?? ""),
-              type: String(item.report_type ?? item.type ?? ""),
-              project: String(item.project_name ?? item.project ?? ""),
-              created: String(item.created_at ?? "").slice(0, 10),
-              author: String(item.created_by ?? item.author ?? ""),
-              status: String(item.status ?? "draft"),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/analytics/reports?per_page=20").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setReports(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.title ?? item.name ?? ""),
+            type: String(item.report_type ?? item.type ?? ""),
+            project: String(item.project_name ?? item.project ?? ""),
+            created: String(item.created_at ?? "").slice(0, 10),
+            author: String(item.created_by ?? item.author ?? ""),
+            status: String(item.status ?? "draft"),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

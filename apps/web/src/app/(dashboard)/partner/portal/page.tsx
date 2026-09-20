@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Building2,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface Notice {
   id: string;
@@ -173,25 +174,25 @@ export default function PartnerPortalPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/partner?status=active&per_page=50");
-      if (res.ok) {
-        const json = await res.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setPartners(
-            data.map((item) => ({
-              id: String(item.id ?? ""),
-              name: String(item.name ?? ""),
-              partner_type: String(item.partner_type ?? ""),
-              status: String(item.status ?? ""),
-              rating: Number(item.rating ?? 0),
-              email: String(item.email ?? ""),
-              phone: String(item.phone ?? ""),
-              address: String(item.address ?? ""),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/partner?status=active&per_page=50").catch(() => null);
+      const data: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setPartners(
+          data.map((item) => ({
+            id: String(item.id ?? ""),
+            name: String(item.name ?? ""),
+            partner_type: String(item.partner_type ?? ""),
+            status: String(item.status ?? ""),
+            rating: Number(item.rating ?? 0),
+            email: String(item.email ?? ""),
+            phone: String(item.phone ?? ""),
+            address: String(item.address ?? ""),
+          })),
+        );
       }
     } catch {
       // fallback to mock data (empty list — notices/docs remain)

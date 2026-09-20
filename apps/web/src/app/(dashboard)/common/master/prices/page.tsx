@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, RefreshCw, TrendingUp, FileText } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type PriceItem = {
   id: number;
@@ -163,26 +164,24 @@ export default function PricesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        "/api/v1/erp/costs?cost_type=unit_price&per_page=50",
-      );
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setPrices(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.item_name ?? item.name ?? ""),
-              unit: String(item.unit ?? ""),
-              price: Number(item.unit_price ?? item.price ?? 0),
-              region: String(item.region ?? "首都圏"),
-              validFrom: String(item.effective_date ?? item.valid_from ?? ""),
-              validTo: String(item.expiry_date ?? item.valid_to ?? ""),
-              note: String(item.note ?? item.description ?? ""),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/erp/costs?cost_type=unit_price&per_page=50").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setPrices(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.item_name ?? item.name ?? ""),
+            unit: String(item.unit ?? ""),
+            price: Number(item.unit_price ?? item.price ?? 0),
+            region: String(item.region ?? "首都圏"),
+            validFrom: String(item.effective_date ?? item.valid_from ?? ""),
+            validTo: String(item.expiry_date ?? item.valid_to ?? ""),
+            note: String(item.note ?? item.description ?? ""),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

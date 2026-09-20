@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Key, Webhook, Activity, Shield } from "lucide-react";
 
 type ApiClient = {
@@ -106,27 +106,27 @@ export default function ApiClientsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/api-clients?per_page=50", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setApiClients(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.name ?? ""),
-              type: String(item.client_type ?? item.type ?? ""),
-              apiKey: String(item.client_id ?? item.api_key ?? ""),
-              scopes: Array.isArray(item.permissions)
-                ? (item.permissions as unknown[]).map((s) => String(s))
-                : Array.isArray(item.scopes)
-                  ? (item.scopes as unknown[]).map((s) => String(s))
-                  : [],
-              lastUsed: String(item.last_used_at ?? item.last_used ?? ""),
-              status: String(item.status ?? "active"),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/api-clients?per_page=50").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setApiClients(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.name ?? ""),
+            type: String(item.client_type ?? item.type ?? ""),
+            apiKey: String(item.client_id ?? item.api_key ?? ""),
+            scopes: Array.isArray(item.permissions)
+              ? (item.permissions as unknown[]).map((s) => String(s))
+              : Array.isArray(item.scopes)
+                ? (item.scopes as unknown[]).map((s) => String(s))
+                : [],
+            lastUsed: String(item.last_used_at ?? item.last_used ?? ""),
+            status: String(item.status ?? "active"),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

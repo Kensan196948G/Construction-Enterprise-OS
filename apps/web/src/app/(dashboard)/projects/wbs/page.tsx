@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ListTree, Clock, CheckSquare, BarChart2 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface WbsItem {
   id: string;
@@ -247,12 +248,13 @@ export default function WbsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/construction/wbs?per_page=50");
-      if (res.ok) {
-        const json: { items: WbsApiItem[] } | WbsApiItem[] = await res.json();
+      const json = await get<WbsApiItem[] | { items: WbsApiItem[] }>(
+        "/construction/wbs?per_page=50",
+      ).catch(() => null);
+      if (json) {
         const items: WbsApiItem[] = Array.isArray(json)
           ? json
-          : ((json as { items: WbsApiItem[] }).items ?? []);
+          : (json.items ?? []);
         if (items.length > 0) {
           setWbsItems(items.map((w, i) => toWbsItem(w, i)));
         }
