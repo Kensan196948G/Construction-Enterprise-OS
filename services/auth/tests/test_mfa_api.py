@@ -1,9 +1,11 @@
 """MFA 有効化・バックアップコードの挙動テスト"""
 
 import uuid
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pyotp
+import pytest
 from fastapi.testclient import TestClient
 
 from src.main import create_app
@@ -22,10 +24,19 @@ class FakeUser:
         self.email = overrides.get("email", "user@example.com")
         self.organization_id = overrides.get("organization_id", uuid.uuid4())
         self.status = overrides.get("status", "active")
-        self.hashed_password = overrides.get("hashed_password", "unused")
+        self.hashed_password = overrides.get("hashed_password", "pw")
         self.mfa_secret = overrides.get("mfa_secret")
         self.mfa_enabled = overrides.get("mfa_enabled", False)
         self.mfa_backup_codes = overrides.get("mfa_backup_codes")
+        self.login_attempts = overrides.get("login_attempts", 0)
+        self.locked_until = overrides.get("locked_until")
+
+
+@pytest.fixture(autouse=True)
+def _stub_password_check(monkeypatch):
+    monkeypatch.setattr(
+        "src.api.auth.verify_password", lambda plain, hashed: plain == hashed
+    )
 
 
 class _Result:
@@ -123,17 +134,27 @@ def test_mfa_setup_rejected_when_already_enabled():
     user = FakeUser(mfa_secret=SECRET, mfa_enabled=True)
     client, _ = _client(user)
 
-    res = client.post("/api/v1/auth/mfa/setup")
+    res = client.post("/api/v1/auth/mfa/setup", json={"password": "pw"})
 
     assert res.status_code == 400
     assert res.json()["detail"]["code"] == "MFA_ALREADY_ENABLED"
+
+
+def test_mfa_setup_rejects_wrong_password():
+    user = FakeUser(mfa_secret=None, mfa_enabled=False)
+    client, _ = _client(user)
+
+    res = client.post("/api/v1/auth/mfa/setup", json={"password": "wrong"})
+
+    assert res.status_code == 400
+    assert res.json()["detail"]["code"] == "WRONG_PASSWORD"
 
 
 def test_mfa_setup_persists_hashed_backup_codes():
     user = FakeUser(mfa_secret=None, mfa_enabled=False)
     client, _ = _client(user)
 
-    res = client.post("/api/v1/auth/mfa/setup")
+    res = client.post("/api/v1/auth/mfa/setup", json={"password": "pw"})
 
     assert res.status_code == 200
     plain_codes = res.json()["data"]["backup_codes"]
@@ -198,3 +219,34 @@ def test_mfa_verify_rejects_replayed_backup_code():
     assert first.json()["success"] is True
     assert second.status_code == 200
     assert second.json()["success"] is False
+
+
+def test_mfa_verify_locked_account_is_rejected():
+    user = FakeUser(
+        mfa_secret=SECRET,
+        mfa_enabled=True,
+        locked_until=datetime.now(timezone.utc) + timedelta(minutes=10),
+    )
+    client, _ = _client(user)
+
+    res = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": "123456"},
+    )
+
+    assert res.status_code == 429
+    assert res.json()["detail"]["code"] == "ACCOUNT_LOCKED"
+
+
+def test_mfa_verify_counts_failed_attempts():
+    user = FakeUser(mfa_secret=SECRET, mfa_enabled=True, mfa_backup_codes=[])
+    client, _ = _client(user)
+
+    res = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={"session_token": _session_token(user), "code": "000000"},
+    )
+
+    assert res.status_code == 200
+    assert res.json()["success"] is False
+    assert user.login_attempts == 1
