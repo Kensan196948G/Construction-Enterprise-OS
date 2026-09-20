@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Building, Users, Network, TreePine } from "lucide-react";
 
 type Department = {
@@ -132,24 +132,24 @@ export default function OrgPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/users/organizations?per_page=20", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setDepartments(
-            data.map((item: Record<string, unknown>, idx: number) => ({
-              id: Number(item.id ?? idx),
-              code: String(item.code ?? `D${String(idx + 1).padStart(3, "0")}`),
-              name: String(item.name ?? ""),
-              manager: String(item.manager ?? item.manager_name ?? ""),
-              members: Number(item.users_count ?? item.members ?? 0),
-              parent: item.parent_name ? String(item.parent_name) : null,
-              work: String(item.description ?? item.work ?? ""),
-              level: Number(item.level ?? 0),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/users/organizations?per_page=20").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setDepartments(
+          data.map((item: Record<string, unknown>, idx: number) => ({
+            id: Number(item.id ?? idx),
+            code: String(item.code ?? `D${String(idx + 1).padStart(3, "0")}`),
+            name: String(item.name ?? ""),
+            manager: String(item.manager ?? item.manager_name ?? ""),
+            members: Number(item.users_count ?? item.members ?? 0),
+            parent: item.parent_name ? String(item.parent_name) : null,
+            work: String(item.description ?? item.work ?? ""),
+            level: Number(item.level ?? 0),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

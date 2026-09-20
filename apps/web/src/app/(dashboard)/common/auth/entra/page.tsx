@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Shield, Cloud, Users, CheckCircle, RefreshCw } from "lucide-react";
 
 const ENTRA_CONFIG = {
@@ -74,9 +74,10 @@ export default function EntraPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/entra/policies", { headers: authHeaders() });
-      if (!res.ok) throw new Error("fetch failed");
-      const json = await res.json();
+      const json = await get<{
+        items?: Record<string, unknown>[];
+        data?: Record<string, unknown>[];
+      }>("/auth/entra/policies");
       const items: Record<string, unknown>[] = json?.items ?? json?.data ?? [];
       if (Array.isArray(items) && items.length > 0) {
         setPolicies(

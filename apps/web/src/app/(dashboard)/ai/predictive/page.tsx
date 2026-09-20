@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Activity, AlertTriangle, Wrench, Clock } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface Equipment {
   id: string;
@@ -199,13 +200,13 @@ export default function AIPredictivePage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/advanced/predictive?per_page=20");
-      if (res.ok) {
-        const json: { items: PredictiveResult[] } | PredictiveResult[] =
-          await res.json();
+      const json = await get<
+        PredictiveResult[] | { items: PredictiveResult[] }
+      >("/advanced/predictive?per_page=20").catch(() => null);
+      if (json) {
         const items: PredictiveResult[] = Array.isArray(json)
           ? json
-          : ((json as { items: PredictiveResult[] }).items ?? []);
+          : (json.items ?? []);
         if (items.length > 0) {
           setEquipment(items.map((r, i) => toEquipment(r, i)));
         }

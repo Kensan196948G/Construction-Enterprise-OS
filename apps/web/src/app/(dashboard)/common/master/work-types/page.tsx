@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Layers, Clock, CheckSquare } from "lucide-react";
 
 type WorkType = {
@@ -154,34 +154,34 @@ export default function WorkTypesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/construction/work-types?per_page=50", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setWorkTypes(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              code: String(item.code ?? item.work_type_code ?? ""),
-              name: String(item.name ?? ""),
-              category: String(item.category ?? ""),
-              stdHours: Number(item.standard_rate ?? item.std_hours ?? 0),
-              safetyReq: Boolean(
-                item.safety_required ?? item.safety_req ?? false,
-              ),
-              qualReq: item.qualification_required
-                ? String(item.qualification_required)
-                : item.qual_req
-                  ? String(item.qual_req)
-                  : null,
-              cert: item.certification
-                ? String(item.certification)
-                : item.cert
-                  ? String(item.cert)
-                  : null,
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/construction/work-types?per_page=50").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setWorkTypes(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            code: String(item.code ?? item.work_type_code ?? ""),
+            name: String(item.name ?? ""),
+            category: String(item.category ?? ""),
+            stdHours: Number(item.standard_rate ?? item.std_hours ?? 0),
+            safetyReq: Boolean(
+              item.safety_required ?? item.safety_req ?? false,
+            ),
+            qualReq: item.qualification_required
+              ? String(item.qualification_required)
+              : item.qual_req
+                ? String(item.qual_req)
+                : null,
+            cert: item.certification
+              ? String(item.certification)
+              : item.cert
+                ? String(item.cert)
+                : null,
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

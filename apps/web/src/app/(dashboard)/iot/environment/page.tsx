@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Thermometer, Droplets, Wind, Activity } from "lucide-react";
 
 type SensorState = "normal" | "warning" | "critical" | "offline";
@@ -198,27 +198,27 @@ export default function EnvironmentPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/iot/sensors?per_page=50", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setSensors(
-            data.map((item) => ({
-              id: String(item.id ?? ""),
-              name: String(item.name ?? ""),
-              location: String(item.location ?? ""),
-              currentValue: Number(item.value ?? 0),
-              unit: String(item.unit ?? ""),
-              normalMin: 0,
-              normalMax: 100,
-              state: normalizeSensorState(String(item.status ?? "")),
-              lastUpdated: String(item.last_reading_at ?? ""),
-              history: [],
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/iot/sensors?per_page=50").catch(() => null);
+      const data: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setSensors(
+          data.map((item) => ({
+            id: String(item.id ?? ""),
+            name: String(item.name ?? ""),
+            location: String(item.location ?? ""),
+            currentValue: Number(item.value ?? 0),
+            unit: String(item.unit ?? ""),
+            normalMin: 0,
+            normalMax: 100,
+            state: normalizeSensorState(String(item.status ?? "")),
+            lastUpdated: String(item.last_reading_at ?? ""),
+            history: [],
+          })),
+        );
       }
     } catch {
       // fallback to mock data

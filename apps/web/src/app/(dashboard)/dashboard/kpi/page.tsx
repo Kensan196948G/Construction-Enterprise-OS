@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Target, TrendingUp, BarChart3, CheckCircle } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type KpiCategory = "安全" | "品質" | "工程" | "コスト" | "環境";
 type KpiTrend = "up" | "down" | "flat";
@@ -267,24 +268,23 @@ export default function KpiDashboardPage() {
     setLoading(true);
     try {
       const [statsRes, hazardsRes] = await Promise.allSettled([
-        fetch("/api/v1/safety/inspections/stats"),
-        fetch("/api/v1/safety/hazards/open"),
+        get<SafetyStats>("/safety/inspections/stats").catch(() => null),
+        get<SafetyHazard[] | { items: SafetyHazard[] }>(
+          "/safety/hazards/open",
+        ).catch(() => null),
       ]);
 
       let passRate: number | null = null;
       let openHazardCount: number | null = null;
 
-      if (statsRes.status === "fulfilled" && statsRes.value.ok) {
-        const json: SafetyStats = await statsRes.value.json();
+      if (statsRes.status === "fulfilled" && statsRes.value) {
+        const json = statsRes.value;
         passRate = json.pass_rate ?? null;
       }
 
-      if (hazardsRes.status === "fulfilled" && hazardsRes.value.ok) {
-        const json: SafetyHazard[] | { items: SafetyHazard[] } =
-          await hazardsRes.value.json();
-        const items = Array.isArray(json)
-          ? json
-          : ((json as { items: SafetyHazard[] }).items ?? []);
+      if (hazardsRes.status === "fulfilled" && hazardsRes.value) {
+        const json = hazardsRes.value;
+        const items = Array.isArray(json) ? json : (json.items ?? []);
         openHazardCount = items.length;
       }
 

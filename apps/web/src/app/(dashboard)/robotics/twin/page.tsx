@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import {
   Globe,
   Layers,
@@ -211,12 +211,14 @@ export default function DigitalTwinPage() {
     setLoading(true);
     try {
       const [twinsResult, sensorsResult] = await Promise.allSettled([
-        fetch("/api/v1/autonomous/digital-twins?per_page=50").then((r) =>
-          r.json(),
-        ),
-        fetch("/api/v1/autonomous/twin-sensors?per_page=50", { headers: authHeaders() }).then((r) =>
-          r.json(),
-        ),
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/autonomous/digital-twins?per_page=50").catch(() => null),
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/autonomous/twin-sensors?per_page=50").catch(() => null),
       ]);
 
       if (twinsResult.status === "fulfilled") {

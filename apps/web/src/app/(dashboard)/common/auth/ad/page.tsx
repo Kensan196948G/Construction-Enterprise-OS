@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Network, Building, RefreshCw, Shield } from "lucide-react";
 
 const AD_CONFIG = {
@@ -63,9 +63,10 @@ export default function AdPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/ad/groups", { headers: authHeaders() });
-      if (!res.ok) throw new Error("fetch failed");
-      const json = await res.json();
+      const json = await get<{
+        items?: Record<string, unknown>[];
+        data?: Record<string, unknown>[];
+      }>("/auth/ad/groups");
       const items: Record<string, unknown>[] = json?.items ?? json?.data ?? [];
       if (Array.isArray(items) && items.length > 0) {
         setGroupMappings(

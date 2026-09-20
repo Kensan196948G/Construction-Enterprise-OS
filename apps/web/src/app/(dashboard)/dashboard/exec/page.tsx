@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TrendingUp, DollarSign, BarChart3, Building } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 const MONTHLY_DATA = [
   { month: "1月", revenue: 8.2, completion: 6.5, newOrders: 12.1 },
@@ -90,27 +91,27 @@ export default function ExecDashboardPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/erp/ledger?per_page=20");
-      if (res.ok) {
-        const json = await res.json();
-        const items = json?.data?.items ?? json?.items;
-        if (Array.isArray(items) && items.length > 0) {
-          setProjects(
-            items.map(
-              (item: Record<string, unknown>): LedgerItem => ({
-                id: String(item.id ?? ""),
-                project_name: String(item.project_name ?? ""),
-                budget_amount: Number(item.budget_amount ?? 0),
-                actual_cost: Number(item.actual_cost ?? 0),
-                progress_rate: Number(item.progress_rate ?? 0),
-                completion_date: item.completion_date
-                  ? String(item.completion_date)
-                  : null,
-                status: String(item.status ?? "in_progress"),
-              }),
-            ),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/erp/ledger?per_page=20").catch(() => null);
+      const items = json?.data?.items ?? json?.items;
+      if (Array.isArray(items) && items.length > 0) {
+        setProjects(
+          items.map(
+            (item: Record<string, unknown>): LedgerItem => ({
+              id: String(item.id ?? ""),
+              project_name: String(item.project_name ?? ""),
+              budget_amount: Number(item.budget_amount ?? 0),
+              actual_cost: Number(item.actual_cost ?? 0),
+              progress_rate: Number(item.progress_rate ?? 0),
+              completion_date: item.completion_date
+                ? String(item.completion_date)
+                : null,
+              status: String(item.status ?? "in_progress"),
+            }),
+          ),
+        );
       }
     } catch {
       // fallback to mock data

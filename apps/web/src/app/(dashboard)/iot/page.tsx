@@ -15,6 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface Sensor {
   id: string;
@@ -198,23 +199,26 @@ export default function IoTPage() {
 
   const loadData = useCallback(() => {
     setIsLoading(true);
-    fetch("/api/v1/iot/devices?per_page=50")
-      .then((res) => (res.ok ? res.json() : null))
+    get<{
+      success?: boolean;
+      data?: {
+        devices?: {
+          id: string;
+          name: string;
+          device_type: string;
+          status: "online" | "offline" | "warning" | "alert";
+          location?: string;
+          project_id?: string;
+          battery_level?: number;
+          last_seen_at?: string;
+        }[];
+      };
+    }>("/iot/devices?per_page=50")
+      .catch(() => null)
       .then((data) => {
-        if (data?.success && data?.data?.devices?.length > 0) {
-          type ApiDevice = {
-            id: string;
-            name: string;
-            device_type: string;
-            status: "online" | "offline" | "warning" | "alert";
-            location?: string;
-            project_id?: string;
-            battery_level?: number;
-            last_seen_at?: string;
-          };
-          const grouped = (data.data.devices as ApiDevice[]).reduce<
-            Record<string, Sensor[]>
-          >((acc, d) => {
+        const devices = data?.data?.devices;
+        if (data?.success && Array.isArray(devices) && devices.length > 0) {
+          const grouped = devices.reduce<Record<string, Sensor[]>>((acc, d) => {
             const key = d.project_id ?? "その他";
             if (!acc[key]) acc[key] = [];
             acc[key].push({

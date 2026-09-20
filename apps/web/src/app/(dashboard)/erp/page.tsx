@@ -15,6 +15,7 @@ import {
   Clock,
   ChevronRight,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface LedgerItem {
   id: string;
@@ -264,12 +265,8 @@ export default function ERPPage() {
     setLoading(true);
     try {
       const [ledgerRes, invoiceRes] = await Promise.allSettled([
-        fetch("/api/v1/erp/ledger?per_page=20").then((r) =>
-          r.ok ? (r.json() as Promise<LedgerListResponse>) : null,
-        ),
-        fetch("/api/v1/erp/invoices?per_page=10").then((r) =>
-          r.ok ? (r.json() as Promise<InvoiceListResponse>) : null,
-        ),
+        get<LedgerListResponse>("/erp/ledger?per_page=20").catch(() => null),
+        get<InvoiceListResponse>("/erp/invoices?per_page=10").catch(() => null),
       ]);
 
       if (

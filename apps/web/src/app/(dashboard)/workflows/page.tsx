@@ -15,6 +15,7 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
+import { get, post } from "@/lib/api-client";
 
 // Mock data (fallback)
 const MOCK_WORKFLOWS = [
@@ -277,29 +278,30 @@ export default function WorkflowsPage() {
 
   const loadWorkflows = useCallback(() => {
     setIsLoading(true);
-    fetch("/api/v1/workflow/instances?per_page=20")
-      .then((res) => (res.ok ? res.json() : null))
+    get<{
+      success?: boolean;
+      data?: {
+        id: string;
+        title?: string;
+        workflow_type?: string;
+        status: string;
+        priority?: string;
+        created_at: string;
+        due_date?: string | null;
+        requester_id?: string;
+        project_id?: string;
+        current_step?: number;
+        steps?: WorkflowStep[];
+      }[];
+    }>("/workflow/instances?per_page=20")
+      .catch(() => null)
       .then((data) => {
         if (
           data?.success &&
           Array.isArray(data?.data) &&
           data.data.length > 0
         ) {
-          const mapped: Workflow[] = (
-            data.data as {
-              id: string;
-              title?: string;
-              workflow_type?: string;
-              status: string;
-              priority?: string;
-              created_at: string;
-              due_date?: string | null;
-              requester_id?: string;
-              project_id?: string;
-              current_step?: number;
-              steps?: WorkflowStep[];
-            }[]
-          ).map((w) => ({
+          const mapped: Workflow[] = data.data.map((w) => ({
             id: w.id,
             title: w.title ?? w.id,
             type: w.workflow_type ?? "document_approval",
@@ -326,11 +328,7 @@ export default function WorkflowsPage() {
   const handleApprove = async (id: string) => {
     setActionLoading(id);
     try {
-      await fetch(`/api/v1/workflow/instances/${id}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      await post<unknown>(`/workflow/instances/${id}/approve`, {});
     } catch {
       // ignore network errors; UI will show stale data until next poll
     }
@@ -341,11 +339,7 @@ export default function WorkflowsPage() {
   const handleReject = async (id: string) => {
     setActionLoading(id);
     try {
-      await fetch(`/api/v1/workflow/instances/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      await post<unknown>(`/workflow/instances/${id}/reject`, {});
     } catch {
       // ignore network errors
     }

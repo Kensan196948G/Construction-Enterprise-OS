@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import {
   TrendingUp,
   BarChart3,
@@ -191,24 +191,22 @@ export default function FieldProgressPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const [zonesRes, reportsRes] = await Promise.allSettled([
-      fetch("/api/v1/field/progress/zones", { headers: authHeaders() }).then((r) =>
-        r.ok ? r.json() : null,
-      ),
-      fetch("/api/v1/field/progress/reports/today", { headers: authHeaders() }).then((r) =>
-        r.ok ? r.json() : null,
+      get<{ data?: ZoneProgress[] }>("/field/progress/zones").catch(() => null),
+      get<{ data?: WorkReport[] }>("/field/progress/reports/today").catch(
+        () => null,
       ),
     ]);
     if (
       zonesRes.status === "fulfilled" &&
       Array.isArray(zonesRes.value?.data)
     ) {
-      setZones(zonesRes.value.data as ZoneProgress[]);
+      setZones(zonesRes.value.data);
     }
     if (
       reportsRes.status === "fulfilled" &&
       Array.isArray(reportsRes.value?.data)
     ) {
-      setReports(reportsRes.value.data as WorkReport[]);
+      setReports(reportsRes.value.data);
     }
     setLoading(false);
   }, []);

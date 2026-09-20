@@ -18,6 +18,7 @@ import {
   MoreVertical,
   Plus,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 const folders = [
   { name: "図面・設計書", count: 142, icon: FolderOpen, color: "primary" },
@@ -144,22 +145,26 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch("/api/v1/documents?per_page=20")
-      .then((res) => (res.ok ? res.json() : null))
+    get<{
+      success?: boolean;
+      data?: {
+        documents?: {
+          id: string;
+          name: string;
+          project_name?: string;
+          file_type: string;
+          file_size: number;
+          status: "approved" | "pending" | "review";
+          created_by?: string;
+          updated_at: string;
+        }[];
+      };
+    }>("/documents?per_page=20")
+      .catch(() => null)
       .then((data) => {
-        if (data?.success && data?.data?.documents?.length > 0) {
-          const mapped: DocItem[] = (
-            data.data.documents as {
-              id: string;
-              name: string;
-              project_name?: string;
-              file_type: string;
-              file_size: number;
-              status: "approved" | "pending" | "review";
-              created_by?: string;
-              updated_at: string;
-            }[]
-          ).map((doc, i) => ({
+        const documents = data?.data?.documents;
+        if (data?.success && Array.isArray(documents) && documents.length > 0) {
+          const mapped: DocItem[] = documents.map((doc, i) => ({
             id: i + 1,
             name: doc.name,
             project: doc.project_name ?? "—",

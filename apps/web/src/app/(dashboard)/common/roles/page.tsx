@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Shield, Lock, Users, CheckSquare } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 type Role = {
   id: number;
@@ -92,24 +93,24 @@ export default function RolesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/roles?per_page=50");
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setRoles(
-            data.map((item: Record<string, unknown>) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.name ?? ""),
-              description: String(item.description ?? ""),
-              users: Number(item.users_count ?? item.users ?? 0),
-              moduleCount: Number(
-                item.permissions_count ?? item.module_count ?? 0,
-              ),
-              updated: String(item.updated_at ?? item.created_at ?? ""),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/roles?per_page=50").catch(() => null);
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setRoles(
+          data.map((item: Record<string, unknown>) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.name ?? ""),
+            description: String(item.description ?? ""),
+            users: Number(item.users_count ?? item.users ?? 0),
+            moduleCount: Number(
+              item.permissions_count ?? item.module_count ?? 0,
+            ),
+            updated: String(item.updated_at ?? item.created_at ?? ""),
+          })),
+        );
       }
     } catch {
       /* fallback to mock */

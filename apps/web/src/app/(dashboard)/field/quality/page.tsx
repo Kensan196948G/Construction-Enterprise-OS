@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import {
   CheckSquare,
   XSquare,
@@ -370,18 +370,18 @@ export default function FieldQualityPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const [catRes, caRes] = await Promise.allSettled([
-      fetch("/api/v1/field/quality/checks", { headers: authHeaders() }).then((r) =>
-        r.ok ? r.json() : null,
+      get<{ data?: CheckCategory[] }>("/field/quality/checks").catch(
+        () => null,
       ),
-      fetch("/api/v1/field/quality/corrective", { headers: authHeaders() }).then((r) =>
-        r.ok ? r.json() : null,
+      get<{ data?: CorrectiveAction[] }>("/field/quality/corrective").catch(
+        () => null,
       ),
     ]);
     if (catRes.status === "fulfilled" && Array.isArray(catRes.value?.data)) {
-      setCategories(catRes.value.data as CheckCategory[]);
+      setCategories(catRes.value.data);
     }
     if (caRes.status === "fulfilled" && Array.isArray(caRes.value?.data)) {
-      setCorrective(caRes.value.data as CorrectiveAction[]);
+      setCorrective(caRes.value.data);
     }
     setLoading(false);
   }, []);

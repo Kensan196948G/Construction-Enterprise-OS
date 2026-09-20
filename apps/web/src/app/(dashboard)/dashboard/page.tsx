@@ -12,6 +12,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 interface DashboardStats {
   activeProjects: number;
@@ -90,18 +91,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      fetch("/api/v1/construction/schedules?per_page=1").then((r) =>
-        r.ok ? r.json() : null,
+      get<{ total?: number }>("/construction/schedules?per_page=1").catch(
+        () => null,
       ),
-      fetch("/api/v1/workflow/instances/pending").then((r) =>
-        r.ok ? r.json() : null,
+      get<{ data?: unknown[] }>("/workflow/instances/pending").catch(
+        () => null,
       ),
-      fetch("/api/v1/iot/alerts?per_page=1").then((r) =>
-        r.ok ? r.json() : null,
+      get<{ data?: { total?: number } }>("/iot/alerts?per_page=1").catch(
+        () => null,
       ),
-      fetch("/api/v1/documents?per_page=1").then((r) =>
-        r.ok ? r.json() : null,
-      ),
+      get<{ data?: { pagination?: { total?: number } } }>(
+        "/documents?per_page=1",
+      ).catch(() => null),
     ]).then(([schedules, workflows, alerts, documents]) => {
       setDashStats({
         activeProjects:

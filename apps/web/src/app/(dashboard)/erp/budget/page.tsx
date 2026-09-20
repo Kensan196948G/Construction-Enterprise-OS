@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, TrendingUp, BarChart3, PieChart } from "lucide-react";
+import { get } from "@/lib/api-client";
 
 // Mock data (fallback)
 const MOCK_BUDGET_PROJECTS = [
@@ -83,21 +84,21 @@ export default function BudgetPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/erp/budgets?per_page=50");
-      if (res.ok) {
-        const json = await res.json();
-        const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setBudgetProjects(
-            items.map((item) => ({
-              id: Number(item.id ?? 0),
-              name: String(item.project_name ?? item.name ?? ""),
-              budget: Number(item.budget_amount ?? item.budget ?? 0),
-              actual: Number(item.actual_amount ?? item.actual ?? 0),
-              status: String(item.status ?? "進行中"),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/erp/budgets?per_page=50").catch(() => null);
+      const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        setBudgetProjects(
+          items.map((item) => ({
+            id: Number(item.id ?? 0),
+            name: String(item.project_name ?? item.name ?? ""),
+            budget: Number(item.budget_amount ?? item.budget ?? 0),
+            actual: Number(item.actual_amount ?? item.actual ?? 0),
+            status: String(item.status ?? "進行中"),
+          })),
+        );
       }
     } catch {
       // fallback to mock data

@@ -2,14 +2,8 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import {
-  Map,
-  MapPin,
-  Layers,
-  Navigation,
-  AlertTriangle,
-} from "lucide-react";
-import { sitesFromGeoJSON } from "@/lib/api/gis";
+import { Map, MapPin, Layers, Navigation, AlertTriangle } from "lucide-react";
+import { listSites, sitesFromGeoJSON } from "@/lib/api/gis";
 import type { MapSitePin } from "@/components/gis/LeafletMap";
 
 // Leaflet requires DOM; load only on client side
@@ -142,9 +136,10 @@ export default function GISPage() {
   const [sitePins, setSitePins] = useState<SitePin[]>(MOCK_SITE_PINS);
 
   useEffect(() => {
-    fetch("/api/v1/gis/sites")
-      .then((res) => (res.ok ? res.json() : null))
+    listSites()
+      .catch(() => null)
       .then((data) => {
+        if (!data) return;
         const sites = sitesFromGeoJSON(data);
         if (sites.length > 0) {
           const mapped: SitePin[] = sites.map((s, i) => ({
@@ -188,7 +183,10 @@ export default function GISPage() {
         {/* Map Placeholder */}
         <div className="lg:col-span-2 space-y-4">
           {/* Real Leaflet Map */}
-          <div className="relative rounded-xl border border-gray-200 bg-white overflow-hidden" style={{ height: "480px" }}>
+          <div
+            className="relative rounded-xl border border-gray-200 bg-white overflow-hidden"
+            style={{ height: "480px" }}
+          >
             <LeafletMap sitePins={sitePins} height="480px" />
           </div>
 

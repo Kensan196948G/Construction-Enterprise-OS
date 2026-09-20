@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Brain, Zap, Target, TrendingUp } from "lucide-react";
 
 type ActionPriority = "critical" | "high" | "medium" | "low";
@@ -322,16 +322,17 @@ export default function AiDashboardPage() {
     setLoading(true);
     try {
       const [modelsRes, reportsRes] = await Promise.allSettled([
-        fetch("/api/v1/ai/models?per_page=10", { headers: authHeaders() }),
-        fetch("/api/v1/analytics/reports?per_page=5", { headers: authHeaders() }),
+        get<AiModel[] | { items: AiModel[] }>("/ai/models?per_page=10").catch(
+          () => null,
+        ),
+        get<unknown>("/analytics/reports?per_page=5").catch(() => null),
       ]);
 
-      if (modelsRes.status === "fulfilled" && modelsRes.value.ok) {
-        const json: { items: AiModel[] } | AiModel[] =
-          await modelsRes.value.json();
+      if (modelsRes.status === "fulfilled" && modelsRes.value) {
+        const json = modelsRes.value;
         const items: AiModel[] = Array.isArray(json)
           ? json
-          : ((json as { items: AiModel[] }).items ?? []);
+          : (json.items ?? []);
 
         if (items.length > 0) {
           const mapped: ModelMetrics[] = items.map((m, idx) => ({

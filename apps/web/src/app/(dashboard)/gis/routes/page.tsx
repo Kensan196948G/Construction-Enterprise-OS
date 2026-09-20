@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Route, Truck, MapPin, AlertTriangle } from "lucide-react";
 
 type RouteStatus = "通常" | "工事中" | "通行止め" | "迂回推奨";
@@ -120,32 +120,32 @@ export default function RoutesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/gis/routes?per_page=50", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setRoutes(
-            data.map((item) => {
-              const distance = Number(item.distance ?? 0);
-              const duration = Number(item.duration ?? 0);
-              return {
-                id: String(item.id ?? ""),
-                name: String(item.name ?? ""),
-                origin: String(item.origin ?? item.start_point ?? ""),
-                destination: String(item.destination ?? item.end_point ?? ""),
-                distance: distance > 0 ? `${distance.toFixed(1)} km` : "",
-                duration: duration > 0 ? `${duration} 分` : "",
-                weightLimit: String(item.weight_limit ?? ""),
-                status: normalizeRouteStatus(String(item.status ?? "")),
-                tripsThisMonth: Number(
-                  item.trips_this_month ?? item.coordinates_count ?? 0,
-                ),
-              };
-            }),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/gis/routes?per_page=50").catch(() => null);
+      const data: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setRoutes(
+          data.map((item) => {
+            const distance = Number(item.distance ?? 0);
+            const duration = Number(item.duration ?? 0);
+            return {
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              origin: String(item.origin ?? item.start_point ?? ""),
+              destination: String(item.destination ?? item.end_point ?? ""),
+              distance: distance > 0 ? `${distance.toFixed(1)} km` : "",
+              duration: duration > 0 ? `${duration} 分` : "",
+              weightLimit: String(item.weight_limit ?? ""),
+              status: normalizeRouteStatus(String(item.status ?? "")),
+              tripsThisMonth: Number(
+                item.trips_this_month ?? item.coordinates_count ?? 0,
+              ),
+            };
+          }),
+        );
       }
     } catch {
       // fallback to mock data

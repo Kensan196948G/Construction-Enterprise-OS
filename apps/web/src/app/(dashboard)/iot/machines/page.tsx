@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authHeaders } from "@/lib/api-client";
+import { get } from "@/lib/api-client";
 import { Truck, Fuel, MapPin, Activity } from "lucide-react";
 
 type MachineStatus = "running" | "idle" | "stopped" | "maintenance";
@@ -188,29 +188,27 @@ export default function MachinesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/iot/machines?per_page=50", { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const data: Record<string, unknown>[] =
-          json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setMachines(
-            data.map((item) => ({
-              id: String(item.id ?? ""),
-              machineNumber: String(item.name ?? item.machine_number ?? ""),
-              type: String(item.machine_type ?? item.type ?? ""),
-              location: String(item.location ?? ""),
-              status: normalizeMachineStatus(String(item.status ?? "")),
-              engineHours: Number(item.engine_hours ?? 0),
-              fuelLevel: Number(item.fuel_level ?? item.health_score ?? 0),
-              gpsLat: String(item.gps_lat ?? ""),
-              gpsLng: String(item.gps_lng ?? ""),
-              lastComm: String(
-                item.last_comm ?? item.last_maintenance_at ?? "",
-              ),
-            })),
-          );
-        }
+      const json = await get<{
+        data?: { items?: Record<string, unknown>[] };
+        items?: Record<string, unknown>[];
+      }>("/iot/machines?per_page=50").catch(() => null);
+      const data: Record<string, unknown>[] =
+        json?.data?.items ?? json?.items ?? [];
+      if (Array.isArray(data) && data.length > 0) {
+        setMachines(
+          data.map((item) => ({
+            id: String(item.id ?? ""),
+            machineNumber: String(item.name ?? item.machine_number ?? ""),
+            type: String(item.machine_type ?? item.type ?? ""),
+            location: String(item.location ?? ""),
+            status: normalizeMachineStatus(String(item.status ?? "")),
+            engineHours: Number(item.engine_hours ?? 0),
+            fuelLevel: Number(item.fuel_level ?? item.health_score ?? 0),
+            gpsLat: String(item.gps_lat ?? ""),
+            gpsLng: String(item.gps_lng ?? ""),
+            lastComm: String(item.last_comm ?? item.last_maintenance_at ?? ""),
+          })),
+        );
       }
     } catch {
       // fallback to mock data
