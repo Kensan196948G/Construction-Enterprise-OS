@@ -1,0 +1,28 @@
+# Trivy（CRITICAL/HIGH, ignore-unfixed）で期限付き許容する既知の脆弱性 ID（1行1件）
+# 追跡: https://github.com/Kensan196948G/Construction-Enterprise-OS/issues/70
+# 見直し期限: 2026-12-31
+# 主な対象: pnpm-lock.yaml（フロントエンド依存）と各サービスの requirements.txt。
+# 空行と '#' 始まりの行は無視される。新規の検出は引き続き CI を失敗させる。
+CVE-2024-33663
+CVE-2024-53981
+CVE-2026-24486
+CVE-2026-42561
+CVE-2026-44573
+CVE-2026-44578
+CVE-2026-45623
+CVE-2026-53539
+CVE-2026-64641
+CVE-2026-64645
+CVE-2026-64649
+CVE-2026-67213
+CVE-2026-67214
+CVE-2026-73088
+CVE-2026-73089
+CVE-2026-73646
+CVE-2026-75604
+GHSA-2xp9-vwfh-vxw4
+GHSA-5j59-xgg2-r9c4
+GHSA-8h8q-6873-q5fj
+GHSA-h25m-26qc-wcjf
+GHSA-mwv6-3258-q52c
+GHSA-q4gf-8mx6-v5v3

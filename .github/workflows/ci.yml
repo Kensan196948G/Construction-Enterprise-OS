@@ -160,6 +160,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
+          trivyignores: .github/security/trivy-ignore.txt
           format: table
           output: trivy-results.txt
 
