@@ -3,16 +3,9 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { buildSitePopup, type MapSitePin } from "./map-popup";
 
-export interface MapSitePin {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  status: string;
-  workers: number;
-  alerts: number;
-}
+export type { MapSitePin };
 
 interface LeafletMapProps {
   sitePins: MapSitePin[];
@@ -46,7 +39,10 @@ function createDivIcon(status: string): L.DivIcon {
   });
 }
 
-export default function LeafletMap({ sitePins, height = "480px" }: LeafletMapProps) {
+export default function LeafletMap({
+  sitePins,
+  height = "480px",
+}: LeafletMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -62,7 +58,8 @@ export default function LeafletMap({ sitePins, height = "480px" }: LeafletMapPro
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(mapRef.current);
 
@@ -88,14 +85,7 @@ export default function LeafletMap({ sitePins, height = "480px" }: LeafletMapPro
         icon: createDivIcon(pin.status),
       }).addTo(map);
 
-      const popupHtml = `
-        <div style="min-width:160px;font-family:sans-serif">
-          <p style="font-weight:700;font-size:13px;margin:0 0 4px">${pin.name}</p>
-          ${pin.workers > 0 ? `<p style="font-size:12px;color:#6b7280;margin:2px 0">作業員: ${pin.workers}名</p>` : ""}
-          ${pin.alerts > 0 ? `<p style="font-size:12px;color:#dc2626;margin:2px 0">⚠ ${pin.alerts}件 アラート</p>` : ""}
-          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}</p>
-        </div>`;
-      marker.bindPopup(popupHtml);
+      marker.bindPopup(buildSitePopup(pin));
 
       markersRef.current.push(marker);
     });
