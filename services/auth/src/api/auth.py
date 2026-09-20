@@ -20,6 +20,7 @@ from ..schemas import (
     MFABackupCodesResponse,
     MFADisableRequest,
     MFARegenerateBackupCodesRequest,
+    MFASetupRequest,
     MFASetupResponse,
     MFAVerifyRequest,
     RefreshRequest,
@@ -399,6 +400,7 @@ async def logout_all(
 @router.post("/mfa/setup", response_model=APIResponse[MFASetupResponse])
 async def mfa_setup(
     request: Request,
+    body: MFASetupRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -413,6 +415,15 @@ async def mfa_setup(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "ユーザーが見つかりません。"},
+        )
+
+    if not verify_password(body.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "WRONG_PASSWORD",
+                "message": "パスワードが正しくありません。",
+            },
         )
 
     if user.mfa_enabled:
@@ -528,6 +539,13 @@ async def mfa_verify(
             },
         )
 
+    can_attempt, lock_msg = await check_login_attempts(user)
+    if not can_attempt:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={"code": "ACCOUNT_LOCKED", "message": lock_msg},
+        )
+
     if verify_mfa_code(user.mfa_secret, body.code):
         pass
     else:
@@ -535,6 +553,7 @@ async def mfa_verify(
             user.mfa_backup_codes or [], body.code
         )
         if not consumed:
+            await record_failed_login(db, user)
             return APIResponse(
                 error=ErrorDetail(
                     code="INVALID_MFA_CODE", message="認証コードが無効です。"
