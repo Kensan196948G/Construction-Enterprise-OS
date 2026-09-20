@@ -48,7 +48,18 @@ def generate_mfa_qr_url(email: str, secret: str) -> str:
 
 
 def generate_backup_codes(count: int = 10) -> list[str]:
-    return [secrets.token_hex(4) for _ in range(count)]
+    return [secrets.token_hex(8) for _ in range(count)]
+
+
+def hash_backup_code(code: str) -> str:
+    return hashlib.sha256(code.strip().encode()).hexdigest()
+
+
+def consume_backup_code(hashed_codes: list[str], code: str) -> tuple[bool, list[str]]:
+    code_hash = hash_backup_code(code)
+    if code_hash not in hashed_codes:
+        return False, hashed_codes
+    return True, [h for h in hashed_codes if h != code_hash]
 
 
 async def create_audit_log(
@@ -120,8 +131,13 @@ async def check_login_attempts(user: User) -> tuple[bool, str | None]:
     Returns: (can_attempt, error_message)
     """
     if user.locked_until and user.locked_until > datetime.now(timezone.utc):
-        remaining = int((user.locked_until - datetime.now(timezone.utc)).total_seconds() // 60)
-        return False, f"アカウントがロックされています。あと{remaining}分お待ちください。"
+        remaining = int(
+            (user.locked_until - datetime.now(timezone.utc)).total_seconds() // 60
+        )
+        return (
+            False,
+            f"アカウントがロックされています。あと{remaining}分お待ちください。",
+        )
     return True, None
 
 
