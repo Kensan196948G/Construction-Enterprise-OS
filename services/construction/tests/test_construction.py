@@ -80,7 +80,9 @@ def app(mock_db):
         yield mock_db
 
     async def mock_get_current_user():
-        return TokenData(sub="test-user-id", type="user", org="test-org", roles=["admin"])
+        return TokenData(
+            sub="test-user-id", type="user", org="test-org", roles=["admin"]
+        )
 
     _app.dependency_overrides[get_db] = mock_get_db
     _app.dependency_overrides[get_current_user] = mock_get_current_user
@@ -178,9 +180,7 @@ class TestWBSCRUD:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[wbs], total=1)
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[wbs], total=1))
 
         response = client.get(
             f"/api/v1/construction/wbs?project_id={project_id}",
@@ -307,6 +307,46 @@ class TestWBSCRUD:
         assert response.status_code == 200
         assert float(wbs.progress_percent) == 45.0
         assert wbs.status == "in_progress"
+
+    def test_wbs_tree_route_not_shadowed_by_wbs_id(self, client, mock_db):
+        from src.models import WBSItem
+
+        root = WBSItem(
+            id=uuid.uuid4(),
+            organization_id=uuid.uuid4(),
+            project_id=uuid.uuid4(),
+            wbs_code="1",
+            name="工事一式",
+            level=1,
+            progress_percent=0,
+            status="pending",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                MockScalarResult(items=[root]),
+                MockScalarResult(items=[]),
+            ]
+        )
+
+        response = client.get(
+            f"/api/v1/construction/wbs/tree?project_id={root.project_id}",
+            headers=_auth_headers(),
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["wbs_code"] == "1"
+        assert data[0]["children"] == []
+
+    def test_wbs_tree_requires_project_id(self, client):
+        response = client.get(
+            "/api/v1/construction/wbs/tree",
+            headers=_auth_headers(),
+        )
+        assert response.status_code == 422
 
 
 # ============================================
@@ -457,9 +497,7 @@ class TestScheduleCRUD:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[s1, s2])
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[s1, s2]))
 
         response = client.get(
             f"/api/v1/construction/projects/{project_id}/critical-path",
@@ -489,9 +527,7 @@ class TestScheduleCRUD:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[s1])
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[s1]))
 
         response = client.get(
             f"/api/v1/construction/projects/{project_id}/gantt",

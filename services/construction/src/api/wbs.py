@@ -50,6 +50,16 @@ async def list_wbs(
     return WBSListResponse(items=items, total=total, page=page, per_page=per_page)  # type: ignore[arg-type]
 
 
+# 定義順マッチのため、固定パス /wbs/tree は /wbs/{wbs_id} より前に置く（422 回避）
+@router.get("/wbs/tree", response_model=list[WBSTreeResponse])
+async def get_wbs_tree(
+    project_id: UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _user: TokenData = Depends(get_current_user),
+):
+    return await construction_service.build_wbs_tree(db, project_id=project_id)
+
+
 @router.get("/wbs/{wbs_id}", response_model=WBSResponse)
 async def get_wbs(
     wbs_id: UUID,
@@ -72,7 +82,9 @@ async def update_wbs(
     wbs = await construction_service.get_wbs(db, wbs_id)
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
-    return await construction_service.update_wbs(db, wbs, body.model_dump(exclude_none=True))
+    return await construction_service.update_wbs(
+        db, wbs, body.model_dump(exclude_none=True)
+    )
 
 
 @router.delete("/wbs/{wbs_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -99,15 +111,6 @@ async def get_wbs_children(
     return await construction_service.get_wbs_children(db, wbs_id)
 
 
-@router.get("/wbs/tree", response_model=list[WBSTreeResponse])
-async def get_wbs_tree(
-    project_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
-):
-    return await construction_service.build_wbs_tree(db, project_id=project_id)
-
-
 @router.patch("/wbs/{wbs_id}/progress", response_model=WBSResponse)
 async def update_wbs_progress(
     wbs_id: UUID,
@@ -118,4 +121,6 @@ async def update_wbs_progress(
     wbs = await construction_service.get_wbs(db, wbs_id)
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
-    return await construction_service.update_wbs_progress(db, wbs, body.model_dump(exclude_none=True))
+    return await construction_service.update_wbs_progress(
+        db, wbs, body.model_dump(exclude_none=True)
+    )
