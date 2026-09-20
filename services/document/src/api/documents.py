@@ -39,6 +39,10 @@ def _api_response(data=None, meta=None, error=None, success=True):
     return APIResponse(success=success, data=data, error=error, meta=meta)
 
 
+def _org_id(token_data: TokenData) -> UUID:
+    return UUID(token_data.org) if token_data.org else UUID(int=0)
+
+
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
@@ -144,7 +148,7 @@ async def get_document(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    document = await document_service.get_document(db, document_id)
+    document = await document_service.get_document(db, document_id, _org_id(token_data))
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -159,7 +163,7 @@ async def download_document(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    document = await document_service.get_document(db, document_id)
+    document = await document_service.get_document(db, document_id, _org_id(token_data))
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -203,6 +207,7 @@ async def update_document(
         description=body.description,
         tags=body.tags,
         status=body.status,
+        organization_id=_org_id(token_data),
     )
     if not document:
         raise HTTPException(
@@ -218,7 +223,9 @@ async def delete_document(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    document = await document_service.soft_delete_document(db, document_id)
+    document = await document_service.soft_delete_document(
+        db, document_id, _org_id(token_data)
+    )
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -262,6 +269,7 @@ async def upload_new_version(
             file_name=file.filename,
             content_type=content_type,
             change_description=change_description,
+            organization_id=_org_id(token_data),
         )
     except Exception as e:
         raise HTTPException(
@@ -288,6 +296,13 @@ async def list_document_versions(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    document = await document_service.get_document(db, document_id, _org_id(token_data))
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "文書が見つかりません。"},
+        )
+
     versions, pmeta = await document_service.list_versions(
         db=db,
         document_id=document_id,
@@ -314,6 +329,13 @@ async def get_document_version(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    document = await document_service.get_document(db, document_id, _org_id(token_data))
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "文書が見つかりません。"},
+        )
+
     version = await document_service.get_version(db, document_id, version_number)
     if not version:
         raise HTTPException(
