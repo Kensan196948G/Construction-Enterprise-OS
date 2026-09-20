@@ -28,7 +28,9 @@ class Organization(Base):
         Index("ix_organizations_type", "type"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.organizations.id"), nullable=True
     )
@@ -67,7 +69,9 @@ class User(Base):
         Index("ix_users_organization_id", "organization_id"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.organizations.id"), nullable=False
     )
@@ -83,6 +87,7 @@ class User(Base):
     )
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     mfa_secret: Mapped[str | None] = mapped_column(String(255))
+    mfa_backup_codes: Mapped[list[str] | None] = mapped_column(JSONB)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     password_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -96,18 +101,24 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    organization: Mapped["Organization"] = relationship("Organization", back_populates="users")
-    roles: Mapped[list["UserRole"]] = relationship("UserRole", back_populates="user", foreign_keys="UserRole.user_id")
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user")
+    organization: Mapped["Organization"] = relationship(
+        "Organization", back_populates="users"
+    )
+    roles: Mapped[list["UserRole"]] = relationship(
+        "UserRole", back_populates="user", foreign_keys="UserRole.user_id"
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user"
+    )
 
 
 class Role(Base):
     __tablename__ = "roles"
-    __table_args__ = (
-        Index("ix_roles_organization_id", "organization_id"),
-    )
+    __table_args__ = (Index("ix_roles_organization_id", "organization_id"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.organizations.id")
     )
@@ -118,22 +129,26 @@ class Role(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    permissions: Mapped[list["RolePermission"]] = relationship("RolePermission", back_populates="role")
+    permissions: Mapped[list["RolePermission"]] = relationship(
+        "RolePermission", back_populates="role"
+    )
     users: Mapped[list["UserRole"]] = relationship("UserRole", back_populates="role")
 
 
 class Permission(Base):
     __tablename__ = "permissions"
-    __table_args__ = (
-        UniqueConstraint("resource", "action"),
-    )
+    __table_args__ = (UniqueConstraint("resource", "action"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     resource: Mapped[str] = mapped_column(String(255), nullable=False)
     action: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
-    roles: Mapped[list["RolePermission"]] = relationship("RolePermission", back_populates="permission")
+    roles: Mapped[list["RolePermission"]] = relationship(
+        "RolePermission", back_populates="permission"
+    )
 
 
 class RolePermission(Base):
@@ -147,7 +162,9 @@ class RolePermission(Base):
     )
 
     role: Mapped["Role"] = relationship("Role", back_populates="permissions")
-    permission: Mapped["Permission"] = relationship("Permission", back_populates="roles")
+    permission: Mapped["Permission"] = relationship(
+        "Permission", back_populates="roles"
+    )
 
 
 class UserRole(Base):
@@ -167,7 +184,9 @@ class UserRole(Base):
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    user: Mapped["User"] = relationship("User", back_populates="roles", foreign_keys=[user_id])
+    user: Mapped["User"] = relationship(
+        "User", back_populates="roles", foreign_keys=[user_id]
+    )
     role: Mapped["Role"] = relationship("Role", back_populates="users")
 
 
@@ -178,14 +197,18 @@ class RefreshToken(Base):
         Index("ix_refresh_tokens_user_id", "user_id"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False
     )
     token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     device_info: Mapped[dict | None] = mapped_column(JSONB)
     ip_address: Mapped[str | None] = mapped_column(INET)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -196,11 +219,11 @@ class RefreshToken(Base):
 
 class ApiClient(Base):
     __tablename__ = "api_clients"
-    __table_args__ = (
-        Index("ix_api_clients_client_id", "client_id"),
-    )
+    __table_args__ = (Index("ix_api_clients_client_id", "client_id"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("auth.organizations.id"), nullable=False
     )

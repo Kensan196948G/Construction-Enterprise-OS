@@ -16,7 +16,10 @@ from ..schemas import (
     ErrorDetail,
     LoginRequest,
     LoginResponse,
+    MFAActivateRequest,
+    MFABackupCodesResponse,
     MFADisableRequest,
+    MFARegenerateBackupCodesRequest,
     MFASetupResponse,
     MFAVerifyRequest,
     RefreshRequest,
@@ -30,6 +33,7 @@ from ..services.auth_service import (
     generate_mfa_secret,
     generate_token_id,
     get_user_by_email,
+    hash_backup_code,
     hash_token,
     record_failed_login,
     record_successful_login,
@@ -410,11 +414,21 @@ async def mfa_setup(
             detail={"code": "USER_NOT_FOUND", "message": "ユーザーが見つかりません。"},
         )
 
+    if user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "MFA_ALREADY_ENABLED",
+                "message": "MFAは既に有効です。無効化してから再設定してください。",
+            },
+        )
+
     secret = generate_mfa_secret()
     qr_url = generate_mfa_qr_url(user.email, secret)
     backup_codes = generate_backup_codes()
 
     user.mfa_secret = secret
+    user.mfa_backup_codes = [hash_backup_code(code) for code in backup_codes]
 
     return APIResponse(
         data=MFASetupResponse(
@@ -423,6 +437,51 @@ async def mfa_setup(
             backup_codes=backup_codes,
         )
     )
+
+
+@router.post("/mfa/activate")
+async def mfa_activate(
+    request: Request,
+    body: MFAActivateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """MFA有効化（TOTPコードの検証後に有効化する）"""
+    from uuid import UUID
+
+    user_id = UUID(current_user.sub)
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "ユーザーが見つかりません。"},
+        )
+
+    if not user.mfa_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "MFA_NOT_SETUP", "message": "先にMFAを設定してください。"},
+        )
+
+    if not verify_mfa_code(user.mfa_secret, body.code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_MFA_CODE", "message": "認証コードが無効です。"},
+        )
+
+    user.mfa_enabled = True
+
+    await create_audit_log(
+        db,
+        user_id=user.id,
+        event_type="auth.mfa.activated",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+
+    return APIResponse(data={"message": "MFAを有効化しました。"})
 
 
 @router.post("/mfa/verify")
@@ -459,7 +518,22 @@ async def mfa_verify(
             detail={"code": "MFA_NOT_SETUP", "message": "MFAが設定されていません。"},
         )
 
-    if not verify_mfa_code(user.mfa_secret, body.code):
+    if not user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "MFA_NOT_ENABLED",
+                "message": "MFAが有効化されていません。",
+            },
+        )
+
+    hashed_codes = user.mfa_backup_codes or []
+    code_hash = hash_backup_code(body.code)
+    if verify_mfa_code(user.mfa_secret, body.code):
+        pass
+    elif code_hash in hashed_codes:
+        user.mfa_backup_codes = [h for h in hashed_codes if h != code_hash]
+    else:
         return APIResponse(
             error=ErrorDetail(
                 code="INVALID_MFA_CODE", message="認証コードが無効です。"
@@ -500,6 +574,58 @@ async def mfa_verify(
     )
 
 
+@router.post(
+    "/mfa/backup-codes/regenerate",
+    response_model=APIResponse[MFABackupCodesResponse],
+)
+async def mfa_regenerate_backup_codes(
+    request: Request,
+    body: MFARegenerateBackupCodesRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """バックアップコードの再発行（パスワードとTOTPで本人確認する）"""
+    from uuid import UUID
+
+    user_id = UUID(current_user.sub)
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "ユーザーが見つかりません。"},
+        )
+
+    if not verify_password(body.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "WRONG_PASSWORD",
+                "message": "パスワードが正しくありません。",
+            },
+        )
+
+    if not user.mfa_secret or not verify_mfa_code(user.mfa_secret, body.code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_MFA_CODE", "message": "認証コードが無効です。"},
+        )
+
+    backup_codes = generate_backup_codes()
+    user.mfa_backup_codes = [hash_backup_code(code) for code in backup_codes]
+
+    await create_audit_log(
+        db,
+        user_id=user.id,
+        event_type="auth.mfa.backup_codes_regenerated",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+
+    return APIResponse(data=MFABackupCodesResponse(backup_codes=backup_codes))
+
+
 @router.post("/mfa/disable")
 async def mfa_disable(
     request: Request,
@@ -537,6 +663,7 @@ async def mfa_disable(
 
     user.mfa_enabled = False
     user.mfa_secret = None
+    user.mfa_backup_codes = None
 
     await create_audit_log(
         db,

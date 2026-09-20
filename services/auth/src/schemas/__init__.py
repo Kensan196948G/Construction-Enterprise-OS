@@ -82,6 +82,19 @@ class MFAVerifyRequest(BaseModel):
     code: str
 
 
+class MFAActivateRequest(BaseModel):
+    code: str
+
+
+class MFABackupCodesResponse(BaseModel):
+    backup_codes: list[str]
+
+
+class MFARegenerateBackupCodesRequest(BaseModel):
+    password: str
+    code: str
+
+
 class MFADisableRequest(BaseModel):
     password: str
     code: str

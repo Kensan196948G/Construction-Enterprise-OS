@@ -51,6 +51,10 @@ def generate_backup_codes(count: int = 10) -> list[str]:
     return [secrets.token_hex(4) for _ in range(count)]
 
 
+def hash_backup_code(code: str) -> str:
+    return hashlib.sha256(code.strip().encode()).hexdigest()
+
+
 async def create_audit_log(
     db: AsyncSession,
     *,
@@ -120,8 +124,13 @@ async def check_login_attempts(user: User) -> tuple[bool, str | None]:
     Returns: (can_attempt, error_message)
     """
     if user.locked_until and user.locked_until > datetime.now(timezone.utc):
-        remaining = int((user.locked_until - datetime.now(timezone.utc)).total_seconds() // 60)
-        return False, f"アカウントがロックされています。あと{remaining}分お待ちください。"
+        remaining = int(
+            (user.locked_until - datetime.now(timezone.utc)).total_seconds() // 60
+        )
+        return (
+            False,
+            f"アカウントがロックされています。あと{remaining}分お待ちください。",
+        )
     return True, None
 
 
