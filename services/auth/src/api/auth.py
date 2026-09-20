@@ -1,15 +1,16 @@
 """認証エンドポイント（ログイン/ログアウト/リフレッシュ/MFA）"""
 
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..db_retry import is_transient_db_error, rollback_safely
-from ..models import RefreshToken, User, UserRole, Role
+from ..models import MfaSessionUse, RefreshToken, Role, User, UserRole
 from ..models.base import async_session, get_db
 from ..schemas import (
     APIResponse,
@@ -62,6 +63,7 @@ def _create_mfa_session_token(user_id: str, email: str) -> str:
         "sub": user_id,
         "email": email,
         "purpose": "mfa_verify",
+        "jti": str(uuid.uuid4()),
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=5)).timestamp()),
     }
@@ -555,6 +557,31 @@ async def mfa_verify(
                 success=False,
             )
         user.mfa_backup_codes = remaining
+
+    jti = payload.get("jti")
+    if not jti:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_SESSION",
+                "message": "MFAセッションが無効です。再度ログインしてください。",
+            },
+        )
+    await db.execute(delete(MfaSessionUse).where(MfaSessionUse.expires_at < func.now()))
+    if await db.get(MfaSessionUse, jti):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "MFA_SESSION_USED",
+                "message": "このMFAセッションは使用済みです。再度ログインしてください。",
+            },
+        )
+    db.add(
+        MfaSessionUse(
+            jti=jti,
+            expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+        )
+    )
 
     roles = await _get_user_roles(db, user)
     access_token = create_access_token(

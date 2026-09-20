@@ -67,6 +67,7 @@ def _client(user):
         return _Result(user)
 
     db.execute = mock_execute
+    db.get = AsyncMock(return_value=None)
     db.add = MagicMock()
     db.flush = AsyncMock()
     db.commit = AsyncMock()
@@ -250,3 +251,20 @@ def test_mfa_verify_counts_failed_attempts():
     assert res.status_code == 200
     assert res.json()["success"] is False
     assert user.login_attempts == 1
+
+
+def test_mfa_verify_rejects_consumed_session_token():
+    user = FakeUser(mfa_secret=SECRET, mfa_enabled=True)
+    client, db = _client(user)
+    db.get = AsyncMock(return_value=object())
+
+    res = client.post(
+        "/api/v1/auth/mfa/verify",
+        json={
+            "session_token": _session_token(user),
+            "code": pyotp.TOTP(SECRET).now(),
+        },
+    )
+
+    assert res.status_code == 400
+    assert res.json()["detail"]["code"] == "MFA_SESSION_USED"
