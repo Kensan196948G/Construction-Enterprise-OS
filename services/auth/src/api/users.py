@@ -20,6 +20,7 @@ from ..schemas import (
 from ..services.auth_service import hash_password, get_user_by_email
 from ..services.user_service import (
     create_user as create_user_svc,
+    get_organization_scope,
     get_user_by_id,
     get_users_paginated,
     soft_delete_user,
@@ -57,8 +58,19 @@ async def list_users(
     current_user: TokenData = Depends(require_permission("users", "read")),
 ):
     """ユーザー一覧取得（ページネーション・検索・フィルタ）"""
+    organization_ids: list[UUID] = []
+    if current_user.org:
+        try:
+            organization_ids = await get_organization_scope(db, UUID(current_user.org))
+        except ValueError:
+            organization_ids = []
     users, total = await get_users_paginated(
-        db, page=page, per_page=per_page, status=status, search=search
+        db,
+        page=page,
+        per_page=per_page,
+        status=status,
+        search=search,
+        organization_ids=organization_ids,
     )
     total_pages = max((total + per_page - 1) // per_page, 1) if total > 0 else 0
 

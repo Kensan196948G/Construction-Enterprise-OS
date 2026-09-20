@@ -3,11 +3,32 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..models import User, UserRole
+from ..models import Organization, User, UserRole
+
+
+async def get_organization_scope(
+    db: AsyncSession, organization_id: uuid.UUID
+) -> list[uuid.UUID]:
+    result = await db.execute(select(Organization.id, Organization.parent_id))
+    children: dict[uuid.UUID | None, list[uuid.UUID]] = {}
+    for org_id, parent_id in result.all():
+        children.setdefault(parent_id, []).append(org_id)
+
+    scope: list[uuid.UUID] = []
+    seen: set[uuid.UUID] = set()
+    stack = [organization_id]
+    while stack:
+        current = stack.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        scope.append(current)
+        stack.extend(children.get(current, []))
+    return scope
 
 
 async def get_users_paginated(
@@ -16,8 +37,11 @@ async def get_users_paginated(
     per_page: int = 20,
     status: str | None = None,
     search: str | None = None,
+    organization_ids: list[uuid.UUID] | None = None,
 ) -> tuple[list[User], int]:
-    conditions = []
+    conditions: list[ColumnElement[bool]] = []
+    if organization_ids is not None:
+        conditions.append(User.organization_id.in_(organization_ids))
     if status:
         conditions.append(User.status == status)
     if search:
@@ -40,8 +64,7 @@ async def get_users_paginated(
 
     offset = (page - 1) * per_page
     query = (
-        base_query
-        .options(selectinload(User.roles).selectinload(UserRole.role))
+        base_query.options(selectinload(User.roles).selectinload(UserRole.role))
         .order_by(User.created_at.desc())
         .offset(offset)
         .limit(per_page)
