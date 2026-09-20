@@ -11,6 +11,8 @@ from src.main import create_app
 from src.middleware.auth import TokenData, get_current_user
 from src.models.base import get_db
 
+ORG_ID = uuid.UUID("00000000-0000-0000-0000-0000000000aa")
+
 
 class MockScalarResult:
     def __init__(self, value=None, items=None, total=0):
@@ -81,7 +83,7 @@ def app(mock_db):
 
     async def mock_get_current_user():
         return TokenData(
-            sub="test-user-id", type="user", org="test-org", roles=["admin"]
+            sub="test-user-id", type="user", org=str(ORG_ID), roles=["admin"]
         )
 
     _app.dependency_overrides[get_db] = mock_get_db
@@ -198,7 +200,7 @@ class TestWBSCRUD:
         wbs_id = uuid.uuid4()
         wbs = WBSItem(
             id=wbs_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             wbs_code="1.1",
             name="基礎工事",
@@ -228,13 +230,36 @@ class TestWBSCRUD:
         )
         assert response.status_code == 404
 
+    def test_get_wbs_rejects_other_organization(self, client, mock_db):
+        from src.models import WBSItem
+
+        other = WBSItem(
+            id=uuid.uuid4(),
+            organization_id=uuid.uuid4(),
+            project_id=uuid.uuid4(),
+            wbs_code="9",
+            name="他組織のWBS",
+            level=1,
+            progress_percent=0,
+            status="pending",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        mock_db.get = AsyncMock(return_value=other)
+
+        response = client.get(
+            f"/api/v1/construction/wbs/{other.id}",
+            headers=_auth_headers(),
+        )
+        assert response.status_code == 404
+
     def test_wbs_children(self, client, mock_db):
         from src.models import WBSItem
 
         parent_id = uuid.uuid4()
         child1 = WBSItem(
             id=uuid.uuid4(),
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             parent_id=parent_id,
             wbs_code="1.1.1",
@@ -246,7 +271,7 @@ class TestWBSCRUD:
         )
         child2 = WBSItem(
             id=uuid.uuid4(),
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             parent_id=parent_id,
             wbs_code="1.1.2",
@@ -258,7 +283,7 @@ class TestWBSCRUD:
         )
         parent = WBSItem(
             id=parent_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             wbs_code="1.1",
             name="基礎工事",
@@ -287,7 +312,7 @@ class TestWBSCRUD:
         wbs_id = uuid.uuid4()
         wbs = WBSItem(
             id=wbs_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             wbs_code="1.1",
             name="基礎工事",
@@ -313,7 +338,7 @@ class TestWBSCRUD:
 
         root = WBSItem(
             id=uuid.uuid4(),
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             wbs_code="1",
             name="工事一式",
@@ -415,7 +440,7 @@ class TestResourceCRUD:
         resource_id = uuid.uuid4()
         resource = Resource(
             id=resource_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             resource_type="labor",
             name="型枠大工",
@@ -514,7 +539,7 @@ class TestScheduleCRUD:
         project_id = uuid.uuid4()
         s1 = Schedule(
             id=uuid.uuid4(),
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=project_id,
             name="基礎工事",
             schedule_type="master",
@@ -577,7 +602,7 @@ class TestMethodStatement:
         method_id = uuid.uuid4()
         method = MethodStatement(
             id=method_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             title="基礎工事施工計画書",
             document_type="method_statement",
@@ -601,7 +626,7 @@ class TestMethodStatement:
         method_id = uuid.uuid4()
         method = MethodStatement(
             id=method_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             title="基礎工事施工計画書",
             document_type="method_statement",
@@ -629,7 +654,7 @@ class TestMethodStatement:
         method_id = uuid.uuid4()
         method = MethodStatement(
             id=method_id,
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             title="基礎工事施工計画書",
             document_type="method_statement",
@@ -652,7 +677,7 @@ class TestMethodStatement:
 
         method = MethodStatement(
             id=uuid.uuid4(),
-            organization_id=uuid.uuid4(),
+            organization_id=ORG_ID,
             project_id=uuid.uuid4(),
             title="基礎工事施工計画書",
             document_type="method_statement",
