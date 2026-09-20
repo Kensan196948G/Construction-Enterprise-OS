@@ -95,9 +95,9 @@ class TestAuthRequired:
     def test_all_endpoints_require_auth(self, client):
         for method, url in self.endpoints:
             response = client.request(method, url)
-            assert (
-                response.status_code == 401
-            ), f"{method} {url} returned {response.status_code}"
+            assert response.status_code == 401, (
+                f"{method} {url} returned {response.status_code}"
+            )
 
     def test_upload_requires_auth(self, client):
         response = client.post(
@@ -295,3 +295,27 @@ class TestDocumentService:
         assert version is not None
         assert doc.current_version == 2
         assert mock_db.add.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_document_applies_organization_filter():
+    from src.services import document_service
+
+    captured = {}
+    mock_db = AsyncMock()
+
+    async def fake_execute(stmt):
+        captured["stmt"] = stmt
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = None
+        return result
+
+    mock_db.execute = fake_execute
+
+    await document_service.get_document(mock_db, uuid4(), uuid4())
+    where = str(captured["stmt"]).split("WHERE", 1)[-1]
+    assert "organization_id" in where
+
+    await document_service.get_document(mock_db, uuid4())
+    where_without_org = str(captured["stmt"]).split("WHERE", 1)[-1]
+    assert "organization_id" not in where_without_org

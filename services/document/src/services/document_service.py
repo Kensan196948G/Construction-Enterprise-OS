@@ -77,8 +77,12 @@ async def create_document(
     return document
 
 
-async def get_document(db: AsyncSession, document_id: UUID) -> Document | None:
+async def get_document(
+    db: AsyncSession, document_id: UUID, organization_id: UUID | None = None
+) -> Document | None:
     stmt = select(Document).where(Document.id == document_id)
+    if organization_id is not None:
+        stmt = stmt.where(Document.organization_id == organization_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -132,8 +136,9 @@ async def update_document(
     description: str | None = None,
     tags: list[str] | None = None,
     status: str | None = None,
+    organization_id: UUID | None = None,
 ) -> Document | None:
-    document = await get_document(db, document_id)
+    document = await get_document(db, document_id, organization_id)
     if not document:
         return None
 
@@ -151,8 +156,10 @@ async def update_document(
     return document
 
 
-async def soft_delete_document(db: AsyncSession, document_id: UUID) -> Document | None:
-    document = await get_document(db, document_id)
+async def soft_delete_document(
+    db: AsyncSession, document_id: UUID, organization_id: UUID | None = None
+) -> Document | None:
+    document = await get_document(db, document_id, organization_id)
     if not document:
         return None
 
@@ -170,8 +177,9 @@ async def create_new_version(
     file_name: str,
     content_type: str,
     change_description: str | None = None,
+    organization_id: UUID | None = None,
 ) -> DocumentVersion | None:
-    document = await get_document(db, document_id)
+    document = await get_document(db, document_id, organization_id)
     if not document:
         return None
 
