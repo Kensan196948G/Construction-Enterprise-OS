@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-
+import jwt
+from jwt import InvalidTokenError as JWTError
 from ..config import get_settings
 
 settings = get_settings()
@@ -68,7 +68,10 @@ async def get_current_user(
     if token_data.type != "user":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "User token required for this API."},
+            detail={
+                "code": "FORBIDDEN",
+                "message": "User token required for this API.",
+            },
         )
 
     return token_data

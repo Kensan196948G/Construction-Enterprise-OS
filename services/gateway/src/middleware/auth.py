@@ -5,7 +5,8 @@ from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError as JWTError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..config import get_settings

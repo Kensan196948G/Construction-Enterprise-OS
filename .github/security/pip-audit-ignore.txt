@@ -1,13 +1,7 @@
 # pip-audit で期限付き許容する既知の脆弱性 ID（1行1件）
 # 追跡: https://github.com/Kensan196948G/Construction-Enterprise-OS/issues/70
 # 見直し期限: 2026-12-31
-# 背景:
-#   - python-jose 3.4.0 は PYSEC-2024-232/233 を修正するが、推移依存 pyasn1 の
-#     修正版 0.6.4 と依存競合するため保留（PYSEC-2025-185 は修正版なし）。
-#   - ecdsa は修正版なし。
-#   - starlette は FastAPI を 0.141.1 へ更新して解消済み。
-# 空行と '#' 始まりの行は無視される。新規の検出は引き続き CI を失敗させる。
-PYSEC-2024-232
-PYSEC-2024-233
-PYSEC-2025-185
-PYSEC-2026-1325
+# 状態: 現在は許容なし（0件）。
+#   - starlette は FastAPI 0.141.1 更新で解消
+#   - python-jose は PyJWT へ統一し、推移依存 ecdsa ごと除去
+# 空行と '#' 始まりの行は無視される。新規の検出は CI を失敗させる。

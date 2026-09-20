@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-
+import jwt
+from jwt import InvalidTokenError as JWTError
 from ..config import get_settings
 from ..schemas import TokenData
 
@@ -46,13 +46,19 @@ async def get_current_user(
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_TOKEN", "message": "トークンが無効または期限切れです。"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "トークンが無効または期限切れです。",
+            },
         )
 
     if token_data.type != "user":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "このAPIにはユーザートークンが必要です。"},
+            detail={
+                "code": "FORBIDDEN",
+                "message": "このAPIにはユーザートークンが必要です。",
+            },
         )
 
     return token_data
