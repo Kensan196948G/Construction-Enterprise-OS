@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Bot,
   Zap,
@@ -25,97 +25,6 @@ interface RpaTask {
   isActive: boolean;
 }
 
-const MOCK_TASKS: RpaTask[] = [
-  {
-    id: "T-001",
-    name: "請求書自動処理",
-    targetProcess: "請求書PDF取込・仕訳起票・承認依頼送信",
-    schedule: "毎日 08:00",
-    lastRun: "2026-05-24 08:00",
-    lastResult: "success",
-    timeSavedMin: 45,
-    runCountThisMonth: 24,
-    isActive: true,
-  },
-  {
-    id: "T-002",
-    name: "日報自動集計",
-    targetProcess: "現場日報PDF→Excel集計→管理者メール送信",
-    schedule: "毎日 18:30",
-    lastRun: "2026-05-23 18:30",
-    lastResult: "success",
-    timeSavedMin: 30,
-    runCountThisMonth: 23,
-    isActive: true,
-  },
-  {
-    id: "T-003",
-    name: "週次工程レポート",
-    targetProcess: "工程データ取得→グラフ生成→PDF作成→配信",
-    schedule: "毎週月曜 07:00",
-    lastRun: "2026-05-20 07:00",
-    lastResult: "success",
-    timeSavedMin: 90,
-    runCountThisMonth: 4,
-    isActive: true,
-  },
-  {
-    id: "T-004",
-    name: "入退場記録転記",
-    targetProcess: "入退場ゲートログ→台帳Excel自動転記",
-    schedule: "毎日 19:00",
-    lastRun: "2026-05-24 09:15",
-    lastResult: "running",
-    timeSavedMin: 20,
-    runCountThisMonth: 24,
-    isActive: true,
-  },
-  {
-    id: "T-005",
-    name: "書類フォーマット変換",
-    targetProcess: "旧形式PDF→新形式テンプレートへ自動変換",
-    schedule: "随時（ファイル検知）",
-    lastRun: "2026-05-24 11:42",
-    lastResult: "success",
-    timeSavedMin: 15,
-    runCountThisMonth: 38,
-    isActive: true,
-  },
-  {
-    id: "T-006",
-    name: "発注書自動作成",
-    targetProcess: "承認済み見積→発注書PDF生成→メール送付",
-    schedule: "毎日 10:00・15:00",
-    lastRun: "2026-05-24 10:00",
-    lastResult: "failed",
-    timeSavedMin: 35,
-    runCountThisMonth: 18,
-    isActive: false,
-  },
-  {
-    id: "T-007",
-    name: "安全パトロール記録集計",
-    targetProcess: "点検アプリデータ→月次安全報告書自動生成",
-    schedule: "毎月末 17:00",
-    lastRun: "2026-04-30 17:00",
-    lastResult: "success",
-    timeSavedMin: 120,
-    runCountThisMonth: 1,
-    isActive: true,
-  },
-  {
-    id: "T-008",
-    name: "協力会社評価集計",
-    targetProcess: "工事完了通知受信→評価フォーム自動配信",
-    schedule: "随時（完了通知検知）",
-    lastRun: "2026-05-22 14:20",
-    lastResult: "success",
-    timeSavedMin: 25,
-    runCountThisMonth: 7,
-    isActive: true,
-  },
-];
-
 const RESULT_CONFIG = {
   success: {
     label: "成功",
@@ -132,8 +41,9 @@ const RESULT_CONFIG = {
 };
 
 export default function RpaPage() {
-  const [tasks, setTasks] = useState<RpaTask[]>(MOCK_TASKS);
+  const [tasks, setTasks] = useState<RpaTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -144,29 +54,36 @@ export default function RpaPage() {
       }>("/autonomous/rpa-tasks?per_page=50");
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setTasks(
-          items.map((item: Record<string, unknown>) => ({
-            id: String(item.id ?? ""),
-            name: String(item.name ?? ""),
-            targetProcess: String(
-              item.targetProcess ?? item.target_process ?? "",
-            ),
-            schedule: String(item.schedule ?? ""),
-            lastRun: String(item.lastRun ?? item.last_run ?? ""),
-            lastResult: String(
-              item.lastResult ?? item.last_result ?? "idle",
-            ) as RpaTask["lastResult"],
-            timeSavedMin: Number(item.timeSavedMin ?? item.time_saved_min ?? 0),
-            runCountThisMonth: Number(
-              item.runCountThisMonth ?? item.run_count_this_month ?? 0,
-            ),
-            isActive: Boolean(item.isActive ?? item.is_active ?? false),
-          })),
-        );
-      }
-    } catch {
-      setTasks(MOCK_TASKS);
+      setTasks(
+        Array.isArray(items)
+          ? items.map((item: Record<string, unknown>) => ({
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              targetProcess: String(
+                item.targetProcess ?? item.target_process ?? "",
+              ),
+              schedule: String(item.schedule ?? ""),
+              lastRun: String(item.lastRun ?? item.last_run ?? ""),
+              lastResult: String(
+                item.lastResult ?? item.last_result ?? "idle",
+              ) as RpaTask["lastResult"],
+              timeSavedMin: Number(
+                item.timeSavedMin ?? item.time_saved_min ?? 0,
+              ),
+              runCountThisMonth: Number(
+                item.runCountThisMonth ?? item.run_count_this_month ?? 0,
+              ),
+              isActive: Boolean(item.isActive ?? item.is_active ?? false),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -182,10 +99,14 @@ export default function RpaPage() {
     (s, t) => s + t.timeSavedMin * t.runCountThisMonth,
     0,
   );
-  const successRate = Math.round(
-    (tasks.filter((t) => t.lastResult === "success").length / tasks.length) *
-      100,
-  );
+  const successRate =
+    tasks.length > 0
+      ? Math.round(
+          (tasks.filter((t) => t.lastResult === "success").length /
+            tasks.length) *
+            100,
+        )
+      : 0;
 
   const timeSavedHours = Math.floor(totalTimeSavedMin / 60);
   const timeSavedMins = totalTimeSavedMin % 60;
@@ -205,6 +126,17 @@ export default function RpaPage() {
           タスク追加
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && tasks.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

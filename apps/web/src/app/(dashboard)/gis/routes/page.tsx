@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Route, Truck, MapPin, AlertTriangle } from "lucide-react";
 
 type RouteStatus = "通常" | "工事中" | "通行止め" | "迂回推奨";
@@ -17,75 +17,6 @@ interface TransportRoute {
   status: RouteStatus;
   tripsThisMonth: number;
 }
-
-const MOCK_ROUTES: TransportRoute[] = [
-  {
-    id: "1",
-    name: "メインルートA",
-    origin: "資材置き場（南ゲート）",
-    destination: "第1工区 作業エリア",
-    distance: "1.2 km",
-    duration: "8 分",
-    weightLimit: "25 t",
-    status: "通常",
-    tripsThisMonth: 142,
-  },
-  {
-    id: "2",
-    name: "資材搬入ルートB",
-    origin: "資材置き場（南ゲート）",
-    destination: "第2工区 作業エリア",
-    distance: "2.1 km",
-    duration: "14 分",
-    weightLimit: "20 t",
-    status: "工事中",
-    tripsThisMonth: 87,
-  },
-  {
-    id: "3",
-    name: "土砂搬出ルートC",
-    origin: "掘削エリア（東）",
-    destination: "土砂仮置き場",
-    distance: "0.8 km",
-    duration: "5 分",
-    weightLimit: "30 t",
-    status: "通常",
-    tripsThisMonth: 215,
-  },
-  {
-    id: "4",
-    name: "重機搬入ルートD",
-    origin: "北ゲート",
-    destination: "第3工区 重機置き場",
-    distance: "3.4 km",
-    duration: "22 分",
-    weightLimit: "50 t",
-    status: "通行止め",
-    tripsThisMonth: 0,
-  },
-  {
-    id: "5",
-    name: "コンクリートルートE",
-    origin: "生コン車進入口",
-    destination: "打設エリア",
-    distance: "1.6 km",
-    duration: "10 分",
-    weightLimit: "20 t",
-    status: "迂回推奨",
-    tripsThisMonth: 63,
-  },
-  {
-    id: "6",
-    name: "廃材搬出ルートF",
-    origin: "解体エリア",
-    destination: "廃材置き場（西）",
-    distance: "2.8 km",
-    duration: "18 分",
-    weightLimit: "15 t",
-    status: "通常",
-    tripsThisMonth: 98,
-  },
-];
 
 const STATUS_CONFIG: Record<RouteStatus, { className: string; dot: string }> = {
   通常: { className: "bg-green-100 text-green-800", dot: "bg-green-500" },
@@ -114,8 +45,9 @@ function normalizeRouteStatus(raw: string): RouteStatus {
 }
 
 export default function RoutesPage() {
-  const [routes, setRoutes] = useState<TransportRoute[]>(MOCK_ROUTES);
+  const [routes, setRoutes] = useState<TransportRoute[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -123,32 +55,37 @@ export default function RoutesPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/gis/routes?per_page=50").catch(() => null);
+      }>("/gis/routes?per_page=50");
       const data: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setRoutes(
-          data.map((item) => {
-            const distance = Number(item.distance ?? 0);
-            const duration = Number(item.duration ?? 0);
-            return {
-              id: String(item.id ?? ""),
-              name: String(item.name ?? ""),
-              origin: String(item.origin ?? item.start_point ?? ""),
-              destination: String(item.destination ?? item.end_point ?? ""),
-              distance: distance > 0 ? `${distance.toFixed(1)} km` : "",
-              duration: duration > 0 ? `${duration} 分` : "",
-              weightLimit: String(item.weight_limit ?? ""),
-              status: normalizeRouteStatus(String(item.status ?? "")),
-              tripsThisMonth: Number(
-                item.trips_this_month ?? item.coordinates_count ?? 0,
-              ),
-            };
-          }),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setRoutes(
+        Array.isArray(data)
+          ? data.map((item) => {
+              const distance = Number(item.distance ?? 0);
+              const duration = Number(item.duration ?? 0);
+              return {
+                id: String(item.id ?? ""),
+                name: String(item.name ?? ""),
+                origin: String(item.origin ?? item.start_point ?? ""),
+                destination: String(item.destination ?? item.end_point ?? ""),
+                distance: distance > 0 ? `${distance.toFixed(1)} km` : "",
+                duration: duration > 0 ? `${duration} 分` : "",
+                weightLimit: String(item.weight_limit ?? ""),
+                status: normalizeRouteStatus(String(item.status ?? "")),
+                tripsThisMonth: Number(
+                  item.trips_this_month ?? item.coordinates_count ?? 0,
+                ),
+              };
+            })
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -217,6 +154,17 @@ export default function RoutesPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && routes.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ルートテーブル */}

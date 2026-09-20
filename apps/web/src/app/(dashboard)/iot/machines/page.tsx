@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Truck, Fuel, MapPin, Activity } from "lucide-react";
 
 type MachineStatus = "running" | "idle" | "stopped" | "maintenance";
@@ -18,105 +18,6 @@ interface Machine {
   gpsLng: string;
   lastComm: string;
 }
-
-const MOCK_MACHINES: Machine[] = [
-  {
-    id: "1",
-    machineNumber: "CR-001",
-    type: "タワークレーン",
-    location: "第1工区 中央",
-    status: "running",
-    engineHours: 1842,
-    fuelLevel: 72,
-    gpsLat: "34.6832",
-    gpsLng: "135.5236",
-    lastComm: "09:00:12",
-  },
-  {
-    id: "2",
-    machineNumber: "BH-003",
-    type: "バックホウ 0.7m³",
-    location: "掘削エリア 北",
-    status: "running",
-    engineHours: 3241,
-    fuelLevel: 45,
-    gpsLat: "34.6829",
-    gpsLng: "135.5241",
-    lastComm: "09:00:08",
-  },
-  {
-    id: "3",
-    machineNumber: "BH-007",
-    type: "バックホウ 1.0m³",
-    location: "掘削エリア 東",
-    status: "idle",
-    engineHours: 2107,
-    fuelLevel: 88,
-    gpsLat: "34.6835",
-    gpsLng: "135.5248",
-    lastComm: "09:00:15",
-  },
-  {
-    id: "4",
-    machineNumber: "DT-002",
-    type: "ダンプトラック 10t",
-    location: "土砂搬出路",
-    status: "running",
-    engineHours: 5632,
-    fuelLevel: 31,
-    gpsLat: "34.6821",
-    gpsLng: "135.5228",
-    lastComm: "09:00:05",
-  },
-  {
-    id: "5",
-    machineNumber: "DT-005",
-    type: "ダンプトラック 10t",
-    location: "資材置き場",
-    status: "idle",
-    engineHours: 4891,
-    fuelLevel: 95,
-    gpsLat: "34.6845",
-    gpsLng: "135.5252",
-    lastComm: "08:59:48",
-  },
-  {
-    id: "6",
-    machineNumber: "CP-001",
-    type: "コンクリートポンプ車",
-    location: "打設エリア",
-    status: "running",
-    engineHours: 1203,
-    fuelLevel: 58,
-    gpsLat: "34.6838",
-    gpsLng: "135.5232",
-    lastComm: "09:00:03",
-  },
-  {
-    id: "7",
-    machineNumber: "BH-012",
-    type: "バックホウ 0.45m³",
-    location: "整備ヤード",
-    status: "maintenance",
-    engineHours: 6748,
-    fuelLevel: 20,
-    gpsLat: "34.6850",
-    gpsLng: "135.5260",
-    lastComm: "07:30:22",
-  },
-  {
-    id: "8",
-    machineNumber: "VR-002",
-    type: "振動ローラー",
-    location: "駐機場",
-    status: "stopped",
-    engineHours: 892,
-    fuelLevel: 100,
-    gpsLat: "34.6848",
-    gpsLng: "135.5255",
-    lastComm: "06:15:44",
-  },
-];
 
 const STATUS_CONFIG: Record<
   MachineStatus,
@@ -182,8 +83,9 @@ function normalizeMachineStatus(raw: string): MachineStatus {
 }
 
 export default function MachinesPage() {
-  const [machines, setMachines] = useState<Machine[]>(MOCK_MACHINES);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -191,27 +93,34 @@ export default function MachinesPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/iot/machines?per_page=50").catch(() => null);
+      }>("/iot/machines?per_page=50");
       const data: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setMachines(
-          data.map((item) => ({
-            id: String(item.id ?? ""),
-            machineNumber: String(item.name ?? item.machine_number ?? ""),
-            type: String(item.machine_type ?? item.type ?? ""),
-            location: String(item.location ?? ""),
-            status: normalizeMachineStatus(String(item.status ?? "")),
-            engineHours: Number(item.engine_hours ?? 0),
-            fuelLevel: Number(item.fuel_level ?? item.health_score ?? 0),
-            gpsLat: String(item.gps_lat ?? ""),
-            gpsLng: String(item.gps_lng ?? ""),
-            lastComm: String(item.last_comm ?? item.last_maintenance_at ?? ""),
-          })),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setMachines(
+        Array.isArray(data)
+          ? data.map((item) => ({
+              id: String(item.id ?? ""),
+              machineNumber: String(item.name ?? item.machine_number ?? ""),
+              type: String(item.machine_type ?? item.type ?? ""),
+              location: String(item.location ?? ""),
+              status: normalizeMachineStatus(String(item.status ?? "")),
+              engineHours: Number(item.engine_hours ?? 0),
+              fuelLevel: Number(item.fuel_level ?? item.health_score ?? 0),
+              gpsLat: String(item.gps_lat ?? ""),
+              gpsLng: String(item.gps_lng ?? ""),
+              lastComm: String(
+                item.last_comm ?? item.last_maintenance_at ?? "",
+              ),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -247,6 +156,17 @@ export default function MachinesPage() {
           <Truck className="w-8 h-8 text-blue-600" />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && machines.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

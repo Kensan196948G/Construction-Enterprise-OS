@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Brain, Zap, Target, TrendingUp } from "lucide-react";
 
 type ActionPriority = "critical" | "high" | "medium" | "low";
@@ -314,28 +314,26 @@ const MODEL_STATUS_CONFIG: Record<
 };
 
 export default function AiDashboardPage() {
-  const [modelMetrics, setModelMetrics] =
-    useState<ModelMetrics[]>(MODEL_METRICS);
+  const [modelMetrics, setModelMetrics] = useState<ModelMetrics[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [modelsRes, reportsRes] = await Promise.allSettled([
-        get<AiModel[] | { items: AiModel[] }>("/ai/models?per_page=10").catch(
-          () => null,
-        ),
-        get<unknown>("/analytics/reports?per_page=5").catch(() => null),
+        get<AiModel[] | { items: AiModel[] }>("/ai/models?per_page=10"),
+        get<unknown>("/analytics/reports?per_page=5"),
       ]);
 
-      if (modelsRes.status === "fulfilled" && modelsRes.value) {
+      if (modelsRes.status === "fulfilled") {
         const json = modelsRes.value;
         const items: AiModel[] = Array.isArray(json)
           ? json
-          : (json.items ?? []);
+          : (json?.items ?? []);
 
-        if (items.length > 0) {
-          const mapped: ModelMetrics[] = items.map((m, idx) => ({
+        setModelMetrics(
+          items.map((m, idx) => ({
             id: typeof m.id === "number" ? m.id : idx + 1,
             modelName: m.name ?? m.model_name ?? `モデル ${idx + 1}`,
             purpose: m.purpose ?? m.description ?? "",
@@ -344,15 +342,20 @@ export default function AiDashboardPage() {
             nextTraining: m.next_training ?? "—",
             dataPoints: m.data_points ?? m.dataPoints ?? 0,
             status: m.status ?? "active",
-          }));
-          setModelMetrics(mapped);
-        }
+          })),
+        );
       }
+      setError(
+        modelsRes.status === "fulfilled"
+          ? null
+          : modelsRes.reason instanceof ApiError &&
+              modelsRes.reason.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
 
       // reportsRes currently unused — available for future extension
       void reportsRes;
-    } catch {
-      // fallback to mock data — already set as default state
     } finally {
       setLoading(false);
     }
@@ -366,7 +369,9 @@ export default function AiDashboardPage() {
     (r) => r.priority === "critical",
   ).length;
   const avgAccuracy =
-    modelMetrics.reduce((a, m) => a + m.accuracy, 0) / modelMetrics.length;
+    modelMetrics.length > 0
+      ? modelMetrics.reduce((a, m) => a + m.accuracy, 0) / modelMetrics.length
+      : 0;
   const running = QUEUE_TASKS.filter((t) => t.status === "running").length;
   const failed = QUEUE_TASKS.filter((t) => t.status === "failed").length;
 
@@ -425,6 +430,17 @@ export default function AiDashboardPage() {
           <Brain className="w-8 h-8 text-purple-600" />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && modelMetrics.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

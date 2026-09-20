@@ -1,29 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { BarChart3, TrendingUp, Banknote, FileText } from "lucide-react";
 
 // Mock data — 建設業規模（億単位）
-const MOCK_PL_ITEMS = [
-  { label: "売上高", amount: 3850000000, indent: false, bold: false },
-  { label: "売上原価", amount: 2926000000, indent: false, bold: false },
-  { label: "売上総利益（粗利）", amount: 924000000, indent: false, bold: true },
-  {
-    label: "販売費及び一般管理費",
-    amount: 312000000,
-    indent: true,
-    bold: false,
-  },
-  { label: "営業利益", amount: 612000000, indent: false, bold: true },
-  { label: "営業外収益", amount: 18000000, indent: true, bold: false },
-  { label: "営業外費用", amount: 24000000, indent: true, bold: false },
-  { label: "経常利益", amount: 606000000, indent: false, bold: true },
-  { label: "特別損益（純額）", amount: -12000000, indent: true, bold: false },
-  { label: "税引前当期純利益", amount: 594000000, indent: false, bold: true },
-  { label: "法人税等", amount: 178200000, indent: true, bold: false },
-  { label: "当期純利益", amount: 415800000, indent: false, bold: true },
-];
 
 const CASHFLOW_MONTHS = [
   {
@@ -130,8 +111,9 @@ function buildPlItemsFromSummary(summary: FinancialSummary): PlItem[] {
 }
 
 export default function FinancePage() {
-  const [plItems, setPlItems] = useState<PlItem[]>(MOCK_PL_ITEMS);
+  const [plItems, setPlItems] = useState<PlItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -139,7 +121,7 @@ export default function FinancePage() {
       const json = await get<{
         data?: FinancialSummary;
         summary?: FinancialSummary;
-      }>("/erp/ledger/summary").catch(() => null);
+      }>("/erp/ledger/summary");
       const summary = (json?.data ??
         json?.summary ??
         json ??
@@ -148,13 +130,17 @@ export default function FinancePage() {
         summary.total_revenue !== undefined ||
         summary.operating_profit !== undefined
       ) {
-        const derived = buildPlItemsFromSummary(summary);
-        if (derived.length > 0) {
-          setPlItems(derived);
-        }
+        setPlItems(buildPlItemsFromSummary(summary));
+      } else {
+        setPlItems([]);
       }
-    } catch {
-      // fallback to mock data
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -181,6 +167,17 @@ export default function FinancePage() {
           損益計算書・キャッシュフローの月次サマリーを確認します（2026年度）
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && plItems.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

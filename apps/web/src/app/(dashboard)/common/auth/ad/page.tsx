@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Network, Building, RefreshCw, Shield } from "lucide-react";
 
 const AD_CONFIG = {
@@ -22,43 +22,10 @@ type GroupMapping = {
   members: number;
 };
 
-const GROUP_MAPPINGS: GroupMapping[] = [
-  {
-    id: 1,
-    adGroup: "CN=SystemAdmins,OU=Groups,DC=construction-os,DC=local",
-    systemRole: "管理者",
-    members: 2,
-  },
-  {
-    id: 2,
-    adGroup: "CN=ProjectManagers,OU=Groups,DC=construction-os,DC=local",
-    systemRole: "プロジェクトマネージャー",
-    members: 5,
-  },
-  {
-    id: 3,
-    adGroup: "CN=SiteWorkers,OU=Groups,DC=construction-os,DC=local",
-    systemRole: "現場監督",
-    members: 20,
-  },
-  {
-    id: 4,
-    adGroup: "CN=SafetyOfficers,OU=Groups,DC=construction-os,DC=local",
-    systemRole: "安全管理者",
-    members: 3,
-  },
-  {
-    id: 5,
-    adGroup: "CN=ReadOnly,OU=Groups,DC=construction-os,DC=local",
-    systemRole: "閲覧のみ",
-    members: 8,
-  },
-];
-
 export default function AdPage() {
-  const [groupMappings, setGroupMappings] =
-    useState<GroupMapping[]>(GROUP_MAPPINGS);
+  const [groupMappings, setGroupMappings] = useState<GroupMapping[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -68,18 +35,23 @@ export default function AdPage() {
         data?: Record<string, unknown>[];
       }>("/auth/ad/groups");
       const items: Record<string, unknown>[] = json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setGroupMappings(
-          items.map((item: Record<string, unknown>, idx: number) => ({
-            id: Number(item.id ?? idx + 1),
-            adGroup: String(item.adGroup ?? item.ad_group ?? ""),
-            systemRole: String(item.systemRole ?? item.system_role ?? ""),
-            members: Number(item.members ?? 0),
-          })),
-        );
-      }
-    } catch {
-      setGroupMappings(GROUP_MAPPINGS);
+      setGroupMappings(
+        Array.isArray(items)
+          ? items.map((item: Record<string, unknown>, idx: number) => ({
+              id: Number(item.id ?? idx + 1),
+              adGroup: String(item.adGroup ?? item.ad_group ?? ""),
+              systemRole: String(item.systemRole ?? item.system_role ?? ""),
+              members: Number(item.members ?? 0),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -158,6 +130,17 @@ export default function AdPage() {
           </span>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && groupMappings.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* グループマッピング */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

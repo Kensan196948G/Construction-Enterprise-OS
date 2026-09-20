@@ -15,101 +15,9 @@ import {
   Filter,
   MoreVertical,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 // Mock data (fallback)
-const MOCK_PROJECTS = [
-  {
-    id: 1,
-    name: "品川タワー新築工事",
-    code: "P-2024-001",
-    location: "東京都品川区",
-    status: "active",
-    progress: 68,
-    startDate: "2024-04-01",
-    endDate: "2025-03-31",
-    manager: "田中 健一",
-    workers: 42,
-    budget: "¥1.2億",
-    spent: "¥0.82億",
-    alerts: 1,
-  },
-  {
-    id: 2,
-    name: "横浜分譲マンション建設",
-    code: "P-2024-002",
-    location: "神奈川県横浜市",
-    status: "active",
-    progress: 35,
-    startDate: "2024-07-01",
-    endDate: "2025-12-31",
-    manager: "鈴木 次郎",
-    workers: 28,
-    budget: "¥2.4億",
-    spent: "¥0.84億",
-    alerts: 0,
-  },
-  {
-    id: 3,
-    name: "大田区道路改良工事",
-    code: "P-2024-003",
-    location: "東京都大田区",
-    status: "active",
-    progress: 82,
-    startDate: "2024-01-15",
-    endDate: "2024-12-31",
-    manager: "佐藤 三郎",
-    workers: 15,
-    budget: "¥0.45億",
-    spent: "¥0.37億",
-    alerts: 0,
-  },
-  {
-    id: 4,
-    name: "新宿再開発ビル工事",
-    code: "P-2024-004",
-    location: "東京都新宿区",
-    status: "planning",
-    progress: 0,
-    startDate: "2025-01-01",
-    endDate: "2026-06-30",
-    manager: "山田 四郎",
-    workers: 0,
-    budget: "¥3.8億",
-    spent: "¥0",
-    alerts: 0,
-  },
-  {
-    id: 5,
-    name: "川崎物流センター建設",
-    code: "P-2024-005",
-    location: "神奈川県川崎市",
-    status: "delayed",
-    progress: 45,
-    startDate: "2024-03-01",
-    endDate: "2024-11-30",
-    manager: "伊藤 五郎",
-    workers: 33,
-    budget: "¥1.9億",
-    spent: "¥1.1億",
-    alerts: 3,
-  },
-  {
-    id: 6,
-    name: "千葉港湾整備工事",
-    code: "P-2023-015",
-    location: "千葉県千葉市",
-    status: "completed",
-    progress: 100,
-    startDate: "2023-06-01",
-    endDate: "2024-05-31",
-    manager: "渡辺 六郎",
-    workers: 0,
-    budget: "¥0.98億",
-    spent: "¥0.96億",
-    alerts: 0,
-  },
-];
 
 interface Project {
   id: number;
@@ -151,8 +59,9 @@ const statusConfig = {
 };
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -166,29 +75,36 @@ export default function ProjectsPage() {
         end_date?: string;
       }[];
     }>("/construction/schedules?per_page=20")
-      .catch(() => null)
       .then((data) => {
         const items = data?.items;
-        if (Array.isArray(items) && items.length > 0) {
-          const mapped: Project[] = items.map((s, i) => ({
-            id: i + 1,
-            name: s.name,
-            code: s.id.slice(0, 12).toUpperCase(),
-            location: "—",
-            status: s.status ?? "active",
-            progress: s.progress ?? 0,
-            startDate: s.start_date ?? "—",
-            endDate: s.end_date ?? "—",
-            manager: "—",
-            workers: 0,
-            budget: "—",
-            spent: "—",
-            alerts: 0,
-          }));
-          setProjects(mapped);
-        }
+        setProjects(
+          Array.isArray(items)
+            ? items.map((s, i) => ({
+                id: i + 1,
+                name: s.name,
+                code: s.id.slice(0, 12).toUpperCase(),
+                location: "—",
+                status: s.status ?? "active",
+                progress: s.progress ?? 0,
+                startDate: s.start_date ?? "—",
+                endDate: s.end_date ?? "—",
+                manager: "—",
+                workers: 0,
+                budget: "—",
+                spent: "—",
+                alerts: 0,
+              }))
+            : [],
+        );
+        setError(null);
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+        );
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -275,6 +191,17 @@ export default function ProjectsPage() {
           フィルター
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && projects.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Project Table */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

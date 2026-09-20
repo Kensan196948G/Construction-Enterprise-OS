@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, UserPlus, UserCheck, Shield } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type User = {
   id: number;
@@ -13,117 +13,6 @@ type User = {
   lastLogin: string;
   status: string;
 };
-
-const MOCK_USERS: User[] = [
-  {
-    id: 1,
-    name: "田中 健一",
-    email: "tanaka.k@construction-os.jp",
-    title: "現場所長",
-    role: "manager",
-    lastLogin: "2024-11-30 09:12",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "鈴木 次郎",
-    email: "suzuki.j@construction-os.jp",
-    title: "主任技術者",
-    role: "manager",
-    lastLogin: "2024-11-30 08:45",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "佐藤 三郎",
-    email: "sato.s@construction-os.jp",
-    title: "現場監督",
-    role: "field",
-    lastLogin: "2024-11-29 17:22",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "山田 五郎",
-    email: "yamada.g@construction-os.jp",
-    title: "施工管理",
-    role: "field",
-    lastLogin: "2024-11-30 07:55",
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "木村 七海",
-    email: "kimura.n@construction-os.jp",
-    title: "安全担当",
-    role: "field",
-    lastLogin: "2024-11-28 16:10",
-    status: "active",
-  },
-  {
-    id: 6,
-    name: "中村 八郎",
-    email: "nakamura.h@construction-os.jp",
-    title: "職長",
-    role: "field",
-    lastLogin: "2024-11-27 14:30",
-    status: "active",
-  },
-  {
-    id: 7,
-    name: "小林 九子",
-    email: "kobayashi.k@construction-os.jp",
-    title: "内装担当",
-    role: "field",
-    lastLogin: "2024-11-25 11:00",
-    status: "active",
-  },
-  {
-    id: 8,
-    name: "加藤 十蔵",
-    email: "kato.j@construction-os.jp",
-    title: "設備技術者",
-    role: "field",
-    lastLogin: "2024-11-20 09:00",
-    status: "inactive",
-  },
-  {
-    id: 9,
-    name: "伊藤 一郎",
-    email: "ito.i@construction-os.jp",
-    title: "経理担当",
-    role: "viewer",
-    lastLogin: "2024-11-30 10:00",
-    status: "active",
-  },
-  {
-    id: 10,
-    name: "渡辺 管理",
-    email: "watanabe.a@construction-os.jp",
-    title: "システム管理者",
-    role: "admin",
-    lastLogin: "2024-11-30 08:00",
-    status: "active",
-  },
-  {
-    id: 11,
-    name: "松本 花子",
-    email: "matsumoto.h@construction-os.jp",
-    title: "品質管理",
-    role: "manager",
-    lastLogin: "2024-11-10 15:00",
-    status: "inactive",
-  },
-  {
-    id: 12,
-    name: "井上 太郎",
-    email: "inoue.t@construction-os.jp",
-    title: "現場補助",
-    role: "field",
-    lastLogin: "2024-10-01 09:00",
-    status: "locked",
-  },
-];
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -165,8 +54,9 @@ function Avatar({ name }: { name: string }) {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -174,23 +64,28 @@ export default function UsersPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/users?per_page=50").catch(() => null);
+      }>("/users?per_page=50");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setUsers(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.full_name ?? item.username ?? ""),
-            email: String(item.email ?? ""),
-            title: String(item.title ?? item.role ?? ""),
-            role: String(item.role ?? "field"),
-            lastLogin: String(item.last_login_at ?? item.updated_at ?? ""),
-            status: String(item.status ?? "active"),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setUsers(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.full_name ?? item.username ?? ""),
+              email: String(item.email ?? ""),
+              title: String(item.title ?? item.role ?? ""),
+              role: String(item.role ?? "field"),
+              lastLogin: String(item.last_login_at ?? item.updated_at ?? ""),
+              status: String(item.status ?? "active"),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -263,6 +158,17 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && users.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Bot,
   Cpu,
@@ -31,110 +31,6 @@ interface ErrorLog {
   description: string;
   resolution: "resolved" | "investigating" | "pending";
 }
-
-const MOCK_MACHINES: AutonomousMachine[] = [
-  {
-    id: "AM-001",
-    machineNo: "CAT-D8-01",
-    type: "bulldozer",
-    area: "A工区 造成エリア北",
-    autonomousMode: "full",
-    completionRate: 78,
-    operatingHours: 6.5,
-    status: "active",
-  },
-  {
-    id: "AM-002",
-    machineNo: "KOM-PC360-02",
-    type: "excavator",
-    area: "B工区 基礎掘削",
-    autonomousMode: "semi",
-    completionRate: 45,
-    operatingHours: 4.2,
-    status: "active",
-  },
-  {
-    id: "AM-003",
-    machineNo: "SAK-CS220-01",
-    type: "compactor",
-    area: "A工区 転圧エリア",
-    autonomousMode: "full",
-    completionRate: 92,
-    operatingHours: 7.8,
-    status: "active",
-  },
-  {
-    id: "AM-004",
-    machineNo: "CAT-D6-03",
-    type: "bulldozer",
-    area: "C工区 整地",
-    autonomousMode: "standby",
-    completionRate: 15,
-    operatingHours: 1.0,
-    status: "error",
-  },
-  {
-    id: "AM-005",
-    machineNo: "KOM-PC200-05",
-    type: "excavator",
-    area: "D工区 排水溝",
-    autonomousMode: "semi",
-    completionRate: 60,
-    operatingHours: 5.3,
-    status: "idle",
-  },
-];
-
-const MOCK_ERROR_LOGS: ErrorLog[] = [
-  {
-    id: "E-001",
-    occurredAt: "2026-05-24 09:15",
-    machineNo: "CAT-D6-03",
-    errorType: "GPS信号喪失",
-    description: "GPS受信不良により自律走行を一時停止",
-    resolution: "resolved",
-  },
-  {
-    id: "E-002",
-    occurredAt: "2026-05-24 07:42",
-    machineNo: "KOM-PC360-02",
-    errorType: "障害物検知",
-    description: "作業エリア内に未登録障害物を検知、セーフモード移行",
-    resolution: "resolved",
-  },
-  {
-    id: "E-003",
-    occurredAt: "2026-05-23 16:30",
-    machineNo: "CAT-D8-01",
-    errorType: "傾斜センサー異常",
-    description: "傾斜センサー値が許容範囲を超過",
-    resolution: "investigating",
-  },
-  {
-    id: "E-004",
-    occurredAt: "2026-05-23 14:05",
-    machineNo: "SAK-CS220-01",
-    errorType: "通信エラー",
-    description: "制御サーバーとの通信が5秒以上途絶",
-    resolution: "resolved",
-  },
-  {
-    id: "E-005",
-    occurredAt: "2026-05-22 11:20",
-    machineNo: "CAT-D6-03",
-    errorType: "バッテリー低下",
-    description: "補助バッテリー残量15%以下",
-    resolution: "resolved",
-  },
-  {
-    id: "E-006",
-    occurredAt: "2026-05-22 08:55",
-    machineNo: "KOM-PC200-05",
-    errorType: "経路計算エラー",
-    description: "最適経路計算のタイムアウト、手動介入が必要",
-    resolution: "pending",
-  },
-];
 
 const machineTypeLabel: Record<AutonomousMachine["type"], string> = {
   bulldozer: "自律ブルドーザー",
@@ -185,9 +81,10 @@ const resolutionStyle: Record<
 };
 
 export default function AutonomousPage() {
-  const [machines, setMachines] = useState<AutonomousMachine[]>(MOCK_MACHINES);
-  const [errorLogs, setErrorLogs] = useState<ErrorLog[]>(MOCK_ERROR_LOGS);
+  const [machines, setMachines] = useState<AutonomousMachine[]>([]);
+  const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -196,69 +93,79 @@ export default function AutonomousPage() {
         get<{
           data?: { items?: Record<string, unknown>[] };
           items?: Record<string, unknown>[];
-        }>("/autonomous/machines?per_page=50").catch(() => null),
+        }>("/autonomous/machines?per_page=50"),
         get<{
           data?: { items?: Record<string, unknown>[] };
           items?: Record<string, unknown>[];
-        }>("/autonomous/error-logs?per_page=50").catch(() => null),
+        }>("/autonomous/error-logs?per_page=50"),
       ]);
 
       if (machinesResult.status === "fulfilled") {
         const json = machinesResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setMachines(
-            items.map(
-              (item: Record<string, unknown>): AutonomousMachine => ({
-                id: String(item.id ?? ""),
-                machineNo: String(item.machineNo ?? item.machine_no ?? ""),
-                type: String(
-                  item.type ?? "bulldozer",
-                ) as AutonomousMachine["type"],
-                area: String(item.area ?? ""),
-                autonomousMode: String(
-                  item.autonomousMode ?? item.autonomous_mode ?? "standby",
-                ) as AutonomousMachine["autonomousMode"],
-                completionRate: Number(
-                  item.completionRate ?? item.completion_rate ?? 0,
-                ),
-                operatingHours: Number(
-                  item.operatingHours ?? item.operating_hours ?? 0,
-                ),
-                status: String(
-                  item.status ?? "idle",
-                ) as AutonomousMachine["status"],
-              }),
-            ),
-          );
-        }
+        setMachines(
+          Array.isArray(items)
+            ? items.map(
+                (item: Record<string, unknown>): AutonomousMachine => ({
+                  id: String(item.id ?? ""),
+                  machineNo: String(item.machineNo ?? item.machine_no ?? ""),
+                  type: String(
+                    item.type ?? "bulldozer",
+                  ) as AutonomousMachine["type"],
+                  area: String(item.area ?? ""),
+                  autonomousMode: String(
+                    item.autonomousMode ?? item.autonomous_mode ?? "standby",
+                  ) as AutonomousMachine["autonomousMode"],
+                  completionRate: Number(
+                    item.completionRate ?? item.completion_rate ?? 0,
+                  ),
+                  operatingHours: Number(
+                    item.operatingHours ?? item.operating_hours ?? 0,
+                  ),
+                  status: String(
+                    item.status ?? "idle",
+                  ) as AutonomousMachine["status"],
+                }),
+              )
+            : [],
+        );
       }
 
       if (errorLogsResult.status === "fulfilled") {
         const json = errorLogsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setErrorLogs(
-            items.map(
-              (item: Record<string, unknown>): ErrorLog => ({
-                id: String(item.id ?? ""),
-                occurredAt: String(item.occurredAt ?? item.occurred_at ?? ""),
-                machineNo: String(item.machineNo ?? item.machine_no ?? ""),
-                errorType: String(item.errorType ?? item.error_type ?? ""),
-                description: String(item.description ?? ""),
-                resolution: String(
-                  item.resolution ?? "pending",
-                ) as ErrorLog["resolution"],
-              }),
-            ),
-          );
-        }
+        setErrorLogs(
+          Array.isArray(items)
+            ? items.map(
+                (item: Record<string, unknown>): ErrorLog => ({
+                  id: String(item.id ?? ""),
+                  occurredAt: String(item.occurredAt ?? item.occurred_at ?? ""),
+                  machineNo: String(item.machineNo ?? item.machine_no ?? ""),
+                  errorType: String(item.errorType ?? item.error_type ?? ""),
+                  description: String(item.description ?? ""),
+                  resolution: String(
+                    item.resolution ?? "pending",
+                  ) as ErrorLog["resolution"],
+                }),
+              )
+            : [],
+        );
       }
-    } catch {
-      setMachines(MOCK_MACHINES);
-      setErrorLogs(MOCK_ERROR_LOGS);
+
+      const rejected = [machinesResult, errorLogsResult].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -289,6 +196,20 @@ export default function AutonomousPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading &&
+        !error &&
+        machines.length === 0 &&
+        errorLogs.length === 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+            該当データがありません。
+          </div>
+        )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Camera,
   Image as ImageIcon,
@@ -21,129 +21,6 @@ interface SitePhoto {
   needs_review: boolean;
   description: string;
 }
-
-const MOCK_PHOTOS: SitePhoto[] = [
-  {
-    id: "p01",
-    filename: "IMG_0101.jpg",
-    taken_at: "2026-05-24",
-    zone: "B工区",
-    tags: ["進捗"],
-    uploader: "鈴木 健太",
-    needs_review: false,
-    description: "3Fスラブ コンクリート打設完了",
-  },
-  {
-    id: "p02",
-    filename: "IMG_0102.jpg",
-    taken_at: "2026-05-24",
-    zone: "D工区",
-    tags: ["問題"],
-    uploader: "山田 浩二",
-    needs_review: true,
-    description: "排水管埋設 — 地盤沈下懸念箇所",
-  },
-  {
-    id: "p03",
-    filename: "IMG_0103.jpg",
-    taken_at: "2026-05-24",
-    zone: "C工区",
-    tags: ["進捗"],
-    uploader: "佐藤 誠",
-    needs_review: false,
-    description: "内装ボード張り作業状況",
-  },
-  {
-    id: "p04",
-    filename: "IMG_0104.jpg",
-    taken_at: "2026-05-24",
-    zone: "全工区",
-    tags: ["安全"],
-    uploader: "田中 一郎",
-    needs_review: false,
-    description: "朝礼 安全確認の様子",
-  },
-  {
-    id: "p05",
-    filename: "IMG_0105.jpg",
-    taken_at: "2026-05-23",
-    zone: "B工区",
-    tags: ["進捗"],
-    uploader: "渡辺 大輔",
-    needs_review: false,
-    description: "型枠設置状況（3F）",
-  },
-  {
-    id: "p06",
-    filename: "IMG_0106.jpg",
-    taken_at: "2026-05-23",
-    zone: "A工区",
-    tags: ["完了"],
-    uploader: "伊藤 隆",
-    needs_review: false,
-    description: "A工区 基礎工事完成写真",
-  },
-  {
-    id: "p07",
-    filename: "IMG_0107.jpg",
-    taken_at: "2026-05-23",
-    zone: "D工区",
-    tags: ["問題"],
-    uploader: "中村 修",
-    needs_review: true,
-    description: "配管接続部 — 要確認箇所マーキング済み",
-  },
-  {
-    id: "p08",
-    filename: "IMG_0108.jpg",
-    taken_at: "2026-05-23",
-    zone: "C工区",
-    tags: ["安全"],
-    uploader: "佐藤 誠",
-    needs_review: false,
-    description: "足場手すり点検結果（C工区）",
-  },
-  {
-    id: "p09",
-    filename: "IMG_0109.jpg",
-    taken_at: "2026-05-22",
-    zone: "B工区",
-    tags: ["進捗"],
-    uploader: "鈴木 健太",
-    needs_review: false,
-    description: "鉄筋配筋検査立会い（2F）",
-  },
-  {
-    id: "p10",
-    filename: "IMG_0110.jpg",
-    taken_at: "2026-05-22",
-    zone: "A工区",
-    tags: ["完了"],
-    uploader: "田中 一郎",
-    needs_review: false,
-    description: "A工区 完成検査 立会い写真",
-  },
-  {
-    id: "p11",
-    filename: "IMG_0111.jpg",
-    taken_at: "2026-05-22",
-    zone: "D工区",
-    tags: ["進捗"],
-    uploader: "山田 浩二",
-    needs_review: false,
-    description: "外構 境界杭確認作業",
-  },
-  {
-    id: "p12",
-    filename: "IMG_0112.jpg",
-    taken_at: "2026-05-21",
-    zone: "C工区",
-    tags: ["進捗"],
-    uploader: "伊藤 隆",
-    needs_review: false,
-    description: "防水下地処理 完了状況",
-  },
-];
 
 const TAG_COLORS: Record<string, string> = {
   安全: "bg-green-100 text-green-700",
@@ -198,18 +75,27 @@ function PhotoCard({ photo }: { photo: SitePhoto }) {
 }
 
 export default function FieldPhotosPage() {
-  const [photos, setPhotos] = useState<SitePhoto[]>(MOCK_PHOTOS);
+  const [photos, setPhotos] = useState<SitePhoto[]>([]);
   const [filterZone, setFilterZone] = useState<string>("all");
   const [filterTag, setFilterTag] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const json = await get<{ data?: SitePhoto[] }>("/field/photos").catch(
-      () => null,
-    );
-    if (Array.isArray(json?.data)) setPhotos(json.data);
-    setLoading(false);
+    try {
+      const json = await get<{ data?: SitePhoto[] }>("/field/photos");
+      setPhotos(Array.isArray(json?.data) ? json.data : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -278,6 +164,17 @@ export default function FieldPhotosPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && photos.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

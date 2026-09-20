@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ListTree, Clock, CheckSquare, BarChart2 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface WbsItem {
   id: string;
@@ -242,25 +242,27 @@ function toWbsItem(w: WbsApiItem, idx: number): WbsItem {
 }
 
 export default function WbsPage() {
-  const [wbsItems, setWbsItems] = useState<WbsItem[]>(WBS_ITEMS);
+  const [wbsItems, setWbsItems] = useState<WbsItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const json = await get<WbsApiItem[] | { items: WbsApiItem[] }>(
         "/construction/wbs?per_page=50",
-      ).catch(() => null);
-      if (json) {
-        const items: WbsApiItem[] = Array.isArray(json)
-          ? json
-          : (json.items ?? []);
-        if (items.length > 0) {
-          setWbsItems(items.map((w, i) => toWbsItem(w, i)));
-        }
-      }
-    } catch {
-      // fallback to mock data — already set as default state
+      );
+      const items: WbsApiItem[] = Array.isArray(json)
+        ? json
+        : (json?.items ?? []);
+      setWbsItems(items.map((w, i) => toWbsItem(w, i)));
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -300,6 +302,17 @@ export default function WbsPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && wbsItems.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">

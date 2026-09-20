@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Activity, AlertTriangle, Wrench, Clock } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface Equipment {
   id: string;
@@ -31,89 +31,6 @@ interface PredictiveResult {
   last_maintained?: string;
   location?: string;
 }
-
-const MOCK_EQUIPMENT: Equipment[] = [
-  {
-    id: "EQ-001",
-    name: "タワークレーン #1",
-    location: "品川タワー現場",
-    healthScore: 82,
-    remainingLifeDays: 180,
-    nextInspectionDate: "2026-06-15",
-    status: "normal",
-    lastMaintained: "2026-04-10",
-  },
-  {
-    id: "EQ-002",
-    name: "コンクリートポンプ車",
-    location: "品川タワー現場",
-    healthScore: 45,
-    remainingLifeDays: 30,
-    nextInspectionDate: "2026-05-31",
-    status: "critical",
-    lastMaintained: "2026-02-20",
-  },
-  {
-    id: "EQ-003",
-    name: "高所作業車 A",
-    location: "大阪ビル現場",
-    healthScore: 73,
-    remainingLifeDays: 90,
-    nextInspectionDate: "2026-07-01",
-    status: "normal",
-    lastMaintained: "2026-03-15",
-  },
-  {
-    id: "EQ-004",
-    name: "仮設発電機 #2",
-    location: "新宿ビル現場",
-    healthScore: 58,
-    remainingLifeDays: 45,
-    nextInspectionDate: "2026-06-05",
-    status: "warning",
-    lastMaintained: "2026-03-01",
-  },
-  {
-    id: "EQ-005",
-    name: "油圧ショベル B",
-    location: "道路工事 A区間",
-    healthScore: 91,
-    remainingLifeDays: 240,
-    nextInspectionDate: "2026-08-20",
-    status: "normal",
-    lastMaintained: "2026-05-01",
-  },
-  {
-    id: "EQ-006",
-    name: "溶接機 #3",
-    location: "横浜工場",
-    healthScore: 38,
-    remainingLifeDays: 15,
-    nextInspectionDate: "2026-05-28",
-    status: "critical",
-    lastMaintained: "2026-01-15",
-  },
-  {
-    id: "EQ-007",
-    name: "コンプレッサー",
-    location: "新宿ビル現場",
-    healthScore: 67,
-    remainingLifeDays: 60,
-    nextInspectionDate: "2026-06-20",
-    status: "warning",
-    lastMaintained: "2026-03-28",
-  },
-  {
-    id: "EQ-008",
-    name: "タワークレーン #2",
-    location: "新宿ビル現場",
-    healthScore: 88,
-    remainingLifeDays: 210,
-    nextInspectionDate: "2026-08-01",
-    status: "normal",
-    lastMaintained: "2026-04-25",
-  },
-];
 
 const STATUS_CONFIG = {
   normal: {
@@ -194,25 +111,27 @@ function HealthGauge({
 }
 
 export default function AIPredictivePage() {
-  const [equipment, setEquipment] = useState<Equipment[]>(MOCK_EQUIPMENT);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const json = await get<
         PredictiveResult[] | { items: PredictiveResult[] }
-      >("/advanced/predictive?per_page=20").catch(() => null);
-      if (json) {
-        const items: PredictiveResult[] = Array.isArray(json)
-          ? json
-          : (json.items ?? []);
-        if (items.length > 0) {
-          setEquipment(items.map((r, i) => toEquipment(r, i)));
-        }
-      }
-    } catch {
-      // fallback to mock data — already set as default state
+      >("/advanced/predictive?per_page=20");
+      const items: PredictiveResult[] = Array.isArray(json)
+        ? json
+        : (json?.items ?? []);
+      setEquipment(items.map((r, i) => toEquipment(r, i)));
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -250,6 +169,17 @@ export default function AIPredictivePage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && equipment.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

@@ -11,6 +11,7 @@ import {
   Filter,
 } from "lucide-react";
 import { listOcrResults, type OcrResult } from "../../../../lib/api/vision";
+import { ApiError } from "@/lib/api-client";
 
 interface OcrItem {
   id: string;
@@ -21,81 +22,6 @@ interface OcrItem {
   charCount: number;
   processingTime: number | null;
 }
-
-const MOCK_ITEMS: OcrItem[] = [
-  {
-    id: "O-001",
-    fileName: "contract_2026_05_24.pdf",
-    docType: "契約書",
-    uploadedAt: "2026-05-24 08:30",
-    status: "completed",
-    charCount: 12450,
-    processingTime: 8,
-  },
-  {
-    id: "O-002",
-    fileName: "blueprint_shinagawa_A.pdf",
-    docType: "図面",
-    uploadedAt: "2026-05-24 09:00",
-    status: "completed",
-    charCount: 3280,
-    processingTime: 12,
-  },
-  {
-    id: "O-003",
-    fileName: "invoice_yamada_0524.pdf",
-    docType: "請求書",
-    uploadedAt: "2026-05-24 09:45",
-    status: "completed",
-    charCount: 890,
-    processingTime: 4,
-  },
-  {
-    id: "O-004",
-    fileName: "spec_yokohama_factory.pdf",
-    docType: "仕様書",
-    uploadedAt: "2026-05-24 10:10",
-    status: "completed",
-    charCount: 28600,
-    processingTime: 31,
-  },
-  {
-    id: "O-005",
-    fileName: "inspection_report_0523.pdf",
-    docType: "検査記録",
-    uploadedAt: "2026-05-24 10:30",
-    status: "processing",
-    charCount: 0,
-    processingTime: null,
-  },
-  {
-    id: "O-006",
-    fileName: "blueprint_shinjuku_B2.pdf",
-    docType: "図面",
-    uploadedAt: "2026-05-24 11:00",
-    status: "queued",
-    charCount: 0,
-    processingTime: null,
-  },
-  {
-    id: "O-007",
-    fileName: "contract_amendment_01.pdf",
-    docType: "契約書",
-    uploadedAt: "2026-05-24 11:15",
-    status: "queued",
-    charCount: 0,
-    processingTime: null,
-  },
-  {
-    id: "O-008",
-    fileName: "invoice_suzuki_electric.pdf",
-    docType: "請求書",
-    uploadedAt: "2026-05-24 13:00",
-    status: "failed",
-    charCount: 0,
-    processingTime: null,
-  },
-];
 
 const STATUS_CONFIG = {
   queued: { label: "待機中", color: "bg-gray-100 text-gray-600" },
@@ -141,20 +67,26 @@ function toOcrItem(r: OcrResult, idx: number): OcrItem {
 }
 
 export default function AIOcrPage() {
-  const [ocrItems, setOcrItems] = useState<OcrItem[]>(MOCK_ITEMS);
+  const [ocrItems, setOcrItems] = useState<OcrItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all");
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const results = await listOcrResults({ limit: 20 });
-      if (results.length > 0) {
-        setOcrItems(results.map((r, i) => toOcrItem(r, i)));
-      }
-    } catch {
-      // fallback to mock data — already set as default state
+      setOcrItems(
+        Array.isArray(results) ? results.map((r, i) => toOcrItem(r, i)) : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -206,6 +138,17 @@ export default function AIOcrPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && ocrItems.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -392,7 +335,9 @@ export default function AIOcrPage() {
         <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
           {filteredItems.length}件
           {filteredItems.length !== ocrItems.length && (
-            <span className="ml-1 text-gray-400">（全{ocrItems.length}件中）</span>
+            <span className="ml-1 text-gray-400">
+              （全{ocrItems.length}件中）
+            </span>
           )}
         </div>
       </div>

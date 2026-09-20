@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Building, Users, Network, TreePine } from "lucide-react";
 
 type Department = {
@@ -15,109 +15,6 @@ type Department = {
   level: number;
 };
 
-const MOCK_DEPARTMENTS: Department[] = [
-  {
-    id: 1,
-    code: "D001",
-    name: "経営本部",
-    manager: "渡辺 管理",
-    members: 5,
-    parent: null,
-    work: "経営企画・全社統括",
-    level: 0,
-  },
-  {
-    id: 2,
-    code: "D002",
-    name: "建設事業部",
-    manager: "田中 健一",
-    members: 48,
-    parent: "経営本部",
-    work: "建設工事全般の施工管理",
-    level: 1,
-  },
-  {
-    id: 3,
-    code: "D003",
-    name: "第一工事部",
-    manager: "鈴木 次郎",
-    members: 20,
-    parent: "建設事業部",
-    work: "RC造・SRC造建築工事",
-    level: 2,
-  },
-  {
-    id: 4,
-    code: "D004",
-    name: "第二工事部",
-    manager: "佐藤 三郎",
-    members: 18,
-    parent: "建設事業部",
-    work: "土木・道路工事",
-    level: 2,
-  },
-  {
-    id: 5,
-    code: "D005",
-    name: "設備工事部",
-    manager: "加藤 十蔵",
-    members: 10,
-    parent: "建設事業部",
-    work: "電気・機械設備工事",
-    level: 2,
-  },
-  {
-    id: 6,
-    code: "D006",
-    name: "安全管理部",
-    manager: "木村 七海",
-    members: 6,
-    parent: "建設事業部",
-    work: "現場安全・法令遵守",
-    level: 2,
-  },
-  {
-    id: 7,
-    code: "D007",
-    name: "品質管理部",
-    manager: "松本 花子",
-    members: 4,
-    parent: "建設事業部",
-    work: "品質検査・ISO管理",
-    level: 2,
-  },
-  {
-    id: 8,
-    code: "D008",
-    name: "技術開発部",
-    manager: "山田 五郎",
-    members: 8,
-    parent: "経営本部",
-    work: "新技術導入・R&D",
-    level: 1,
-  },
-  {
-    id: 9,
-    code: "D009",
-    name: "管理部",
-    manager: "伊藤 一郎",
-    members: 6,
-    parent: "経営本部",
-    work: "総務・人事・経理",
-    level: 1,
-  },
-  {
-    id: 10,
-    code: "D010",
-    name: "DX推進室",
-    manager: "中村 八郎",
-    members: 4,
-    parent: "技術開発部",
-    work: "デジタル化・システム導入",
-    level: 2,
-  },
-];
-
 const INDENT_CLASSES: Record<number, string> = {
   0: "",
   1: "pl-6",
@@ -125,9 +22,9 @@ const INDENT_CLASSES: Record<number, string> = {
 };
 
 export default function OrgPage() {
-  const [departments, setDepartments] =
-    useState<Department[]>(MOCK_DEPARTMENTS);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -135,24 +32,29 @@ export default function OrgPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/users/organizations?per_page=20").catch(() => null);
+      }>("/users/organizations?per_page=20");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setDepartments(
-          data.map((item: Record<string, unknown>, idx: number) => ({
-            id: Number(item.id ?? idx),
-            code: String(item.code ?? `D${String(idx + 1).padStart(3, "0")}`),
-            name: String(item.name ?? ""),
-            manager: String(item.manager ?? item.manager_name ?? ""),
-            members: Number(item.users_count ?? item.members ?? 0),
-            parent: item.parent_name ? String(item.parent_name) : null,
-            work: String(item.description ?? item.work ?? ""),
-            level: Number(item.level ?? 0),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setDepartments(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>, idx: number) => ({
+              id: Number(item.id ?? idx),
+              code: String(item.code ?? `D${String(idx + 1).padStart(3, "0")}`),
+              name: String(item.name ?? ""),
+              manager: String(item.manager ?? item.manager_name ?? ""),
+              members: Number(item.users_count ?? item.members ?? 0),
+              parent: item.parent_name ? String(item.parent_name) : null,
+              work: String(item.description ?? item.work ?? ""),
+              level: Number(item.level ?? 0),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -230,6 +132,17 @@ export default function OrgPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && departments.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 組織ツリーテーブル */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

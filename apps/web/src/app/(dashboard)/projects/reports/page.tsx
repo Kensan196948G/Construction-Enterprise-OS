@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { FileText, BarChart3, Send, Eye } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type Report = {
   id: number;
@@ -13,99 +13,6 @@ type Report = {
   author: string;
   status: string;
 };
-
-const MOCK_REPORTS: Report[] = [
-  {
-    id: 1,
-    name: "2024年11月 月次工事報告書",
-    type: "月次報告",
-    project: "品川タワー新築工事",
-    created: "2024-11-30",
-    author: "田中 健一",
-    status: "approved",
-  },
-  {
-    id: 2,
-    name: "2024年11月第4週 週次報告",
-    type: "週次報告",
-    project: "品川タワー新築工事",
-    created: "2024-11-29",
-    author: "田中 健一",
-    status: "sent",
-  },
-  {
-    id: 3,
-    name: "2024年11月第3週 週次報告",
-    type: "週次報告",
-    project: "品川タワー新築工事",
-    created: "2024-11-22",
-    author: "田中 健一",
-    status: "sent",
-  },
-  {
-    id: 4,
-    name: "横浜マンション 中間報告書",
-    type: "中間報告",
-    project: "横浜分譲マンション建設",
-    created: "2024-11-15",
-    author: "鈴木 次郎",
-    status: "approved",
-  },
-  {
-    id: 5,
-    name: "大田区道路改良 完工報告書",
-    type: "完工報告",
-    project: "大田区道路改良工事",
-    created: "2024-11-10",
-    author: "佐藤 三郎",
-    status: "approved",
-  },
-  {
-    id: 6,
-    name: "2024年10月 月次工事報告書",
-    type: "月次報告",
-    project: "品川タワー新築工事",
-    created: "2024-10-31",
-    author: "田中 健一",
-    status: "sent",
-  },
-  {
-    id: 7,
-    name: "竣工写真集 Vol.1",
-    type: "竣工写真集",
-    project: "大田区道路改良工事",
-    created: "2024-10-25",
-    author: "中村 八郎",
-    status: "draft",
-  },
-  {
-    id: 8,
-    name: "横浜マンション 週次報告 第12週",
-    type: "週次報告",
-    project: "横浜分譲マンション建設",
-    created: "2024-10-18",
-    author: "鈴木 次郎",
-    status: "sent",
-  },
-  {
-    id: 9,
-    name: "川崎工場 中間報告書",
-    type: "中間報告",
-    project: "川崎工場改修工事",
-    created: "2024-10-05",
-    author: "木村 七海",
-    status: "draft",
-  },
-  {
-    id: 10,
-    name: "2024年9月 月次工事報告書",
-    type: "月次報告",
-    project: "品川タワー新築工事",
-    created: "2024-09-30",
-    author: "田中 健一",
-    status: "sent",
-  },
-];
 
 const STATUS_STYLES: Record<string, string> = {
   approved: "bg-green-100 text-green-800",
@@ -128,8 +35,9 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -137,23 +45,28 @@ export default function ReportsPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/analytics/reports?per_page=20").catch(() => null);
+      }>("/analytics/reports?per_page=20");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setReports(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.title ?? item.name ?? ""),
-            type: String(item.report_type ?? item.type ?? ""),
-            project: String(item.project_name ?? item.project ?? ""),
-            created: String(item.created_at ?? "").slice(0, 10),
-            author: String(item.created_by ?? item.author ?? ""),
-            status: String(item.status ?? "draft"),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setReports(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.title ?? item.name ?? ""),
+              type: String(item.report_type ?? item.type ?? ""),
+              project: String(item.project_name ?? item.project ?? ""),
+              created: String(item.created_at ?? "").slice(0, 10),
+              author: String(item.created_by ?? item.author ?? ""),
+              status: String(item.status ?? "draft"),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -229,6 +142,17 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && reports.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
