@@ -12,7 +12,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface DashboardStats {
   activeProjects: number;
@@ -20,13 +20,6 @@ interface DashboardStats {
   iotAlerts: number;
   newDocuments: number;
 }
-
-const MOCK_STATS: DashboardStats = {
-  activeProjects: 12,
-  pendingApprovals: 5,
-  iotAlerts: 3,
-  newDocuments: 28,
-};
 
 const activities = [
   {
@@ -87,43 +80,55 @@ const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
 };
 
 export default function DashboardPage() {
-  const [dashStats, setDashStats] = useState<DashboardStats>(MOCK_STATS);
+  const [dashStats, setDashStats] = useState<DashboardStats>({
+    activeProjects: 0,
+    pendingApprovals: 0,
+    iotAlerts: 0,
+    newDocuments: 0,
+  });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.allSettled([
-      get<{ total?: number }>("/construction/schedules?per_page=1").catch(
-        () => null,
-      ),
-      get<{ data?: unknown[] }>("/workflow/instances/pending").catch(
-        () => null,
-      ),
-      get<{ data?: { total?: number } }>("/iot/alerts?per_page=1").catch(
-        () => null,
-      ),
+      get<{ total?: number }>("/construction/schedules?per_page=1"),
+      get<{ data?: unknown[] }>("/workflow/instances/pending"),
+      get<{ data?: { total?: number } }>("/iot/alerts?per_page=1"),
       get<{ data?: { pagination?: { total?: number } } }>(
         "/documents?per_page=1",
-      ).catch(() => null),
+      ),
     ]).then(([schedules, workflows, alerts, documents]) => {
       setDashStats({
         activeProjects:
           schedules.status === "fulfilled" && schedules.value?.total != null
             ? schedules.value.total
-            : MOCK_STATS.activeProjects,
+            : 0,
         pendingApprovals:
           workflows.status === "fulfilled" &&
           Array.isArray(workflows.value?.data)
             ? workflows.value.data.length
-            : MOCK_STATS.pendingApprovals,
+            : 0,
         iotAlerts:
           alerts.status === "fulfilled" && alerts.value?.data?.total != null
             ? alerts.value.data.total
-            : MOCK_STATS.iotAlerts,
+            : 0,
         newDocuments:
           documents.status === "fulfilled" &&
           documents.value?.data?.pagination?.total != null
             ? documents.value.data.pagination.total
-            : MOCK_STATS.newDocuments,
+            : 0,
       });
+      const rejected = [schedules, workflows, alerts, documents].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
     });
   }, []);
 
@@ -173,6 +178,12 @@ export default function DashboardPage() {
           本日も安全第一で。現場の状況を確認しましょう。
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

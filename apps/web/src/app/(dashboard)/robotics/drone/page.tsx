@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Plane, Camera, Map, Wind, Clock, Plus } from "lucide-react";
 
 interface FlightRecord {
@@ -17,81 +17,6 @@ interface FlightRecord {
   coverage: number;
 }
 
-const MOCK_FLIGHTS: FlightRecord[] = [
-  {
-    id: "F-001",
-    flightId: "DRN-2026-031",
-    date: "2026-05-24",
-    pilot: "田中 航",
-    area: "品川タワー 全体",
-    altitude: 80,
-    flightTimeMin: 42,
-    photoCount: 312,
-    status: "in_flight",
-    coverage: 65,
-  },
-  {
-    id: "F-002",
-    flightId: "DRN-2026-030",
-    date: "2026-05-22",
-    pilot: "鈴木 空",
-    area: "新宿ビル 北側",
-    altitude: 60,
-    flightTimeMin: 28,
-    photoCount: 198,
-    status: "completed",
-    coverage: 100,
-  },
-  {
-    id: "F-003",
-    flightId: "DRN-2026-029",
-    date: "2026-05-20",
-    pilot: "田中 航",
-    area: "道路工事 A区間",
-    altitude: 50,
-    flightTimeMin: 55,
-    photoCount: 421,
-    status: "completed",
-    coverage: 100,
-  },
-  {
-    id: "F-004",
-    flightId: "DRN-2026-028",
-    date: "2026-05-18",
-    pilot: "山田 翼",
-    area: "大阪ビル 外壁",
-    altitude: 40,
-    flightTimeMin: 35,
-    photoCount: 267,
-    status: "completed",
-    coverage: 100,
-  },
-  {
-    id: "F-005",
-    flightId: "DRN-2026-027",
-    date: "2026-05-15",
-    pilot: "鈴木 空",
-    area: "横浜工場 屋根",
-    altitude: 30,
-    flightTimeMin: 22,
-    photoCount: 156,
-    status: "completed",
-    coverage: 100,
-  },
-  {
-    id: "F-006",
-    flightId: "DRN-2026-032",
-    date: "2026-05-26",
-    pilot: "山田 翼",
-    area: "品川タワー 東側",
-    altitude: 70,
-    flightTimeMin: 0,
-    photoCount: 0,
-    status: "scheduled",
-    coverage: 0,
-  },
-];
-
 const STATUS_CONFIG = {
   completed: { label: "完了", color: "bg-green-100 text-green-700" },
   in_flight: { label: "飛行中", color: "bg-blue-100 text-blue-700" },
@@ -100,8 +25,9 @@ const STATUS_CONFIG = {
 };
 
 export default function DronePage() {
-  const [flights, setFlights] = useState<FlightRecord[]>(MOCK_FLIGHTS);
+  const [flights, setFlights] = useState<FlightRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -112,28 +38,33 @@ export default function DronePage() {
       }>("/autonomous/drone-flights?per_page=50");
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setFlights(
-          items.map((item: Record<string, unknown>) => ({
-            id: String(item.id ?? ""),
-            flightId: String(item.flightId ?? item.flight_id ?? ""),
-            date: String(item.date ?? ""),
-            pilot: String(item.pilot ?? item.pilot_name ?? ""),
-            area: String(item.area ?? ""),
-            altitude: Number(item.altitude ?? 0),
-            flightTimeMin: Number(
-              item.flightTimeMin ?? item.flight_time_min ?? 0,
-            ),
-            photoCount: Number(item.photoCount ?? item.photo_count ?? 0),
-            status: String(
-              item.status ?? "scheduled",
-            ) as FlightRecord["status"],
-            coverage: Number(item.coverage ?? 0),
-          })),
-        );
-      }
-    } catch {
-      setFlights(MOCK_FLIGHTS);
+      setFlights(
+        Array.isArray(items)
+          ? items.map((item: Record<string, unknown>) => ({
+              id: String(item.id ?? ""),
+              flightId: String(item.flightId ?? item.flight_id ?? ""),
+              date: String(item.date ?? ""),
+              pilot: String(item.pilot ?? item.pilot_name ?? ""),
+              area: String(item.area ?? ""),
+              altitude: Number(item.altitude ?? 0),
+              flightTimeMin: Number(
+                item.flightTimeMin ?? item.flight_time_min ?? 0,
+              ),
+              photoCount: Number(item.photoCount ?? item.photo_count ?? 0),
+              status: String(
+                item.status ?? "scheduled",
+              ) as FlightRecord["status"],
+              coverage: Number(item.coverage ?? 0),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -169,6 +100,17 @@ export default function DronePage() {
           フライト計画
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && flights.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

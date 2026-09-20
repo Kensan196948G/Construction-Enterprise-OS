@@ -12,64 +12,7 @@ import {
   Filter,
 } from "lucide-react";
 import { listBimModels, type BimModel } from "../../../lib/api/bim";
-
-const MOCK_MODELS: BimModel[] = [
-  {
-    id: "bim-001",
-    organization_id: "org1",
-    name: "品川タワー構造モデル",
-    file_path: "bim/shinagawa_tower_structure.ifc",
-    file_size: 52428800,
-    format: "IFC",
-    status: "active",
-    element_count: 12450,
-    created_at: "2026-05-20T09:00:00Z",
-  },
-  {
-    id: "bim-002",
-    organization_id: "org1",
-    name: "横浜マンション意匠モデル",
-    file_path: "bim/yokohama_mansion_arch.rvt",
-    file_size: 78643200,
-    format: "RVT",
-    status: "active",
-    element_count: 8920,
-    created_at: "2026-05-21T10:30:00Z",
-  },
-  {
-    id: "bim-003",
-    organization_id: "org1",
-    name: "大田区道路設備モデル",
-    file_path: "bim/ota_road_mep.ifc",
-    file_size: 20971520,
-    format: "IFC",
-    status: "processing",
-    element_count: 0,
-    created_at: "2026-05-24T14:00:00Z",
-  },
-  {
-    id: "bim-004",
-    organization_id: "org1",
-    name: "新宿オフィス全体モデル",
-    file_path: "bim/shinjuku_office_full.ifc",
-    file_size: 104857600,
-    format: "IFC",
-    status: "active",
-    element_count: 31200,
-    created_at: "2026-05-18T08:15:00Z",
-  },
-  {
-    id: "bim-005",
-    organization_id: "org1",
-    name: "川崎工場設備モデル",
-    file_path: "bim/kawasaki_factory_eq.obj",
-    file_size: 15728640,
-    format: "OBJ",
-    status: "error",
-    element_count: 0,
-    created_at: "2026-05-22T11:00:00Z",
-  },
-];
+import { ApiError } from "@/lib/api-client";
 
 const STATUS_CONFIG: Record<
   string,
@@ -112,19 +55,23 @@ function formatDate(iso?: string): string {
 }
 
 export default function BimPage() {
-  const [models, setModels] = useState<BimModel[]>(MOCK_MODELS);
+  const [models, setModels] = useState<BimModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await listBimModels();
-      if (res.items.length > 0) {
-        setModels(res.items);
-      }
-    } catch {
-      // fallback to mock data
+      setModels(Array.isArray(res.items) ? res.items : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -168,6 +115,17 @@ export default function BimPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && models.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

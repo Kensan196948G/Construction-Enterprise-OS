@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TrendingUp, DollarSign, BarChart3, Building } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 const MONTHLY_DATA = [
   { month: "1月", revenue: 8.2, completion: 6.5, newOrders: 12.1 },
@@ -22,54 +22,6 @@ interface LedgerItem {
   status: string;
 }
 
-const MOCK_PROJECTS: LedgerItem[] = [
-  {
-    id: "1",
-    project_name: "大阪オフィスビル新築工事",
-    budget_amount: 4200000000,
-    actual_cost: 3850000000,
-    progress_rate: 82,
-    completion_date: "2026-11-30",
-    status: "in_progress",
-  },
-  {
-    id: "2",
-    project_name: "国道XX号線橋梁工事",
-    budget_amount: 2850000000,
-    actual_cost: 2410000000,
-    progress_rate: 68,
-    completion_date: "2027-03-31",
-    status: "in_progress",
-  },
-  {
-    id: "3",
-    project_name: "山岳トンネル掘削工事",
-    budget_amount: 6500000000,
-    actual_cost: 4120000000,
-    progress_rate: 55,
-    completion_date: "2027-09-30",
-    status: "in_progress",
-  },
-  {
-    id: "4",
-    project_name: "都市再開発第2期工事",
-    budget_amount: 3520000000,
-    actual_cost: 1280000000,
-    progress_rate: 28,
-    completion_date: "2028-03-31",
-    status: "in_progress",
-  },
-  {
-    id: "5",
-    project_name: "港湾設備整備工事",
-    budget_amount: 1870000000,
-    actual_cost: 1940000000,
-    progress_rate: 91,
-    completion_date: "2026-07-31",
-    status: "over_budget",
-  },
-];
-
 function formatOkuYen(amount: number): string {
   return (amount / 100000000).toFixed(1);
 }
@@ -85,8 +37,9 @@ function getProjectStatus(item: LedgerItem): { label: string; color: string } {
 }
 
 export default function ExecDashboardPage() {
-  const [projects, setProjects] = useState<LedgerItem[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<LedgerItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -94,27 +47,32 @@ export default function ExecDashboardPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/erp/ledger?per_page=20").catch(() => null);
+      }>("/erp/ledger?per_page=20");
       const items = json?.data?.items ?? json?.items;
-      if (Array.isArray(items) && items.length > 0) {
-        setProjects(
-          items.map(
-            (item: Record<string, unknown>): LedgerItem => ({
-              id: String(item.id ?? ""),
-              project_name: String(item.project_name ?? ""),
-              budget_amount: Number(item.budget_amount ?? 0),
-              actual_cost: Number(item.actual_cost ?? 0),
-              progress_rate: Number(item.progress_rate ?? 0),
-              completion_date: item.completion_date
-                ? String(item.completion_date)
-                : null,
-              status: String(item.status ?? "in_progress"),
-            }),
-          ),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setProjects(
+        Array.isArray(items)
+          ? items.map(
+              (item: Record<string, unknown>): LedgerItem => ({
+                id: String(item.id ?? ""),
+                project_name: String(item.project_name ?? ""),
+                budget_amount: Number(item.budget_amount ?? 0),
+                actual_cost: Number(item.actual_cost ?? 0),
+                progress_rate: Number(item.progress_rate ?? 0),
+                completion_date: item.completion_date
+                  ? String(item.completion_date)
+                  : null,
+                status: String(item.status ?? "in_progress"),
+              }),
+            )
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -279,6 +237,17 @@ export default function ExecDashboardPage() {
           </table>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && projects.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">

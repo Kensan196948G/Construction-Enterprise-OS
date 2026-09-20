@@ -2,46 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, TrendingUp, BarChart3, PieChart } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 // Mock data (fallback)
-const MOCK_BUDGET_PROJECTS = [
-  {
-    id: 1,
-    name: "品川タワー新築工事",
-    budget: 120000000,
-    actual: 82000000,
-    status: "進行中",
-  },
-  {
-    id: 2,
-    name: "横浜分譲マンション建設",
-    budget: 240000000,
-    actual: 84000000,
-    status: "進行中",
-  },
-  {
-    id: 3,
-    name: "大田区道路改良工事",
-    budget: 35000000,
-    actual: 28700000,
-    status: "進行中",
-  },
-  {
-    id: 4,
-    name: "渋谷複合施設改修工事",
-    budget: 480000000,
-    actual: 480000000,
-    status: "完了",
-  },
-  {
-    id: 5,
-    name: "川崎市庁舎耐震補強",
-    budget: 65000000,
-    actual: 12000000,
-    status: "計画中",
-  },
-];
 
 const BUDGET_CATEGORIES = [
   { name: "人件費", budget: 282000000, actual: 210000000 },
@@ -77,9 +40,9 @@ function rateColorClass(rate: number): string {
 }
 
 export default function BudgetPage() {
-  const [budgetProjects, setBudgetProjects] =
-    useState<BudgetProject[]>(MOCK_BUDGET_PROJECTS);
+  const [budgetProjects, setBudgetProjects] = useState<BudgetProject[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -87,21 +50,26 @@ export default function BudgetPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/erp/budgets?per_page=50").catch(() => null);
+      }>("/erp/budgets?per_page=50");
       const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setBudgetProjects(
-          items.map((item) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.project_name ?? item.name ?? ""),
-            budget: Number(item.budget_amount ?? item.budget ?? 0),
-            actual: Number(item.actual_amount ?? item.actual ?? 0),
-            status: String(item.status ?? "進行中"),
-          })),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setBudgetProjects(
+        Array.isArray(items)
+          ? items.map((item) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.project_name ?? item.name ?? ""),
+              budget: Number(item.budget_amount ?? item.budget ?? 0),
+              actual: Number(item.actual_amount ?? item.actual ?? 0),
+              status: String(item.status ?? "進行中"),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -125,6 +93,17 @@ export default function BudgetPage() {
           プロジェクト別・費目別の予算執行状況を管理します
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && budgetProjects.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

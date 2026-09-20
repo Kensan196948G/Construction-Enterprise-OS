@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Target, TrendingUp, BarChart3, CheckCircle } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type KpiCategory = "安全" | "品質" | "工程" | "コスト" | "環境";
 type KpiTrend = "up" | "down" | "flat";
@@ -261,71 +261,79 @@ function TrendBadge({ trend, change }: { trend: KpiTrend; change: number }) {
 }
 
 export default function KpiDashboardPage() {
-  const [kpiData, setKpiData] = useState<KpiItem[]>(KPI_DATA);
+  const [kpiData, setKpiData] = useState<KpiItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [statsRes, hazardsRes] = await Promise.allSettled([
-        get<SafetyStats>("/safety/inspections/stats").catch(() => null),
-        get<SafetyHazard[] | { items: SafetyHazard[] }>(
-          "/safety/hazards/open",
-        ).catch(() => null),
+        get<SafetyStats>("/safety/inspections/stats"),
+        get<SafetyHazard[] | { items: SafetyHazard[] }>("/safety/hazards/open"),
       ]);
 
       let passRate: number | null = null;
       let openHazardCount: number | null = null;
 
-      if (statsRes.status === "fulfilled" && statsRes.value) {
+      if (statsRes.status === "fulfilled") {
         const json = statsRes.value;
-        passRate = json.pass_rate ?? null;
+        passRate = json?.pass_rate ?? null;
       }
 
-      if (hazardsRes.status === "fulfilled" && hazardsRes.value) {
+      if (hazardsRes.status === "fulfilled") {
         const json = hazardsRes.value;
-        const items = Array.isArray(json) ? json : (json.items ?? []);
+        const items = Array.isArray(json) ? json : (json?.items ?? []);
         openHazardCount = items.length;
       }
 
-      if (passRate !== null || openHazardCount !== null) {
-        setKpiData((prev) =>
-          prev.map((k) => {
-            if (k.id === 2 && passRate !== null) {
-              // 安全パトロール実施率
-              const rounded = Math.round(passRate * 10) / 10;
-              return {
-                ...k,
-                actual: rounded,
-                trend: rounded >= k.actual ? "up" : "down",
-                prevPeriodChange: Math.round((rounded - k.actual) * 10) / 10,
-              };
-            }
-            if (k.id === 3 && openHazardCount !== null) {
-              // ヒヤリハット報告件数
-              return {
-                ...k,
-                actual: openHazardCount,
-                trend:
-                  openHazardCount > k.actual
-                    ? "up"
-                    : openHazardCount < k.actual
-                      ? "down"
-                      : "flat",
-                prevPeriodChange:
-                  k.actual > 0
-                    ? Math.round(
-                        ((openHazardCount - k.actual) / k.actual) * 1000,
-                      ) / 10
-                    : 0,
-              };
-            }
-            return k;
-          }),
-        );
-      }
-    } catch {
-      // fallback to mock data — already set as default state
+      setKpiData(
+        KPI_DATA.map((k) => {
+          if (k.id === 2 && passRate !== null) {
+            // 安全パトロール実施率
+            const rounded = Math.round(passRate * 10) / 10;
+            return {
+              ...k,
+              actual: rounded,
+              trend: rounded >= k.actual ? "up" : "down",
+              prevPeriodChange: Math.round((rounded - k.actual) * 10) / 10,
+            };
+          }
+          if (k.id === 3 && openHazardCount !== null) {
+            // ヒヤリハット報告件数
+            return {
+              ...k,
+              actual: openHazardCount,
+              trend:
+                openHazardCount > k.actual
+                  ? "up"
+                  : openHazardCount < k.actual
+                    ? "down"
+                    : "flat",
+              prevPeriodChange:
+                k.actual > 0
+                  ? Math.round(
+                      ((openHazardCount - k.actual) / k.actual) * 1000,
+                    ) / 10
+                  : 0,
+            };
+          }
+          return k;
+        }),
+      );
+
+      const rejected = [statsRes, hazardsRes].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -339,7 +347,8 @@ export default function KpiDashboardPage() {
   const achieved = rates.filter((r) => r >= 100).length;
   const improving = kpiData.filter((k) => k.trend === "up").length;
   const declining = kpiData.filter((k) => k.trend === "down").length;
-  const overallRate = Math.round((achieved / kpiData.length) * 100);
+  const overallRate =
+    kpiData.length > 0 ? Math.round((achieved / kpiData.length) * 100) : 0;
 
   const stats = [
     {
@@ -398,6 +407,17 @@ export default function KpiDashboardPage() {
           <Target className="w-8 h-8 text-purple-600" />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && kpiData.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -15,181 +15,9 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-import { get, post } from "@/lib/api-client";
+import { get, post, ApiError } from "@/lib/api-client";
 
 // Mock data (fallback)
-const MOCK_WORKFLOWS = [
-  {
-    id: "WF-2024-089",
-    title: "品川タワー 施工計画書 Rev3 承認",
-    type: "document_approval",
-    status: "in_progress",
-    priority: "high",
-    createdAt: "2024-11-20",
-    dueDate: "2024-11-22",
-    requester: "田中 健一",
-    project: "品川タワー新築工事",
-    currentStep: 2,
-    steps: [
-      {
-        label: "申請",
-        status: "done",
-        assignee: "田中 健一",
-        completedAt: "2024-11-20 09:00",
-      },
-      {
-        label: "一次確認",
-        status: "active",
-        assignee: "鈴木 次郎",
-        completedAt: null,
-      },
-      {
-        label: "最終承認",
-        status: "pending",
-        assignee: "山田 部長",
-        completedAt: null,
-      },
-      { label: "完了", status: "pending", assignee: null, completedAt: null },
-    ],
-  },
-  {
-    id: "WF-2024-088",
-    title: "横浜マンション 配筋検査 承認依頼",
-    type: "inspection",
-    status: "pending_approval",
-    priority: "high",
-    createdAt: "2024-11-20",
-    dueDate: "2024-11-21",
-    requester: "鈴木 次郎",
-    project: "横浜分譲マンション建設",
-    currentStep: 1,
-    steps: [
-      {
-        label: "申請",
-        status: "done",
-        assignee: "鈴木 次郎",
-        completedAt: "2024-11-20 11:00",
-      },
-      {
-        label: "検査担当確認",
-        status: "active",
-        assignee: "伊藤 五郎",
-        completedAt: null,
-      },
-      {
-        label: "品質管理承認",
-        status: "pending",
-        assignee: "佐藤 三郎",
-        completedAt: null,
-      },
-      { label: "完了", status: "pending", assignee: null, completedAt: null },
-    ],
-  },
-  {
-    id: "WF-2024-087",
-    title: "川崎物流センター 重機点検報告",
-    type: "safety",
-    status: "approved",
-    priority: "critical",
-    createdAt: "2024-11-19",
-    dueDate: "2024-11-19",
-    requester: "加藤 二郎",
-    project: "川崎物流センター建設",
-    currentStep: 3,
-    steps: [
-      {
-        label: "報告",
-        status: "done",
-        assignee: "加藤 二郎",
-        completedAt: "2024-11-19 14:00",
-      },
-      {
-        label: "現場確認",
-        status: "done",
-        assignee: "伊藤 五郎",
-        completedAt: "2024-11-19 15:30",
-      },
-      {
-        label: "安全管理承認",
-        status: "done",
-        assignee: "山田 部長",
-        completedAt: "2024-11-19 17:00",
-      },
-      {
-        label: "完了",
-        status: "done",
-        assignee: null,
-        completedAt: "2024-11-19 17:00",
-      },
-    ],
-  },
-  {
-    id: "WF-2024-086",
-    title: "大田区道路 完成検査申請",
-    type: "inspection",
-    status: "rejected",
-    priority: "medium",
-    createdAt: "2024-11-18",
-    dueDate: "2024-11-20",
-    requester: "佐藤 三郎",
-    project: "大田区道路改良工事",
-    currentStep: 1,
-    steps: [
-      {
-        label: "申請",
-        status: "done",
-        assignee: "佐藤 三郎",
-        completedAt: "2024-11-18 10:00",
-      },
-      {
-        label: "書類確認",
-        status: "rejected",
-        assignee: "山田 部長",
-        completedAt: "2024-11-18 16:00",
-      },
-      {
-        label: "最終承認",
-        status: "pending",
-        assignee: "渡辺 六郎",
-        completedAt: null,
-      },
-      { label: "完了", status: "pending", assignee: null, completedAt: null },
-    ],
-  },
-  {
-    id: "WF-2024-085",
-    title: "新宿再開発 着工前安全計画書",
-    type: "safety",
-    status: "draft",
-    priority: "medium",
-    createdAt: "2024-11-17",
-    dueDate: "2024-12-01",
-    requester: "山田 四郎",
-    project: "新宿再開発ビル工事",
-    currentStep: 0,
-    steps: [
-      {
-        label: "作成",
-        status: "active",
-        assignee: "山田 四郎",
-        completedAt: null,
-      },
-      {
-        label: "社内レビュー",
-        status: "pending",
-        assignee: "田中 健一",
-        completedAt: null,
-      },
-      {
-        label: "所長承認",
-        status: "pending",
-        assignee: "山田 部長",
-        completedAt: null,
-      },
-      { label: "完了", status: "pending", assignee: null, completedAt: null },
-    ],
-  },
-];
 
 interface WorkflowStep {
   label: string;
@@ -272,9 +100,10 @@ const stepStatusConfig: Record<string, string> = {
 };
 
 export default function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadWorkflows = useCallback(() => {
     setIsLoading(true);
@@ -294,30 +123,33 @@ export default function WorkflowsPage() {
         steps?: WorkflowStep[];
       }[];
     }>("/workflow/instances?per_page=20")
-      .catch(() => null)
       .then((data) => {
-        if (
-          data?.success &&
-          Array.isArray(data?.data) &&
-          data.data.length > 0
-        ) {
-          const mapped: Workflow[] = data.data.map((w) => ({
-            id: w.id,
-            title: w.title ?? w.id,
-            type: w.workflow_type ?? "document_approval",
-            status: w.status,
-            priority: w.priority ?? "medium",
-            createdAt: w.created_at.slice(0, 10),
-            dueDate: w.due_date?.slice(0, 10) ?? "—",
-            requester: w.requester_id ?? "—",
-            project: w.project_id ?? "—",
-            currentStep: w.current_step ?? 0,
-            steps: w.steps ?? [],
-          }));
-          setWorkflows(mapped);
-        }
+        setWorkflows(
+          data?.success && Array.isArray(data?.data)
+            ? data.data.map((w) => ({
+                id: w.id,
+                title: w.title ?? w.id,
+                type: w.workflow_type ?? "document_approval",
+                status: w.status,
+                priority: w.priority ?? "medium",
+                createdAt: w.created_at.slice(0, 10),
+                dueDate: w.due_date?.slice(0, 10) ?? "—",
+                requester: w.requester_id ?? "—",
+                project: w.project_id ?? "—",
+                currentStep: w.current_step ?? 0,
+                steps: w.steps ?? [],
+              }))
+            : [],
+        );
+        setError(null);
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+        );
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -329,8 +161,12 @@ export default function WorkflowsPage() {
     setActionLoading(id);
     try {
       await post<unknown>(`/workflow/instances/${id}/approve`, {});
-    } catch {
-      // ignore network errors; UI will show stale data until next poll
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "操作に失敗しました。",
+      );
     }
     loadWorkflows();
     setActionLoading(null);
@@ -340,8 +176,12 @@ export default function WorkflowsPage() {
     setActionLoading(id);
     try {
       await post<unknown>(`/workflow/instances/${id}/reject`, {});
-    } catch {
-      // ignore network errors
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "操作に失敗しました。",
+      );
     }
     loadWorkflows();
     setActionLoading(null);
@@ -385,6 +225,17 @@ export default function WorkflowsPage() {
           新規申請
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && workflows.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -11,7 +11,7 @@ import {
   Clock,
   Plus,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface InspectionStats {
   total: number;
@@ -51,107 +51,6 @@ interface Inspection {
   is_safe: boolean | null;
   inspection_date: string | null;
 }
-
-const MOCK_STATS: InspectionStats = {
-  total: 48,
-  passed: 41,
-  failed: 4,
-  pending: 3,
-  pass_rate: 91.1,
-};
-
-const MOCK_HAZARDS: Hazard[] = [
-  {
-    id: "h1",
-    title: "足場の手すり不備（第3工区）",
-    hazard_type: "fall",
-    risk_level: "high",
-    severity: "serious",
-    status: "open",
-    location: "品川タワー新築工事 3F",
-    created_at: "2026-05-24T08:00:00Z",
-  },
-  {
-    id: "h2",
-    title: "クレーン旋回範囲内への作業員立入",
-    hazard_type: "equipment",
-    risk_level: "critical",
-    severity: "critical",
-    status: "open",
-    location: "川崎物流センター建設",
-    created_at: "2026-05-23T14:30:00Z",
-  },
-  {
-    id: "h3",
-    title: "掘削箇所の土砂崩れリスク",
-    hazard_type: "ground",
-    risk_level: "medium",
-    severity: "moderate",
-    status: "in_progress",
-    location: "大田区道路改良工事",
-    created_at: "2026-05-22T10:00:00Z",
-  },
-];
-
-const MOCK_INCIDENTS: Incident[] = [
-  {
-    id: "i1",
-    title: "作業員 軽傷（転倒）",
-    incident_type: "injury",
-    severity: "minor",
-    status: "investigating",
-    occurred_at: "2026-05-23T09:15:00Z",
-    created_at: "2026-05-23T09:30:00Z",
-  },
-  {
-    id: "i2",
-    title: "資材落下ヒヤリハット",
-    incident_type: "near_miss",
-    severity: "moderate",
-    status: "resolved",
-    occurred_at: "2026-05-22T15:00:00Z",
-    created_at: "2026-05-22T15:20:00Z",
-  },
-  {
-    id: "i3",
-    title: "熱中症疑い（軽症）",
-    incident_type: "illness",
-    severity: "minor",
-    status: "resolved",
-    occurred_at: "2026-05-21T13:45:00Z",
-    created_at: "2026-05-21T14:00:00Z",
-  },
-];
-
-const MOCK_INSPECTIONS: Inspection[] = [
-  {
-    id: "insp1",
-    title: "週次安全パトロール",
-    inspection_type: "patrol",
-    status: "passed",
-    score: 94,
-    is_safe: true,
-    inspection_date: "2026-05-23",
-  },
-  {
-    id: "insp2",
-    title: "足場設備点検",
-    inspection_type: "equipment",
-    status: "failed",
-    score: 62,
-    is_safe: false,
-    inspection_date: "2026-05-22",
-  },
-  {
-    id: "insp3",
-    title: "消火設備定期点検",
-    inspection_type: "fire_safety",
-    status: "passed",
-    score: 100,
-    is_safe: true,
-    inspection_date: "2026-05-20",
-  },
-];
 
 const riskLevelStyle: Record<string, { label: string; className: string }> = {
   critical: {
@@ -199,25 +98,25 @@ function formatDate(iso: string | null): string {
 }
 
 export default function SafetyPage() {
-  const [stats, setStats] = useState<InspectionStats>(MOCK_STATS);
-  const [hazards, setHazards] = useState<Hazard[]>(MOCK_HAZARDS);
-  const [incidents, setIncidents] = useState<Incident[]>(MOCK_INCIDENTS);
-  const [inspections, setInspections] =
-    useState<Inspection[]>(MOCK_INSPECTIONS);
+  const [stats, setStats] = useState<InspectionStats>({
+    total: 0,
+    passed: 0,
+    failed: 0,
+    pending: 0,
+    pass_rate: 0,
+  });
+  const [hazards, setHazards] = useState<Hazard[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const loadSafetyData = useCallback(async () => {
     const [statsRes, hazardsRes, incidentsRes, inspectionsRes] =
       await Promise.allSettled([
-        get<{ data?: InspectionStats }>("/safety/inspections/stats").catch(
-          () => null,
-        ),
-        get<{ data?: Hazard[] }>("/safety/hazards/open").catch(() => null),
-        get<{ data?: Incident[] }>("/safety/incidents?limit=10").catch(
-          () => null,
-        ),
-        get<{ data?: Inspection[] }>("/safety/inspections?limit=5").catch(
-          () => null,
-        ),
+        get<{ data?: InspectionStats }>("/safety/inspections/stats"),
+        get<{ data?: Hazard[] }>("/safety/hazards/open"),
+        get<{ data?: Incident[] }>("/safety/incidents?limit=10"),
+        get<{ data?: Inspection[] }>("/safety/inspections?limit=5"),
       ]);
 
     if (
@@ -228,26 +127,45 @@ export default function SafetyPage() {
       setStats(statsRes.value.data as InspectionStats);
     }
 
-    if (
-      hazardsRes.status === "fulfilled" &&
-      Array.isArray(hazardsRes.value?.data)
-    ) {
-      setHazards(hazardsRes.value.data as Hazard[]);
+    if (hazardsRes.status === "fulfilled") {
+      setHazards(
+        Array.isArray(hazardsRes.value?.data)
+          ? (hazardsRes.value.data as Hazard[])
+          : [],
+      );
     }
 
-    if (
-      incidentsRes.status === "fulfilled" &&
-      Array.isArray(incidentsRes.value?.data)
-    ) {
-      setIncidents(incidentsRes.value.data as Incident[]);
+    if (incidentsRes.status === "fulfilled") {
+      setIncidents(
+        Array.isArray(incidentsRes.value?.data)
+          ? (incidentsRes.value.data as Incident[])
+          : [],
+      );
     }
 
-    if (
-      inspectionsRes.status === "fulfilled" &&
-      Array.isArray(inspectionsRes.value?.data)
-    ) {
-      setInspections(inspectionsRes.value.data as Inspection[]);
+    if (inspectionsRes.status === "fulfilled") {
+      setInspections(
+        Array.isArray(inspectionsRes.value?.data)
+          ? (inspectionsRes.value.data as Inspection[])
+          : [],
+      );
     }
+
+    const rejected = [
+      statsRes,
+      hazardsRes,
+      incidentsRes,
+      inspectionsRes,
+    ].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    setError(
+      rejected.length === 0
+        ? null
+        : rejected.some(
+              (r) => r.reason instanceof ApiError && r.reason.status === 403,
+            )
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+    );
   }, []);
 
   useEffect(() => {
@@ -315,6 +233,20 @@ export default function SafetyPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!error &&
+        hazards.length === 0 &&
+        incidents.length === 0 &&
+        inspections.length === 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+            該当データがありません。
+          </div>
+        )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

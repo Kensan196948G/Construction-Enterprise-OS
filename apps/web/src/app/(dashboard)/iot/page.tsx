@@ -15,7 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface Sensor {
   id: string;
@@ -32,124 +32,6 @@ interface SensorGroup {
   project: string;
   sensors: Sensor[];
 }
-
-const MOCK_SENSOR_GROUPS: SensorGroup[] = [
-  {
-    project: "品川タワー新築工事",
-    sensors: [
-      {
-        id: "S-001",
-        name: "地盤変位計 #1",
-        type: "displacement",
-        value: "2.3 mm",
-        threshold: "5.0 mm",
-        status: "normal",
-        battery: 87,
-        lastUpdate: "2分前",
-      },
-      {
-        id: "S-002",
-        name: "傾斜計 B棟",
-        type: "tilt",
-        value: "0.12°",
-        threshold: "0.5°",
-        status: "normal",
-        battery: 62,
-        lastUpdate: "2分前",
-      },
-      {
-        id: "S-003",
-        name: "温度センサー #3",
-        type: "temperature",
-        value: "34.2°C",
-        threshold: "40°C",
-        status: "warning",
-        battery: 91,
-        lastUpdate: "1分前",
-      },
-      {
-        id: "S-004",
-        name: "騒音計",
-        type: "noise",
-        value: "72 dB",
-        threshold: "85 dB",
-        status: "normal",
-        battery: 55,
-        lastUpdate: "3分前",
-      },
-    ],
-  },
-  {
-    project: "川崎物流センター建設",
-    sensors: [
-      {
-        id: "S-010",
-        name: "重機振動センサー",
-        type: "vibration",
-        value: "4.8 gal",
-        threshold: "3.0 gal",
-        status: "alert",
-        battery: 43,
-        lastUpdate: "5分前",
-      },
-      {
-        id: "S-011",
-        name: "粉塵計",
-        type: "dust",
-        value: "0.08 mg/m³",
-        threshold: "0.15 mg/m³",
-        status: "normal",
-        battery: 78,
-        lastUpdate: "2分前",
-      },
-      {
-        id: "S-012",
-        name: "酸素濃度計 坑内",
-        type: "oxygen",
-        value: "20.8%",
-        threshold: "18%",
-        status: "normal",
-        battery: 95,
-        lastUpdate: "1分前",
-      },
-      {
-        id: "S-013",
-        name: "電力モニター",
-        type: "power",
-        value: "45.2 kW",
-        threshold: "100 kW",
-        status: "offline",
-        battery: 0,
-        lastUpdate: "2時間前",
-      },
-    ],
-  },
-  {
-    project: "横浜分譲マンション建設",
-    sensors: [
-      {
-        id: "S-020",
-        name: "杭打ち管理センサー",
-        type: "pile",
-        value: "12.4 m",
-        threshold: "13.0 m",
-        status: "normal",
-        battery: 82,
-        lastUpdate: "4分前",
-      },
-      {
-        id: "S-021",
-        name: "水位計",
-        type: "water",
-        value: "1.2 m",
-        threshold: "2.0 m",
-        status: "normal",
-        battery: 71,
-        lastUpdate: "3分前",
-      },
-    ],
-  },
-];
 
 const statusConfig = {
   normal: {
@@ -192,10 +74,10 @@ const typeIconMap: Record<string, React.ElementType> = {
 };
 
 export default function IoTPage() {
-  const [sensorGroups, setSensorGroups] =
-    useState<SensorGroup[]>(MOCK_SENSOR_GROUPS);
+  const [sensorGroups, setSensorGroups] = useState<SensorGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -214,10 +96,9 @@ export default function IoTPage() {
         }[];
       };
     }>("/iot/devices?per_page=50")
-      .catch(() => null)
       .then((data) => {
         const devices = data?.data?.devices;
-        if (data?.success && Array.isArray(devices) && devices.length > 0) {
+        if (data?.success && Array.isArray(devices)) {
           const grouped = devices.reduce<Record<string, Sensor[]>>((acc, d) => {
             const key = d.project_id ?? "その他";
             if (!acc[key]) acc[key] = [];
@@ -248,10 +129,19 @@ export default function IoTPage() {
               sensors,
             })),
           );
+        } else {
+          setSensorGroups([]);
         }
+        setError(null);
         setLastUpdated(new Date());
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+        );
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -290,6 +180,17 @@ export default function IoTPage() {
           更新
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && sensorGroups.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

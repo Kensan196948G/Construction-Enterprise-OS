@@ -11,7 +11,7 @@ import {
   CheckCircle,
   Building2,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface Notice {
   id: string;
@@ -151,8 +151,6 @@ const MOCK_DOCUMENTS: SharedDocument[] = [
   },
 ];
 
-const MOCK_PARTNERS: Partner[] = [];
-
 const IMPORTANCE_CONFIG = {
   high: { label: "重要", color: "bg-red-100 text-red-700", icon: AlertCircle },
   normal: { label: "通常", color: "bg-blue-100 text-blue-700", icon: Info },
@@ -168,8 +166,9 @@ const DOC_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function PartnerPortalPage() {
-  const [partners, setPartners] = useState<Partner[]>(MOCK_PARTNERS);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -177,25 +176,30 @@ export default function PartnerPortalPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/partner?status=active&per_page=50").catch(() => null);
+      }>("/partner?status=active&per_page=50");
       const data: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setPartners(
-          data.map((item) => ({
-            id: String(item.id ?? ""),
-            name: String(item.name ?? ""),
-            partner_type: String(item.partner_type ?? ""),
-            status: String(item.status ?? ""),
-            rating: Number(item.rating ?? 0),
-            email: String(item.email ?? ""),
-            phone: String(item.phone ?? ""),
-            address: String(item.address ?? ""),
-          })),
-        );
-      }
-    } catch {
-      // fallback to mock data (empty list — notices/docs remain)
+      setPartners(
+        Array.isArray(data)
+          ? data.map((item) => ({
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              partner_type: String(item.partner_type ?? ""),
+              status: String(item.status ?? ""),
+              rating: Number(item.rating ?? 0),
+              email: String(item.email ?? ""),
+              phone: String(item.phone ?? ""),
+              address: String(item.address ?? ""),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -228,6 +232,17 @@ export default function PartnerPortalPage() {
           )}
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && partners.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

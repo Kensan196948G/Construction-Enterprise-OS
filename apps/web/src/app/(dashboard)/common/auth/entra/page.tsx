@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Shield, Cloud, Users, CheckCircle, RefreshCw } from "lucide-react";
 
 const ENTRA_CONFIG = {
@@ -23,53 +23,10 @@ type ConditionalPolicy = {
   status: string;
 };
 
-const CONDITIONAL_POLICIES: ConditionalPolicy[] = [
-  {
-    id: 1,
-    name: "管理者MFA必須",
-    target: "管理者グループ",
-    condition: "全アクセス時",
-    action: "MFA要求",
-    status: "enabled",
-  },
-  {
-    id: 2,
-    name: "外部ネットワーク制限",
-    target: "全ユーザー",
-    condition: "社外ネットワークからのアクセス",
-    action: "MFA要求",
-    status: "enabled",
-  },
-  {
-    id: 3,
-    name: "レガシー認証ブロック",
-    target: "全ユーザー",
-    condition: "レガシー認証プロトコル使用時",
-    action: "ブロック",
-    status: "enabled",
-  },
-  {
-    id: 4,
-    name: "高リスクサインインブロック",
-    target: "全ユーザー",
-    condition: "高リスクサインイン検出時",
-    action: "ブロック",
-    status: "enabled",
-  },
-  {
-    id: 5,
-    name: "準拠デバイスのみ",
-    target: "現場担当グループ",
-    condition: "モバイル端末からのアクセス",
-    action: "準拠デバイス要求",
-    status: "disabled",
-  },
-];
-
 export default function EntraPage() {
-  const [policies, setPolicies] =
-    useState<ConditionalPolicy[]>(CONDITIONAL_POLICIES);
+  const [policies, setPolicies] = useState<ConditionalPolicy[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -79,20 +36,25 @@ export default function EntraPage() {
         data?: Record<string, unknown>[];
       }>("/auth/entra/policies");
       const items: Record<string, unknown>[] = json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setPolicies(
-          items.map((item: Record<string, unknown>, idx: number) => ({
-            id: Number(item.id ?? idx + 1),
-            name: String(item.name ?? ""),
-            target: String(item.target ?? ""),
-            condition: String(item.condition ?? ""),
-            action: String(item.action ?? ""),
-            status: String(item.status ?? "disabled"),
-          })),
-        );
-      }
-    } catch {
-      setPolicies(CONDITIONAL_POLICIES);
+      setPolicies(
+        Array.isArray(items)
+          ? items.map((item: Record<string, unknown>, idx: number) => ({
+              id: Number(item.id ?? idx + 1),
+              name: String(item.name ?? ""),
+              target: String(item.target ?? ""),
+              condition: String(item.condition ?? ""),
+              action: String(item.action ?? ""),
+              status: String(item.status ?? "disabled"),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -197,6 +159,17 @@ export default function EntraPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && policies.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 条件付きアクセスポリシー */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

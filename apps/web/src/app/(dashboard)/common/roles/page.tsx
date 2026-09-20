@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Shield, Lock, Users, CheckSquare } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type Role = {
   id: number;
@@ -12,49 +12,6 @@ type Role = {
   moduleCount: number;
   updated: string;
 };
-
-const MOCK_ROLES: Role[] = [
-  {
-    id: 1,
-    name: "管理者",
-    description: "全機能へのフルアクセス権限",
-    users: 2,
-    moduleCount: 9,
-    updated: "2024-10-01",
-  },
-  {
-    id: 2,
-    name: "プロジェクトマネージャー",
-    description: "プロジェクト管理・文書・レポート閲覧・編集",
-    users: 5,
-    moduleCount: 7,
-    updated: "2024-10-15",
-  },
-  {
-    id: 3,
-    name: "現場監督",
-    description: "現場データ入力・安全報告・GIS閲覧",
-    users: 12,
-    moduleCount: 5,
-    updated: "2024-11-01",
-  },
-  {
-    id: 4,
-    name: "安全管理者",
-    description: "安全管理・インシデント管理・IoTアラート",
-    users: 3,
-    moduleCount: 4,
-    updated: "2024-09-20",
-  },
-  {
-    id: 5,
-    name: "閲覧のみ",
-    description: "全モジュールの読み取り専用アクセス",
-    users: 8,
-    moduleCount: 9,
-    updated: "2024-08-01",
-  },
-];
 
 const MODULES = [
   "ダッシュボード",
@@ -87,8 +44,9 @@ const PERMISSIONS: Record<string, boolean[]> = {
 };
 
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(MOCK_ROLES);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -96,24 +54,29 @@ export default function RolesPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/roles?per_page=50").catch(() => null);
+      }>("/roles?per_page=50");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setRoles(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.name ?? ""),
-            description: String(item.description ?? ""),
-            users: Number(item.users_count ?? item.users ?? 0),
-            moduleCount: Number(
-              item.permissions_count ?? item.module_count ?? 0,
-            ),
-            updated: String(item.updated_at ?? item.created_at ?? ""),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setRoles(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.name ?? ""),
+              description: String(item.description ?? ""),
+              users: Number(item.users_count ?? item.users ?? 0),
+              moduleCount: Number(
+                item.permissions_count ?? item.module_count ?? 0,
+              ),
+              updated: String(item.updated_at ?? item.created_at ?? ""),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -142,6 +105,17 @@ export default function RolesPage() {
           ロール追加
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && roles.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* ロール一覧 */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

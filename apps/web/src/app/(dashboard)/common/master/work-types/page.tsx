@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Layers, Clock, CheckSquare } from "lucide-react";
 
 type WorkType = {
@@ -15,129 +15,6 @@ type WorkType = {
   cert: string | null;
 };
 
-const MOCK_WORK_TYPES: WorkType[] = [
-  {
-    id: 1,
-    code: "WT-001",
-    name: "機械掘削工",
-    category: "土工",
-    stdHours: 8,
-    safetyReq: true,
-    qualReq: "建設機械運転技能講習",
-    cert: "車両系建設機械",
-  },
-  {
-    id: 2,
-    code: "WT-002",
-    name: "人力掘削工",
-    category: "土工",
-    stdHours: 4,
-    safetyReq: false,
-    qualReq: null,
-    cert: null,
-  },
-  {
-    id: 3,
-    code: "WT-003",
-    name: "場所打ちコンクリート杭工",
-    category: "基礎工",
-    stdHours: 16,
-    safetyReq: true,
-    qualReq: "杭基礎施工管理技術者",
-    cert: "アースドリル工法",
-  },
-  {
-    id: 4,
-    code: "WT-004",
-    name: "既製コンクリート杭打設工",
-    category: "基礎工",
-    stdHours: 12,
-    safetyReq: true,
-    qualReq: "杭基礎施工管理技術者",
-    cert: "プレボーリング工法",
-  },
-  {
-    id: 5,
-    code: "WT-005",
-    name: "鉄筋組立工",
-    category: "躯体工",
-    stdHours: 6,
-    safetyReq: false,
-    qualReq: "鉄筋施工技能士",
-    cert: null,
-  },
-  {
-    id: 6,
-    code: "WT-006",
-    name: "型枠組立工",
-    category: "躯体工",
-    stdHours: 6,
-    safetyReq: false,
-    qualReq: "型枠施工技能士",
-    cert: null,
-  },
-  {
-    id: 7,
-    code: "WT-007",
-    name: "コンクリート打設工",
-    category: "躯体工",
-    stdHours: 8,
-    safetyReq: true,
-    qualReq: "コンクリート主任技士",
-    cert: "ポンプ車使用",
-  },
-  {
-    id: 8,
-    code: "WT-008",
-    name: "タイル工",
-    category: "仕上工",
-    stdHours: 5,
-    safetyReq: false,
-    qualReq: "タイル張り技能士",
-    cert: null,
-  },
-  {
-    id: 9,
-    code: "WT-009",
-    name: "左官工",
-    category: "仕上工",
-    stdHours: 5,
-    safetyReq: false,
-    qualReq: "左官技能士",
-    cert: null,
-  },
-  {
-    id: 10,
-    code: "WT-010",
-    name: "電気設備工事",
-    category: "設備工",
-    stdHours: 8,
-    safetyReq: true,
-    qualReq: "電気工事士（第2種以上）",
-    cert: "第2種電気工事士",
-  },
-  {
-    id: 11,
-    code: "WT-011",
-    name: "給排水設備工事",
-    category: "設備工",
-    stdHours: 8,
-    safetyReq: false,
-    qualReq: "管工事施工管理技士",
-    cert: null,
-  },
-  {
-    id: 12,
-    code: "WT-012",
-    name: "アスファルト舗装工",
-    category: "外構",
-    stdHours: 10,
-    safetyReq: true,
-    qualReq: null,
-    cert: "ローラー運転技能講習",
-  },
-];
-
 const CATEGORY_COLORS: Record<string, string> = {
   土工: "bg-yellow-100 text-yellow-800",
   基礎工: "bg-orange-100 text-orange-800",
@@ -148,8 +25,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function WorkTypesPage() {
-  const [workTypes, setWorkTypes] = useState<WorkType[]>(MOCK_WORK_TYPES);
+  const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -157,34 +35,39 @@ export default function WorkTypesPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/construction/work-types?per_page=50").catch(() => null);
+      }>("/construction/work-types?per_page=50");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setWorkTypes(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            code: String(item.code ?? item.work_type_code ?? ""),
-            name: String(item.name ?? ""),
-            category: String(item.category ?? ""),
-            stdHours: Number(item.standard_rate ?? item.std_hours ?? 0),
-            safetyReq: Boolean(
-              item.safety_required ?? item.safety_req ?? false,
-            ),
-            qualReq: item.qualification_required
-              ? String(item.qualification_required)
-              : item.qual_req
-                ? String(item.qual_req)
-                : null,
-            cert: item.certification
-              ? String(item.certification)
-              : item.cert
-                ? String(item.cert)
-                : null,
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setWorkTypes(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              code: String(item.code ?? item.work_type_code ?? ""),
+              name: String(item.name ?? ""),
+              category: String(item.category ?? ""),
+              stdHours: Number(item.standard_rate ?? item.std_hours ?? 0),
+              safetyReq: Boolean(
+                item.safety_required ?? item.safety_req ?? false,
+              ),
+              qualReq: item.qualification_required
+                ? String(item.qualification_required)
+                : item.qual_req
+                  ? String(item.qual_req)
+                  : null,
+              cert: item.certification
+                ? String(item.certification)
+                : item.cert
+                  ? String(item.cert)
+                  : null,
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -247,6 +130,17 @@ export default function WorkTypesPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && workTypes.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

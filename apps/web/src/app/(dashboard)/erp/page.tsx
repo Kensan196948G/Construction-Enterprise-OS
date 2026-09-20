@@ -15,7 +15,7 @@ import {
   Clock,
   ChevronRight,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface LedgerItem {
   id: string;
@@ -62,132 +62,6 @@ interface InvoiceListResponse {
   page: number;
   per_page: number;
 }
-
-const MOCK_LEDGERS: LedgerItem[] = [
-  {
-    id: "l-001",
-    project_code: "PJ-2026-001",
-    project_name: "A工区橋梁建設工事",
-    project_type: "bridge",
-    client_name: "国土交通省",
-    contract_amount: 850000000,
-    budget_amount: 780000000,
-    actual_cost: 420000000,
-    estimated_profit: 50000000,
-    progress_rate: 52.3,
-    status: "in_progress",
-    start_date: "2026-01-15",
-    planned_end_date: "2026-12-31",
-    location: "東京都江東区",
-  },
-  {
-    id: "l-002",
-    project_code: "PJ-2026-002",
-    project_name: "B地区道路舗装工事",
-    project_type: "road",
-    client_name: "東京都",
-    contract_amount: 250000000,
-    budget_amount: 230000000,
-    actual_cost: 198000000,
-    estimated_profit: 32000000,
-    progress_rate: 85.0,
-    status: "in_progress",
-    start_date: "2025-10-01",
-    planned_end_date: "2026-06-30",
-    location: "東京都港区",
-  },
-  {
-    id: "l-003",
-    project_code: "PJ-2025-018",
-    project_name: "C棟耐震補強工事",
-    project_type: "building",
-    client_name: "民間企業A社",
-    contract_amount: 120000000,
-    budget_amount: 110000000,
-    actual_cost: 115000000,
-    estimated_profit: 5000000,
-    progress_rate: 100,
-    status: "completed",
-    start_date: "2025-06-01",
-    planned_end_date: "2026-03-31",
-    location: "神奈川県横浜市",
-  },
-  {
-    id: "l-004",
-    project_code: "PJ-2026-003",
-    project_name: "港湾施設改修工事",
-    project_type: "port",
-    client_name: "港湾局",
-    contract_amount: 380000000,
-    budget_amount: 350000000,
-    actual_cost: 45000000,
-    estimated_profit: null,
-    progress_rate: 12.5,
-    status: "planning",
-    start_date: "2026-04-01",
-    planned_end_date: "2027-03-31",
-    location: "千葉県千葉市",
-  },
-];
-
-const MOCK_INVOICES: InvoiceItem[] = [
-  {
-    id: "inv-001",
-    invoice_number: "INV-2026-0423",
-    invoice_type: "subcontract",
-    vendor_name: "田中建設株式会社",
-    amount: 15000000,
-    tax_amount: 1500000,
-    total_amount: 16500000,
-    issue_date: "2026-05-01",
-    due_date: "2026-05-31",
-    status: "pending",
-    paid_date: null,
-    ledger_id: "l-001",
-  },
-  {
-    id: "inv-002",
-    invoice_number: "INV-2026-0415",
-    invoice_type: "material",
-    vendor_name: "鋼材商事株式会社",
-    amount: 8500000,
-    tax_amount: 850000,
-    total_amount: 9350000,
-    issue_date: "2026-04-15",
-    due_date: "2026-05-15",
-    status: "paid",
-    paid_date: "2026-05-10",
-    ledger_id: "l-001",
-  },
-  {
-    id: "inv-003",
-    invoice_number: "INV-2026-0398",
-    invoice_type: "equipment",
-    vendor_name: "重機レンタル株式会社",
-    amount: 2200000,
-    tax_amount: 220000,
-    total_amount: 2420000,
-    issue_date: "2026-04-01",
-    due_date: "2026-04-30",
-    status: "overdue",
-    paid_date: null,
-    ledger_id: "l-002",
-  },
-  {
-    id: "inv-004",
-    invoice_number: "INV-2026-0441",
-    invoice_type: "subcontract",
-    vendor_name: "佐藤電気工事株式会社",
-    amount: 5800000,
-    tax_amount: 580000,
-    total_amount: 6380000,
-    issue_date: "2026-05-10",
-    due_date: "2026-06-10",
-    status: "pending",
-    paid_date: null,
-    ledger_id: "l-002",
-  },
-];
 
 function formatAmount(value: number): string {
   if (value >= 100000000) {
@@ -256,31 +130,47 @@ const projectTypeLabel: Record<string, string> = {
 };
 
 export default function ERPPage() {
-  const [ledgers, setLedgers] = useState<LedgerItem[]>(MOCK_LEDGERS);
-  const [invoices, setInvoices] = useState<InvoiceItem[]>(MOCK_INVOICES);
+  const [ledgers, setLedgers] = useState<LedgerItem[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const loadERPData = useCallback(async () => {
     setLoading(true);
     try {
       const [ledgerRes, invoiceRes] = await Promise.allSettled([
-        get<LedgerListResponse>("/erp/ledger?per_page=20").catch(() => null),
-        get<InvoiceListResponse>("/erp/invoices?per_page=10").catch(() => null),
+        get<LedgerListResponse>("/erp/ledger?per_page=20"),
+        get<InvoiceListResponse>("/erp/invoices?per_page=10"),
       ]);
 
-      if (
-        ledgerRes.status === "fulfilled" &&
-        Array.isArray(ledgerRes.value?.items)
-      ) {
-        setLedgers(ledgerRes.value.items as unknown as LedgerItem[]);
+      if (ledgerRes.status === "fulfilled") {
+        setLedgers(
+          Array.isArray(ledgerRes.value?.items)
+            ? (ledgerRes.value.items as unknown as LedgerItem[])
+            : [],
+        );
       }
-      if (
-        invoiceRes.status === "fulfilled" &&
-        Array.isArray(invoiceRes.value?.items)
-      ) {
-        setInvoices(invoiceRes.value.items as unknown as InvoiceItem[]);
+      if (invoiceRes.status === "fulfilled") {
+        setInvoices(
+          Array.isArray(invoiceRes.value?.items)
+            ? (invoiceRes.value.items as unknown as InvoiceItem[])
+            : [],
+        );
       }
+
+      const rejected = [ledgerRes, invoiceRes].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
@@ -324,6 +214,17 @@ export default function ERPPage() {
           更新
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && ledgers.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

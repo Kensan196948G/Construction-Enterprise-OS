@@ -15,79 +15,7 @@ import {
   listImageAnalyses,
   type ImageAnalysis,
 } from "../../../../lib/api/vision";
-
-const MOCK_ANALYSES: ImageAnalysis[] = [
-  {
-    id: "v-001",
-    organization_id: "org1",
-    file_key: "images/site/shinagawa_facade_01.jpg",
-    analysis_type: "defect_detection",
-    status: "completed",
-    confidence: 0.94,
-    processing_time_ms: 3200,
-    created_at: "2026-06-08T09:00:00Z",
-  },
-  {
-    id: "v-002",
-    organization_id: "org1",
-    file_key: "images/site/yokohama_wall_02.jpg",
-    analysis_type: "crack_detection",
-    status: "completed",
-    confidence: 0.87,
-    processing_time_ms: 2800,
-    created_at: "2026-06-08T09:30:00Z",
-  },
-  {
-    id: "v-003",
-    organization_id: "org1",
-    file_key: "images/site/shinjuku_progress_03.jpg",
-    analysis_type: "progress_tracking",
-    status: "completed",
-    confidence: 0.91,
-    processing_time_ms: 4100,
-    created_at: "2026-06-08T10:00:00Z",
-  },
-  {
-    id: "v-004",
-    organization_id: "org1",
-    file_key: "images/site/kawasaki_material_04.jpg",
-    analysis_type: "material_recognition",
-    status: "completed",
-    confidence: 0.79,
-    processing_time_ms: 1900,
-    created_at: "2026-06-08T10:30:00Z",
-  },
-  {
-    id: "v-005",
-    organization_id: "org1",
-    file_key: "images/site/ota_roof_05.jpg",
-    analysis_type: "defect_detection",
-    status: "processing",
-    confidence: null,
-    processing_time_ms: null,
-    created_at: "2026-06-08T11:00:00Z",
-  },
-  {
-    id: "v-006",
-    organization_id: "org1",
-    file_key: "images/site/shibuya_crack_06.jpg",
-    analysis_type: "crack_detection",
-    status: "pending",
-    confidence: null,
-    processing_time_ms: null,
-    created_at: "2026-06-08T11:15:00Z",
-  },
-  {
-    id: "v-007",
-    organization_id: "org1",
-    file_key: "images/site/ikebukuro_struct_07.jpg",
-    analysis_type: "defect_detection",
-    status: "failed",
-    confidence: null,
-    processing_time_ms: null,
-    created_at: "2026-06-08T11:30:00Z",
-  },
-];
+import { ApiError } from "@/lib/api-client";
 
 const ANALYSIS_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
   defect_detection: {
@@ -150,19 +78,23 @@ function formatConfidence(c?: number | null): string {
 }
 
 export default function AIVisionPage() {
-  const [analyses, setAnalyses] = useState<ImageAnalysis[]>(MOCK_ANALYSES);
+  const [analyses, setAnalyses] = useState<ImageAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const results = await listImageAnalyses({ limit: 20 });
-      if (results.length > 0) {
-        setAnalyses(results);
-      }
-    } catch {
-      // fallback to mock data
+      setAnalyses(Array.isArray(results) ? results : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -215,6 +147,17 @@ export default function AIVisionPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && analyses.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

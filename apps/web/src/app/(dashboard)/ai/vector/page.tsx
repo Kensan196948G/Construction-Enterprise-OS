@@ -17,87 +17,7 @@ import {
   type VectorIndex,
   type VectorSearchResult,
 } from "../../../../lib/api/vision";
-
-const MOCK_INDICES: VectorIndex[] = [
-  {
-    id: "vi-001",
-    organization_id: "org1",
-    collection_name: "construction_documents",
-    dimension: 1536,
-    index_type: "HNSW",
-    metric: "cosine",
-    document_count: 1240,
-    total_vectors: 8750,
-    is_active: true,
-    created_at: "2026-05-10T08:00:00Z",
-  },
-  {
-    id: "vi-002",
-    organization_id: "org1",
-    collection_name: "site_inspection_reports",
-    dimension: 768,
-    index_type: "IVF",
-    metric: "euclidean",
-    document_count: 430,
-    total_vectors: 2890,
-    is_active: true,
-    created_at: "2026-05-15T10:30:00Z",
-  },
-  {
-    id: "vi-003",
-    organization_id: "org1",
-    collection_name: "bim_metadata",
-    dimension: 512,
-    index_type: "HNSW",
-    metric: "dot_product",
-    document_count: 95,
-    total_vectors: 680,
-    is_active: true,
-    created_at: "2026-05-20T14:00:00Z",
-  },
-  {
-    id: "vi-004",
-    organization_id: "org1",
-    collection_name: "legacy_drawings_v1",
-    dimension: 1536,
-    index_type: "FLAT",
-    metric: "cosine",
-    document_count: 320,
-    total_vectors: 1540,
-    is_active: false,
-    created_at: "2026-04-01T09:00:00Z",
-  },
-];
-
-const MOCK_SEARCH_RESULTS: VectorSearchResult[] = [
-  {
-    source_id: "doc-0021",
-    source_type: "inspection_report",
-    chunk_index: 2,
-    content:
-      "外壁の亀裂については、幅0.3mm以上のものを重大欠陥として分類し、即座の補修を推奨する。",
-    similarity: 0.94,
-    metadata: { project: "品川タワー", date: "2026-05-30" },
-  },
-  {
-    source_id: "doc-0034",
-    source_type: "construction_spec",
-    chunk_index: 5,
-    content:
-      "コンクリートの圧縮強度試験は28日養生後に実施し、設計基準強度の85%以上を合格とする。",
-    similarity: 0.87,
-    metadata: { project: "横浜マンション", date: "2026-04-15" },
-  },
-  {
-    source_id: "doc-0058",
-    source_type: "safety_manual",
-    chunk_index: 1,
-    content:
-      "高所作業（2m以上）では必ず安全帯を着用し、墜落防止措置を講ずること。",
-    similarity: 0.79,
-    metadata: { category: "安全基準", version: "2.1" },
-  },
-];
+import { ApiError } from "@/lib/api-client";
 
 const INDEX_TYPE_COLOR: Record<string, string> = {
   HNSW: "bg-blue-100 text-blue-700",
@@ -129,7 +49,7 @@ function formatSimilarity(s: number): string {
 }
 
 export default function VectorDBPage() {
-  const [indices, setIndices] = useState<VectorIndex[]>(MOCK_INDICES);
+  const [indices, setIndices] = useState<VectorIndex[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndexId, setSelectedIndexId] = useState<string>("");
   const [queryText, setQueryText] = useState("");
@@ -137,16 +57,20 @@ export default function VectorDBPage() {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<VectorSearchResult[]>([]);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listVectorIndices({ limit: 20 });
-      if (data.length > 0) {
-        setIndices(data);
-      }
-    } catch {
-      // fallback to mock data
+      setIndices(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -174,9 +98,15 @@ export default function VectorDBPage() {
         query_text: queryText.trim(),
         top_k: topK,
       });
-      setResults(data.length > 0 ? data : MOCK_SEARCH_RESULTS);
-    } catch {
-      setResults(MOCK_SEARCH_RESULTS);
+      setResults(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setResults([]);
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setSearching(false);
     }
@@ -202,6 +132,17 @@ export default function VectorDBPage() {
           </span>
         )}
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && indices.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

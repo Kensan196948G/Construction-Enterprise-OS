@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   ClipboardCheck,
   AlertCircle,
@@ -24,97 +24,6 @@ interface WorkInstruction {
   assignee: string;
   created_at: string;
 }
-
-const MOCK_INSTRUCTIONS: WorkInstruction[] = [
-  {
-    id: "wi1",
-    number: "WI-2026-001",
-    title: "D工区 排水管埋設工事の遅延挽回計画策定",
-    zone: "D工区",
-    priority: "critical",
-    deadline: "2026-05-25",
-    status: "in_progress",
-    assignee: "山田 浩二",
-    created_at: "2026-05-24T08:00:00Z",
-  },
-  {
-    id: "wi2",
-    number: "WI-2026-002",
-    title: "B工区 3Fスラブ養生期間管理・脱型判定",
-    zone: "B工区",
-    priority: "high",
-    deadline: "2026-05-28",
-    status: "in_progress",
-    assignee: "鈴木 健太",
-    created_at: "2026-05-24T09:00:00Z",
-  },
-  {
-    id: "wi3",
-    number: "WI-2026-003",
-    title: "C工区 内装仕上げ材発注確認（クロス・床材）",
-    zone: "C工区",
-    priority: "high",
-    deadline: "2026-05-26",
-    status: "pending",
-    assignee: "佐藤 誠",
-    created_at: "2026-05-23T14:00:00Z",
-  },
-  {
-    id: "wi4",
-    number: "WI-2026-004",
-    title: "全工区 週次安全パトロール実施",
-    zone: "全工区",
-    priority: "normal",
-    deadline: "2026-05-24",
-    status: "completed",
-    assignee: "田中 一郎",
-    created_at: "2026-05-22T10:00:00Z",
-  },
-  {
-    id: "wi5",
-    number: "WI-2026-005",
-    title: "B工区 4F 鉄筋配筋検査立会い手配",
-    zone: "B工区",
-    priority: "high",
-    deadline: "2026-05-27",
-    status: "pending",
-    assignee: "渡辺 大輔",
-    created_at: "2026-05-23T11:00:00Z",
-  },
-  {
-    id: "wi6",
-    number: "WI-2026-006",
-    title: "D工区 設計変更協議資料作成",
-    zone: "D工区",
-    priority: "critical",
-    deadline: "2026-05-25",
-    status: "pending",
-    assignee: "中村 修",
-    created_at: "2026-05-24T07:30:00Z",
-  },
-  {
-    id: "wi7",
-    number: "WI-2026-007",
-    title: "A工区 完成検査書類整備",
-    zone: "A工区",
-    priority: "normal",
-    deadline: "2026-05-30",
-    status: "in_progress",
-    assignee: "伊藤 隆",
-    created_at: "2026-05-21T09:00:00Z",
-  },
-  {
-    id: "wi8",
-    number: "WI-2026-008",
-    title: "C工区 防水検査前清掃・整理",
-    zone: "C工区",
-    priority: "low",
-    deadline: "2026-05-31",
-    status: "pending",
-    assignee: "佐藤 誠",
-    created_at: "2026-05-23T16:00:00Z",
-  },
-];
 
 const priorityStyle: Record<string, { label: string; className: string }> = {
   critical: {
@@ -172,19 +81,29 @@ function isOverdue(deadline: string, status: string): boolean {
 }
 
 export default function FieldInstructionsPage() {
-  const [instructions, setInstructions] =
-    useState<WorkInstruction[]>(MOCK_INSTRUCTIONS);
+  const [instructions, setInstructions] = useState<WorkInstruction[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const json = await get<{ data?: WorkInstruction[] }>(
-      "/field/instructions",
-    ).catch(() => null);
-    if (Array.isArray(json?.data)) setInstructions(json.data);
-    setLoading(false);
+    try {
+      const json = await get<{ data?: WorkInstruction[] }>(
+        "/field/instructions",
+      );
+      setInstructions(Array.isArray(json?.data) ? json.data : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -266,6 +185,17 @@ export default function FieldInstructionsPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && instructions.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

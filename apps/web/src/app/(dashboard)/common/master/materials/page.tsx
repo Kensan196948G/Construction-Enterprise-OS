@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Package, Boxes, DollarSign, RefreshCw } from "lucide-react";
 
 type Material = {
@@ -16,141 +16,6 @@ type Material = {
   updated: string;
 };
 
-const MOCK_MATERIALS: Material[] = [
-  {
-    id: 1,
-    code: "MAT-001",
-    name: "異形棒鋼 D13",
-    spec: "SD345 D13×5.5m",
-    unit: "t",
-    price: 98000,
-    stock: 25.5,
-    category: "鉄筋",
-    updated: "2024-11-01",
-  },
-  {
-    id: 2,
-    code: "MAT-002",
-    name: "異形棒鋼 D16",
-    spec: "SD345 D16×5.5m",
-    unit: "t",
-    price: 97000,
-    stock: 18.2,
-    category: "鉄筋",
-    updated: "2024-11-01",
-  },
-  {
-    id: 3,
-    code: "MAT-003",
-    name: "普通コンクリート Fc21",
-    spec: "Fc21 スランプ12cm",
-    unit: "m³",
-    price: 14500,
-    stock: 0,
-    category: "コンクリート",
-    updated: "2024-10-15",
-  },
-  {
-    id: 4,
-    code: "MAT-004",
-    name: "普通コンクリート Fc24",
-    spec: "Fc24 スランプ15cm",
-    unit: "m³",
-    price: 15200,
-    stock: 0,
-    category: "コンクリート",
-    updated: "2024-10-15",
-  },
-  {
-    id: 5,
-    code: "MAT-005",
-    name: "杉板型枠",
-    spec: "厚さ12mm×幅90mm×3000mm",
-    unit: "枚",
-    price: 380,
-    stock: 1200,
-    category: "木材",
-    updated: "2024-11-10",
-  },
-  {
-    id: 6,
-    code: "MAT-006",
-    name: "合板型枠",
-    spec: "12mm厚 900×1800",
-    unit: "枚",
-    price: 680,
-    stock: 850,
-    category: "木材",
-    updated: "2024-11-10",
-  },
-  {
-    id: 7,
-    code: "MAT-007",
-    name: "VVFケーブル 2.0×3C",
-    spec: "2.0mm 3心 100m巻",
-    unit: "巻",
-    price: 12400,
-    stock: 45,
-    category: "電材",
-    updated: "2024-09-20",
-  },
-  {
-    id: 8,
-    code: "MAT-008",
-    name: "硬質塩ビ管 VU100",
-    spec: "VU100 4m",
-    unit: "本",
-    price: 1850,
-    stock: 320,
-    category: "管材",
-    updated: "2024-10-01",
-  },
-  {
-    id: 9,
-    code: "MAT-009",
-    name: "単管パイプ 48.6φ",
-    spec: "48.6mm 6m",
-    unit: "本",
-    price: 580,
-    stock: 600,
-    category: "仮設",
-    updated: "2024-11-15",
-  },
-  {
-    id: 10,
-    code: "MAT-010",
-    name: "クランプ（直交）",
-    spec: "48.6mm用 直交型",
-    unit: "個",
-    price: 85,
-    stock: 3200,
-    category: "仮設",
-    updated: "2024-11-15",
-  },
-  {
-    id: 11,
-    code: "MAT-011",
-    name: "ポルトランドセメント",
-    spec: "25kg袋 N種",
-    unit: "袋",
-    price: 840,
-    stock: 8,
-    category: "コンクリート",
-    updated: "2024-11-20",
-  },
-  {
-    id: 12,
-    code: "MAT-012",
-    name: "鉄筋スペーサー",
-    spec: "PC製 D=60mm",
-    unit: "個",
-    price: 28,
-    stock: 5000,
-    category: "鉄筋",
-    updated: "2024-10-05",
-  },
-];
-
 const CATEGORY_COLORS: Record<string, string> = {
   鉄筋: "bg-red-100 text-red-800",
   コンクリート: "bg-gray-100 text-gray-700",
@@ -161,40 +26,53 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function MaterialsPage() {
-  const [materials, setMaterials] = useState<Material[]>(MOCK_MATERIALS);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const primary = await get<{
-        data?: { items?: Record<string, unknown>[] };
-        items?: Record<string, unknown>[];
-      }>("/construction/materials?per_page=50").catch(() => null);
-      const json =
-        primary ??
-        (await get<{
+      let json:
+        | {
+            data?: { items?: Record<string, unknown>[] };
+            items?: Record<string, unknown>[];
+          }
+        | undefined;
+      try {
+        json = await get<{
           data?: { items?: Record<string, unknown>[] };
           items?: Record<string, unknown>[];
-        }>("/erp/materials?per_page=50").catch(() => null));
-      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setMaterials(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            code: String(item.code ?? item.material_code ?? ""),
-            name: String(item.name ?? ""),
-            spec: String(item.spec ?? item.specification ?? ""),
-            unit: String(item.unit ?? ""),
-            price: Number(item.unit_price ?? item.price ?? 0),
-            stock: Number(item.stock_quantity ?? item.stock ?? 0),
-            category: String(item.material_type ?? item.category ?? ""),
-            updated: String(item.updated_at ?? item.created_at ?? ""),
-          })),
-        );
+        }>("/construction/materials?per_page=50");
+      } catch {
+        json = await get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/erp/materials?per_page=50");
       }
-    } catch {
-      /* fallback to mock */
+      const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
+      setMaterials(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              code: String(item.code ?? item.material_code ?? ""),
+              name: String(item.name ?? ""),
+              spec: String(item.spec ?? item.specification ?? ""),
+              unit: String(item.unit ?? ""),
+              price: Number(item.unit_price ?? item.price ?? 0),
+              stock: Number(item.stock_quantity ?? item.stock ?? 0),
+              category: String(item.material_type ?? item.category ?? ""),
+              updated: String(item.updated_at ?? item.created_at ?? ""),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -271,6 +149,17 @@ export default function MaterialsPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && materials.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

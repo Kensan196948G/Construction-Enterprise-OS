@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   CheckSquare,
   XSquare,
@@ -40,217 +40,6 @@ interface CorrectiveAction {
   due_date: string;
   status: "open" | "in_progress" | "resolved";
 }
-
-const MOCK_CATEGORIES: CheckCategory[] = [
-  {
-    id: "cat1",
-    category: "コンクリート打設",
-    items: [
-      {
-        id: "c1-1",
-        name: "スランプ値確認（規定値内）",
-        judgment: "pass",
-        inspector: "鈴木 健太",
-        inspected_at: "2026-05-24",
-        note: null,
-      },
-      {
-        id: "c1-2",
-        name: "空気量測定（4±1.5%）",
-        judgment: "pass",
-        inspector: "鈴木 健太",
-        inspected_at: "2026-05-24",
-        note: null,
-      },
-      {
-        id: "c1-3",
-        name: "打設温度確認（5〜35℃）",
-        judgment: "pass",
-        inspector: "鈴木 健太",
-        inspected_at: "2026-05-24",
-        note: "実測 22℃",
-      },
-      {
-        id: "c1-4",
-        name: "養生期間・養生方法確認",
-        judgment: "pending",
-        inspector: null,
-        inspected_at: null,
-        note: null,
-      },
-      {
-        id: "c1-5",
-        name: "圧縮強度試験（供試体採取）",
-        judgment: "pending",
-        inspector: null,
-        inspected_at: null,
-        note: "7日後試験予定",
-      },
-    ],
-  },
-  {
-    id: "cat2",
-    category: "鉄筋工",
-    items: [
-      {
-        id: "c2-1",
-        name: "鉄筋径・本数確認（設計図照合）",
-        judgment: "pass",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-23",
-        note: null,
-      },
-      {
-        id: "c2-2",
-        name: "鉄筋間隔確認（許容誤差内）",
-        judgment: "pass",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-23",
-        note: null,
-      },
-      {
-        id: "c2-3",
-        name: "かぶり厚確認（最小かぶり確保）",
-        judgment: "fail",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-23",
-        note: "一部 25mm 未満（是正指示済み）",
-      },
-      {
-        id: "c2-4",
-        name: "継手長さ・位置確認",
-        judgment: "pass",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-23",
-        note: null,
-      },
-      {
-        id: "c2-5",
-        name: "溶接継手品質確認（外観）",
-        judgment: "pass",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-23",
-        note: null,
-      },
-    ],
-  },
-  {
-    id: "cat3",
-    category: "型枠",
-    items: [
-      {
-        id: "c3-1",
-        name: "型枠精度確認（±3mm以内）",
-        judgment: "pass",
-        inspector: "渡辺 大輔",
-        inspected_at: "2026-05-22",
-        note: null,
-      },
-      {
-        id: "c3-2",
-        name: "型枠支保工強度確認",
-        judgment: "pass",
-        inspector: "田中 一郎",
-        inspected_at: "2026-05-22",
-        note: null,
-      },
-      {
-        id: "c3-3",
-        name: "せき板目地・漏水防止確認",
-        judgment: "fail",
-        inspector: "田中 一郎",
-        inspected_at: "2026-05-22",
-        note: "北面 2箇所 目地シール不足",
-      },
-      {
-        id: "c3-4",
-        name: "脱型後 面精度確認",
-        judgment: "pending",
-        inspector: null,
-        inspected_at: null,
-        note: null,
-      },
-    ],
-  },
-  {
-    id: "cat4",
-    category: "防水",
-    items: [
-      {
-        id: "c4-1",
-        name: "下地含水率確認（8%以下）",
-        judgment: "pass",
-        inspector: "佐藤 誠",
-        inspected_at: "2026-05-21",
-        note: null,
-      },
-      {
-        id: "c4-2",
-        name: "防水材塗布厚確認",
-        judgment: "pass",
-        inspector: "佐藤 誠",
-        inspected_at: "2026-05-21",
-        note: null,
-      },
-      {
-        id: "c4-3",
-        name: "立上り高さ確認（250mm以上）",
-        judgment: "fail",
-        inspector: "佐藤 誠",
-        inspected_at: "2026-05-21",
-        note: "C工区 東側 200mm — 是正要",
-      },
-      {
-        id: "c4-4",
-        name: "ドレン廻り防水処理確認",
-        judgment: "pass",
-        inspector: "佐藤 誠",
-        inspected_at: "2026-05-21",
-        note: null,
-      },
-      {
-        id: "c4-5",
-        name: "散水試験（漏水なし）",
-        judgment: "pending",
-        inspector: null,
-        inspected_at: null,
-        note: "施工完了後に実施予定",
-      },
-    ],
-  },
-];
-
-const MOCK_CORRECTIVE_ACTIONS: CorrectiveAction[] = [
-  {
-    id: "ca1",
-    item_name: "かぶり厚確認（最小かぶり確保）",
-    category: "鉄筋工",
-    issue:
-      "B工区 2F 一部箇所でかぶり厚 25mm 未満を確認。スペーサー追加による是正が必要。",
-    assignee: "渡辺 大輔",
-    due_date: "2026-05-25",
-    status: "in_progress",
-  },
-  {
-    id: "ca2",
-    item_name: "せき板目地・漏水防止確認",
-    category: "型枠",
-    issue: "北面 2箇所で目地シール不足を確認。再施工・シール増し打ちが必要。",
-    assignee: "田中 一郎",
-    due_date: "2026-05-25",
-    status: "open",
-  },
-  {
-    id: "ca3",
-    item_name: "立上り高さ確認（250mm以上）",
-    category: "防水",
-    issue:
-      "C工区 東側で立上り高さ 200mm（規定 250mm 以上）を確認。防水材追加施工が必要。",
-    assignee: "佐藤 誠",
-    due_date: "2026-05-27",
-    status: "open",
-  },
-];
 
 const judgmentStyle: Record<
   Judgment,
@@ -360,30 +149,41 @@ function CategorySection({ category }: { category: CheckCategory }) {
 }
 
 export default function FieldQualityPage() {
-  const [categories, setCategories] =
-    useState<CheckCategory[]>(MOCK_CATEGORIES);
-  const [corrective, setCorrective] = useState<CorrectiveAction[]>(
-    MOCK_CORRECTIVE_ACTIONS,
-  );
+  const [categories, setCategories] = useState<CheckCategory[]>([]);
+  const [corrective, setCorrective] = useState<CorrectiveAction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [catRes, caRes] = await Promise.allSettled([
-      get<{ data?: CheckCategory[] }>("/field/quality/checks").catch(
-        () => null,
-      ),
-      get<{ data?: CorrectiveAction[] }>("/field/quality/corrective").catch(
-        () => null,
-      ),
-    ]);
-    if (catRes.status === "fulfilled" && Array.isArray(catRes.value?.data)) {
-      setCategories(catRes.value.data);
+    try {
+      const [catRes, caRes] = await Promise.allSettled([
+        get<{ data?: CheckCategory[] }>("/field/quality/checks"),
+        get<{ data?: CorrectiveAction[] }>("/field/quality/corrective"),
+      ]);
+      if (catRes.status === "fulfilled") {
+        setCategories(
+          Array.isArray(catRes.value?.data) ? catRes.value.data : [],
+        );
+      }
+      if (caRes.status === "fulfilled") {
+        setCorrective(Array.isArray(caRes.value?.data) ? caRes.value.data : []);
+      }
+      const rejected = [catRes, caRes].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
     }
-    if (caRes.status === "fulfilled" && Array.isArray(caRes.value?.data)) {
-      setCorrective(caRes.value.data);
-    }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -462,6 +262,17 @@ export default function FieldQualityPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && categories.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

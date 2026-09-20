@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type Invoice = {
   id: string;
@@ -13,99 +13,6 @@ type Invoice = {
   dueDate: string;
   status: "paid" | "pending" | "overdue";
 };
-
-const INVOICES: Invoice[] = [
-  {
-    id: "INV-2026-001",
-    client: "東京都住宅供給公社",
-    project: "品川タワー新築工事",
-    amount: 48000000,
-    issueDate: "2026-04-30",
-    dueDate: "2026-05-31",
-    status: "paid",
-  },
-  {
-    id: "INV-2026-002",
-    client: "横浜市建設局",
-    project: "横浜分譲マンション建設",
-    amount: 32500000,
-    issueDate: "2026-05-01",
-    dueDate: "2026-05-31",
-    status: "pending",
-  },
-  {
-    id: "INV-2026-003",
-    client: "大田区土木課",
-    project: "大田区道路改良工事",
-    amount: 9800000,
-    issueDate: "2026-04-15",
-    dueDate: "2026-05-15",
-    status: "overdue",
-  },
-  {
-    id: "INV-2026-004",
-    client: "渋谷開発株式会社",
-    project: "渋谷複合施設改修工事",
-    amount: 125000000,
-    issueDate: "2026-05-10",
-    dueDate: "2026-06-10",
-    status: "paid",
-  },
-  {
-    id: "INV-2026-005",
-    client: "川崎市財務局",
-    project: "川崎市庁舎耐震補強",
-    amount: 18500000,
-    issueDate: "2026-05-15",
-    dueDate: "2026-06-15",
-    status: "pending",
-  },
-  {
-    id: "INV-2026-006",
-    client: "品川不動産株式会社",
-    project: "品川オフィスビル外装改修",
-    amount: 7200000,
-    issueDate: "2026-04-01",
-    dueDate: "2026-04-30",
-    status: "overdue",
-  },
-  {
-    id: "INV-2026-007",
-    client: "神奈川県道路公社",
-    project: "国道16号線舗装補修工事",
-    amount: 22100000,
-    issueDate: "2026-05-20",
-    dueDate: "2026-06-20",
-    status: "pending",
-  },
-  {
-    id: "INV-2026-008",
-    client: "さいたま市都市局",
-    project: "さいたま駅前広場整備工事",
-    amount: 54000000,
-    issueDate: "2026-05-01",
-    dueDate: "2026-05-31",
-    status: "paid",
-  },
-  {
-    id: "INV-2026-009",
-    client: "千葉市建設部",
-    project: "千葉港岸壁補修工事",
-    amount: 16300000,
-    issueDate: "2026-04-20",
-    dueDate: "2026-05-20",
-    status: "overdue",
-  },
-  {
-    id: "INV-2026-010",
-    client: "東急建設株式会社",
-    project: "二子玉川再開発基礎工事",
-    amount: 88000000,
-    issueDate: "2026-05-22",
-    dueDate: "2026-06-22",
-    status: "pending",
-  },
-];
 
 const STATUS_CONFIG: Record<
   string,
@@ -129,8 +36,9 @@ const STATUS_CONFIG: Record<
 };
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>(INVOICES);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -141,23 +49,28 @@ export default function InvoicesPage() {
       }>("/erp/invoices?per_page=50");
       const items: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setInvoices(
-          items.map(
-            (item): Invoice => ({
-              id: String(item.id ?? ""),
-              client: String(item.client ?? item.client_name ?? ""),
-              project: String(item.project ?? item.project_name ?? ""),
-              amount: Number(item.amount ?? 0),
-              issueDate: String(item.issueDate ?? item.issue_date ?? ""),
-              dueDate: String(item.dueDate ?? item.due_date ?? ""),
-              status: String(item.status ?? "pending") as Invoice["status"],
-            }),
-          ),
-        );
-      }
-    } catch {
-      setInvoices(INVOICES);
+      setInvoices(
+        Array.isArray(items)
+          ? items.map(
+              (item): Invoice => ({
+                id: String(item.id ?? ""),
+                client: String(item.client ?? item.client_name ?? ""),
+                project: String(item.project ?? item.project_name ?? ""),
+                amount: Number(item.amount ?? 0),
+                issueDate: String(item.issueDate ?? item.issue_date ?? ""),
+                dueDate: String(item.dueDate ?? item.due_date ?? ""),
+                status: String(item.status ?? "pending") as Invoice["status"],
+              }),
+            )
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -240,6 +153,17 @@ export default function InvoicesPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && invoices.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 請求書一覧テーブル */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">

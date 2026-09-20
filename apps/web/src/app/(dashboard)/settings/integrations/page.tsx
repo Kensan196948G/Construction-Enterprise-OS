@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Link,
   RefreshCw,
@@ -28,148 +28,6 @@ interface IntegrationLog {
   event: string;
   result: "success" | "error" | "warning";
 }
-
-const MOCK_SYSTEMS: IntegrationSystem[] = [
-  {
-    id: "sys-kintone",
-    name: "kintone",
-    category: "業務アプリ",
-    iconBg: "bg-blue-600",
-    iconText: "K",
-    status: "connected",
-    lastSync: "2026-05-24 11:30",
-    syncCount: 148,
-  },
-  {
-    id: "sys-salesforce",
-    name: "Salesforce",
-    category: "CRM",
-    iconBg: "bg-sky-500",
-    iconText: "SF",
-    status: "connected",
-    lastSync: "2026-05-24 11:15",
-    syncCount: 62,
-  },
-  {
-    id: "sys-m365",
-    name: "Microsoft 365",
-    category: "コラボレーション",
-    iconBg: "bg-orange-500",
-    iconText: "M",
-    status: "connected",
-    lastSync: "2026-05-24 11:28",
-    syncCount: 312,
-  },
-  {
-    id: "sys-bim360",
-    name: "Autodesk BIM 360",
-    category: "BIM/CAD",
-    iconBg: "bg-red-600",
-    iconText: "BIM",
-    status: "connected",
-    lastSync: "2026-05-24 10:00",
-    syncCount: 24,
-  },
-  {
-    id: "sys-arcgis",
-    name: "Esri ArcGIS",
-    category: "GIS",
-    iconBg: "bg-green-600",
-    iconText: "GIS",
-    status: "error",
-    lastSync: "2026-05-23 18:00",
-    syncCount: 0,
-  },
-  {
-    id: "sys-sap",
-    name: "SAP",
-    category: "ERP",
-    iconBg: "bg-indigo-600",
-    iconText: "SAP",
-    status: "disconnected",
-    lastSync: null,
-    syncCount: 0,
-  },
-  {
-    id: "sys-lineworks",
-    name: "LINE Works",
-    category: "コミュニケーション",
-    iconBg: "bg-teal-500",
-    iconText: "LW",
-    status: "connected",
-    lastSync: "2026-05-24 11:29",
-    syncCount: 89,
-  },
-  {
-    id: "sys-slack",
-    name: "Slack",
-    category: "コミュニケーション",
-    iconBg: "bg-purple-600",
-    iconText: "SL",
-    status: "connected",
-    lastSync: "2026-05-24 11:30",
-    syncCount: 204,
-  },
-];
-
-const MOCK_LOGS: IntegrationLog[] = [
-  {
-    id: "log-001",
-    timestamp: "2026-05-24 11:30:12",
-    systemName: "kintone",
-    event: "工事台帳データ同期完了",
-    result: "success",
-  },
-  {
-    id: "log-002",
-    timestamp: "2026-05-24 11:29:45",
-    systemName: "Slack",
-    event: "安全アラート通知送信",
-    result: "success",
-  },
-  {
-    id: "log-003",
-    timestamp: "2026-05-24 11:28:33",
-    systemName: "Microsoft 365",
-    event: "承認ワークフロー連携",
-    result: "success",
-  },
-  {
-    id: "log-004",
-    timestamp: "2026-05-24 11:15:22",
-    systemName: "Salesforce",
-    event: "取引先情報更新",
-    result: "success",
-  },
-  {
-    id: "log-005",
-    timestamp: "2026-05-24 10:45:18",
-    systemName: "Esri ArcGIS",
-    event: "GISデータ同期失敗",
-    result: "error",
-  },
-  {
-    id: "log-006",
-    timestamp: "2026-05-24 10:00:05",
-    systemName: "Autodesk BIM 360",
-    event: "BIMモデルデータ取得",
-    result: "success",
-  },
-  {
-    id: "log-007",
-    timestamp: "2026-05-24 09:55:40",
-    systemName: "Esri ArcGIS",
-    event: "認証トークン期限切れ",
-    result: "error",
-  },
-  {
-    id: "log-008",
-    timestamp: "2026-05-24 09:30:10",
-    systemName: "LINE Works",
-    event: "日報通知送信",
-    result: "success",
-  },
-];
 
 const statusStyle: Record<
   IntegrationSystem["status"],
@@ -211,82 +69,88 @@ const logResultStyle: Record<
 };
 
 export default function IntegrationsPage() {
-  const [systems, setSystems] = useState<IntegrationSystem[]>(MOCK_SYSTEMS);
-  const [logs, setLogs] = useState<IntegrationLog[]>(MOCK_LOGS);
+  const [systems, setSystems] = useState<IntegrationSystem[]>([]);
+  const [logs, setLogs] = useState<IntegrationLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const results = await Promise.allSettled([
-      get<{
-        data?: { items?: Record<string, unknown>[] };
-        items?: Record<string, unknown>[];
-      }>("/integrations?per_page=50").catch(() => null),
-      get<{
-        data?: { items?: Record<string, unknown>[] };
-        items?: Record<string, unknown>[];
-      }>("/integrations/logs?per_page=50").catch(() => null),
-    ]);
-
-    const [systemsResult, logsResult] = results;
-
     try {
-      if (systemsResult.status === "fulfilled" && systemsResult.value) {
+      const [systemsResult, logsResult] = await Promise.allSettled([
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/integrations?per_page=50"),
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/integrations/logs?per_page=50"),
+      ]);
+
+      if (systemsResult.status === "fulfilled") {
         const json = systemsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setSystems(
-            items.map(
-              (item): IntegrationSystem => ({
-                id: String(item.id ?? ""),
-                name: String(item.name ?? ""),
-                category: String(item.category ?? ""),
-                iconBg: String(item.iconBg ?? item.icon_bg ?? "bg-gray-500"),
-                iconText: String(item.iconText ?? item.icon_text ?? ""),
-                status: String(
-                  item.status ?? "disconnected",
-                ) as IntegrationSystem["status"],
-                lastSync:
-                  (item.lastSync ?? item.last_sync)
-                    ? String(item.lastSync ?? item.last_sync)
-                    : null,
-                syncCount: Number(item.syncCount ?? item.sync_count ?? 0),
-              }),
-            ),
-          );
-        }
+        setSystems(
+          Array.isArray(items)
+            ? items.map(
+                (item): IntegrationSystem => ({
+                  id: String(item.id ?? ""),
+                  name: String(item.name ?? ""),
+                  category: String(item.category ?? ""),
+                  iconBg: String(item.iconBg ?? item.icon_bg ?? "bg-gray-500"),
+                  iconText: String(item.iconText ?? item.icon_text ?? ""),
+                  status: String(
+                    item.status ?? "disconnected",
+                  ) as IntegrationSystem["status"],
+                  lastSync:
+                    (item.lastSync ?? item.last_sync)
+                      ? String(item.lastSync ?? item.last_sync)
+                      : null,
+                  syncCount: Number(item.syncCount ?? item.sync_count ?? 0),
+                }),
+              )
+            : [],
+        );
       }
-    } catch {
-      setSystems(MOCK_SYSTEMS);
-    }
 
-    try {
-      if (logsResult.status === "fulfilled" && logsResult.value) {
+      if (logsResult.status === "fulfilled") {
         const json = logsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setLogs(
-            items.map(
-              (item): IntegrationLog => ({
-                id: String(item.id ?? ""),
-                timestamp: String(item.timestamp ?? ""),
-                systemName: String(item.systemName ?? item.system_name ?? ""),
-                event: String(item.event ?? ""),
-                result: String(
-                  item.result ?? "success",
-                ) as IntegrationLog["result"],
-              }),
-            ),
-          );
-        }
+        setLogs(
+          Array.isArray(items)
+            ? items.map(
+                (item): IntegrationLog => ({
+                  id: String(item.id ?? ""),
+                  timestamp: String(item.timestamp ?? ""),
+                  systemName: String(item.systemName ?? item.system_name ?? ""),
+                  event: String(item.event ?? ""),
+                  result: String(
+                    item.result ?? "success",
+                  ) as IntegrationLog["result"],
+                }),
+              )
+            : [],
+        );
       }
-    } catch {
-      setLogs(MOCK_LOGS);
-    }
 
-    setLoading(false);
+      const rejected = [systemsResult, logsResult].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -306,6 +170,17 @@ export default function IntegrationsPage() {
           外部システムとのAPI連携状態を確認・管理します
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && systems.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

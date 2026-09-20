@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, HardHat, Sun, Calendar } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface FieldProgress {
   id: string;
@@ -55,55 +55,6 @@ const RECENT_ALERTS = {
   ],
 };
 
-const MOCK_SCHEDULE: ScheduleItem[] = [
-  {
-    id: "1",
-    time: "07:00",
-    task: "朝礼・安全確認",
-    workers: 42,
-    status: "完了",
-  },
-  {
-    id: "2",
-    time: "08:00",
-    task: "掘削作業 第3工区",
-    workers: 18,
-    status: "進行中",
-  },
-  {
-    id: "3",
-    time: "09:00",
-    task: "コンクリート打設 B棟基礎",
-    workers: 12,
-    status: "進行中",
-  },
-  {
-    id: "4",
-    time: "10:30",
-    task: "配筋検査 第2工区",
-    workers: 4,
-    status: "予定",
-  },
-  { id: "5", time: "12:00", task: "昼休憩", workers: 42, status: "予定" },
-  {
-    id: "6",
-    time: "13:00",
-    task: "型枠組立 A棟",
-    workers: 15,
-    status: "予定",
-  },
-  {
-    id: "7",
-    time: "15:00",
-    task: "資材搬入 鉄骨部材",
-    workers: 6,
-    status: "予定",
-  },
-  { id: "8", time: "17:00", task: "片付け・終礼", workers: 42, status: "予定" },
-];
-
-const MOCK_FIELD_PROGRESS: FieldProgress[] = [];
-
 const LEVEL_COLORS: Record<string, string> = {
   critical: "border-l-red-500 bg-red-50",
   warning: "border-l-yellow-500 bg-yellow-50",
@@ -131,56 +82,73 @@ function normalizeScheduleStatus(raw: string): string {
 }
 
 export default function FieldDashboardPage() {
-  const [fieldProgress, setFieldProgress] =
-    useState<FieldProgress[]>(MOCK_FIELD_PROGRESS);
-  const [scheduleItems, setScheduleItems] =
-    useState<ScheduleItem[]>(MOCK_SCHEDULE);
+  const [fieldProgress, setFieldProgress] = useState<FieldProgress[]>([]);
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch field progress reports
-      const progressJson = await get<{
-        data?: { items?: Record<string, unknown>[] };
-        items?: Record<string, unknown>[];
-      }>("/field/progress?per_page=20").catch(() => null);
-      const progressData: Record<string, unknown>[] =
-        progressJson?.data?.items ?? progressJson?.items ?? [];
-      if (Array.isArray(progressData) && progressData.length > 0) {
+      const [progressResult, scheduleResult] = await Promise.allSettled([
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/field/progress?per_page=20"),
+        get<{
+          data?: { items?: Record<string, unknown>[] };
+          items?: Record<string, unknown>[];
+        }>("/construction/schedule?per_page=20"),
+      ]);
+
+      if (progressResult.status === "fulfilled") {
+        const progressJson = progressResult.value;
+        const progressData: Record<string, unknown>[] =
+          progressJson?.data?.items ?? progressJson?.items ?? [];
         setFieldProgress(
-          progressData.map((item) => ({
-            id: String(item.id ?? ""),
-            site_id: String(item.site_id ?? ""),
-            site_name: String(item.site_name ?? ""),
-            progress_rate: Number(item.progress_rate ?? 0),
-            worker_count: Number(item.worker_count ?? 0),
-            status: String(item.status ?? ""),
-            reported_at: String(item.reported_at ?? ""),
-          })),
+          Array.isArray(progressData)
+            ? progressData.map((item) => ({
+                id: String(item.id ?? ""),
+                site_id: String(item.site_id ?? ""),
+                site_name: String(item.site_name ?? ""),
+                progress_rate: Number(item.progress_rate ?? 0),
+                worker_count: Number(item.worker_count ?? 0),
+                status: String(item.status ?? ""),
+                reported_at: String(item.reported_at ?? ""),
+              }))
+            : [],
         );
       }
 
-      // Fetch construction schedule as sub-data
-      const scheduleJson = await get<{
-        data?: { items?: Record<string, unknown>[] };
-        items?: Record<string, unknown>[];
-      }>("/construction/schedule?per_page=20").catch(() => null);
-      const scheduleData: Record<string, unknown>[] =
-        scheduleJson?.data?.items ?? scheduleJson?.items ?? [];
-      if (Array.isArray(scheduleData) && scheduleData.length > 0) {
+      if (scheduleResult.status === "fulfilled") {
+        const scheduleJson = scheduleResult.value;
+        const scheduleData: Record<string, unknown>[] =
+          scheduleJson?.data?.items ?? scheduleJson?.items ?? [];
         setScheduleItems(
-          scheduleData.map((item) => ({
-            id: String(item.id ?? ""),
-            time: String(item.start_time ?? item.time ?? ""),
-            task: String(item.task ?? item.name ?? item.title ?? ""),
-            workers: Number(item.workers ?? item.worker_count ?? 0),
-            status: normalizeScheduleStatus(String(item.status ?? "")),
-          })),
+          Array.isArray(scheduleData)
+            ? scheduleData.map((item) => ({
+                id: String(item.id ?? ""),
+                time: String(item.start_time ?? item.time ?? ""),
+                task: String(item.task ?? item.name ?? item.title ?? ""),
+                workers: Number(item.workers ?? item.worker_count ?? 0),
+                status: normalizeScheduleStatus(String(item.status ?? "")),
+              }))
+            : [],
         );
       }
-    } catch {
-      // fallback to mock data
+
+      const rejected = [progressResult, scheduleResult].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -194,7 +162,7 @@ export default function FieldDashboardPage() {
   const totalWorkers =
     fieldProgress.length > 0
       ? fieldProgress.reduce((acc, fp) => acc + fp.worker_count, 0)
-      : 42;
+      : 0;
 
   const stats = [
     {
@@ -240,6 +208,20 @@ export default function FieldDashboardPage() {
           <HardHat className="w-8 h-8 text-orange-500" />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading &&
+        !error &&
+        fieldProgress.length === 0 &&
+        scheduleItems.length === 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+            該当データがありません。
+          </div>
+        )}
 
       {/* サマリーカード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

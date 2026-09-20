@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Key, Webhook, Activity, Shield } from "lucide-react";
 
 type ApiClient = {
@@ -14,81 +14,6 @@ type ApiClient = {
   status: string;
 };
 
-const MOCK_API_CLIENTS: ApiClient[] = [
-  {
-    id: 1,
-    name: "建設現場IoTゲートウェイ",
-    type: "IoTシステム",
-    apiKey: "ck_live_****...****a1b2",
-    scopes: ["iot:read", "iot:write"],
-    lastUsed: "2024-11-30 09:05",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "会計システム連携",
-    type: "ERPシステム",
-    apiKey: "ck_live_****...****c3d4",
-    scopes: ["erp:read", "erp:write"],
-    lastUsed: "2024-11-30 08:30",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "GISマッピングAPI",
-    type: "GISシステム",
-    apiKey: "ck_live_****...****e5f6",
-    scopes: ["gis:read"],
-    lastUsed: "2024-11-29 17:45",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "工事写真管理システム",
-    type: "文書管理",
-    apiKey: "ck_live_****...****g7h8",
-    scopes: ["documents:read", "documents:write"],
-    lastUsed: "2024-11-29 14:00",
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "安全管理モバイルApp",
-    type: "モバイルアプリ",
-    apiKey: "ck_live_****...****i9j0",
-    scopes: ["safety:read", "safety:write"],
-    lastUsed: "2024-11-30 07:22",
-    status: "active",
-  },
-  {
-    id: 6,
-    name: "レポート自動生成Bot",
-    type: "自動化Bot",
-    apiKey: "ck_live_****...****k1l2",
-    scopes: ["projects:read", "reports:write"],
-    lastUsed: "2024-11-30 06:00",
-    status: "active",
-  },
-  {
-    id: 7,
-    name: "旧システム連携（廃止予定）",
-    type: "レガシーシステム",
-    apiKey: "ck_live_****...****m3n4",
-    scopes: ["projects:read"],
-    lastUsed: "2024-10-15 10:00",
-    status: "inactive",
-  },
-  {
-    id: 8,
-    name: "テスト用クライアント",
-    type: "開発・テスト",
-    apiKey: "ck_test_****...****o5p6",
-    scopes: ["*"],
-    lastUsed: "2024-11-28 11:30",
-    status: "active",
-  },
-];
-
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   inactive: "bg-gray-100 text-gray-700",
@@ -100,8 +25,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function ApiClientsPage() {
-  const [apiClients, setApiClients] = useState<ApiClient[]>(MOCK_API_CLIENTS);
+  const [apiClients, setApiClients] = useState<ApiClient[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -109,27 +35,32 @@ export default function ApiClientsPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/api-clients?per_page=50").catch(() => null);
+      }>("/api-clients?per_page=50");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setApiClients(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.name ?? ""),
-            type: String(item.client_type ?? item.type ?? ""),
-            apiKey: String(item.client_id ?? item.api_key ?? ""),
-            scopes: Array.isArray(item.permissions)
-              ? (item.permissions as unknown[]).map((s) => String(s))
-              : Array.isArray(item.scopes)
-                ? (item.scopes as unknown[]).map((s) => String(s))
-                : [],
-            lastUsed: String(item.last_used_at ?? item.last_used ?? ""),
-            status: String(item.status ?? "active"),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setApiClients(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.name ?? ""),
+              type: String(item.client_type ?? item.type ?? ""),
+              apiKey: String(item.client_id ?? item.api_key ?? ""),
+              scopes: Array.isArray(item.permissions)
+                ? (item.permissions as unknown[]).map((s) => String(s))
+                : Array.isArray(item.scopes)
+                  ? (item.scopes as unknown[]).map((s) => String(s))
+                  : [],
+              lastUsed: String(item.last_used_at ?? item.last_used ?? ""),
+              status: String(item.status ?? "active"),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -196,6 +127,17 @@ export default function ApiClientsPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && apiClients.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

@@ -18,7 +18,7 @@ import {
   MoreVertical,
   Plus,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 const folders = [
   { name: "図面・設計書", count: 142, icon: FolderOpen, color: "primary" },
@@ -39,69 +39,6 @@ interface DocItem {
   author: string;
   updatedAt: string;
 }
-
-const MOCK_DOCS: DocItem[] = [
-  {
-    id: 1,
-    name: "品川タワー_施工計画書_Rev3.pdf",
-    project: "品川タワー新築工事",
-    type: "pdf",
-    size: "4.2 MB",
-    status: "approved",
-    author: "田中 健一",
-    updatedAt: "2024-11-20 14:32",
-  },
-  {
-    id: 2,
-    name: "横浜マンション_配筋検査記録.xlsx",
-    project: "横浜分譲マンション建設",
-    type: "xlsx",
-    size: "1.8 MB",
-    status: "pending",
-    author: "鈴木 次郎",
-    updatedAt: "2024-11-20 11:15",
-  },
-  {
-    id: 3,
-    name: "大田区道路_完成写真帳.zip",
-    project: "大田区道路改良工事",
-    type: "zip",
-    size: "128 MB",
-    status: "approved",
-    author: "佐藤 三郎",
-    updatedAt: "2024-11-19 17:48",
-  },
-  {
-    id: 4,
-    name: "川崎物流_地盤調査報告書.pdf",
-    project: "川崎物流センター建設",
-    type: "pdf",
-    size: "8.6 MB",
-    status: "review",
-    author: "伊藤 五郎",
-    updatedAt: "2024-11-19 09:22",
-  },
-  {
-    id: 5,
-    name: "品川タワー_安全パトロール記録_Nov.docx",
-    project: "品川タワー新築工事",
-    type: "docx",
-    size: "0.9 MB",
-    status: "pending",
-    author: "田中 健一",
-    updatedAt: "2024-11-18 16:05",
-  },
-  {
-    id: 6,
-    name: "横浜マンション_構造計算書.pdf",
-    project: "横浜分譲マンション建設",
-    type: "pdf",
-    size: "12.4 MB",
-    status: "approved",
-    author: "山田 建築士",
-    updatedAt: "2024-11-17 10:30",
-  },
-];
 
 const statusConfig = {
   approved: {
@@ -140,8 +77,9 @@ const fileColorMap: Record<string, string> = {
 };
 
 export default function DocumentsPage() {
-  const [recentDocs, setRecentDocs] = useState<DocItem[]>(MOCK_DOCS);
+  const [recentDocs, setRecentDocs] = useState<DocItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -160,24 +98,31 @@ export default function DocumentsPage() {
         }[];
       };
     }>("/documents?per_page=20")
-      .catch(() => null)
       .then((data) => {
         const documents = data?.data?.documents;
-        if (data?.success && Array.isArray(documents) && documents.length > 0) {
-          const mapped: DocItem[] = documents.map((doc, i) => ({
-            id: i + 1,
-            name: doc.name,
-            project: doc.project_name ?? "—",
-            type: doc.file_type.toLowerCase(),
-            size: `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB`,
-            status: doc.status,
-            author: doc.created_by ?? "—",
-            updatedAt: doc.updated_at.slice(0, 16).replace("T", " "),
-          }));
-          setRecentDocs(mapped);
-        }
+        setRecentDocs(
+          data?.success && Array.isArray(documents)
+            ? documents.map((doc, i) => ({
+                id: i + 1,
+                name: doc.name,
+                project: doc.project_name ?? "—",
+                type: doc.file_type.toLowerCase(),
+                size: `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB`,
+                status: doc.status,
+                author: doc.created_by ?? "—",
+                updatedAt: doc.updated_at.slice(0, 16).replace("T", " "),
+              }))
+            : [],
+        );
+        setError(null);
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+        );
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -258,6 +203,17 @@ export default function DocumentsPage() {
           })}
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && recentDocs.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Recent Documents */}
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">

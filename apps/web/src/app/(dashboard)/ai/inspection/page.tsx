@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Camera, Brain, AlertCircle, CheckCircle, Search } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 interface InspectionItem {
   id: string;
@@ -30,99 +30,6 @@ interface InspectionResult {
   anomalies?: string[];
   confidence?: number;
 }
-
-const MOCK_ITEMS: InspectionItem[] = [
-  {
-    id: "I-001",
-    fileName: "IMG_2026_001.jpg",
-    location: "品川タワー B1F 柱脚部",
-    status: "completed",
-    anomalies: ["ひび割れ"],
-    confidence: 94,
-    capturedAt: "2026-05-24 09:10",
-  },
-  {
-    id: "I-002",
-    fileName: "IMG_2026_002.jpg",
-    location: "品川タワー 3F 梁",
-    status: "completed",
-    anomalies: [],
-    confidence: 97,
-    capturedAt: "2026-05-24 09:15",
-  },
-  {
-    id: "I-003",
-    fileName: "IMG_2026_003.jpg",
-    location: "大阪ビル 外壁 北面",
-    status: "completed",
-    anomalies: ["錆び", "剥離"],
-    confidence: 88,
-    capturedAt: "2026-05-24 10:02",
-  },
-  {
-    id: "I-004",
-    fileName: "IMG_2026_004.jpg",
-    location: "横浜工場 屋根 東エリア",
-    status: "analyzing",
-    anomalies: [],
-    confidence: 0,
-    capturedAt: "2026-05-24 10:30",
-  },
-  {
-    id: "I-005",
-    fileName: "IMG_2026_005.jpg",
-    location: "新宿ビル 1F スラブ",
-    status: "completed",
-    anomalies: ["ひび割れ", "その他"],
-    confidence: 81,
-    capturedAt: "2026-05-24 11:00",
-  },
-  {
-    id: "I-006",
-    fileName: "IMG_2026_006.jpg",
-    location: "品川タワー 5F 壁面",
-    status: "completed",
-    anomalies: [],
-    confidence: 99,
-    capturedAt: "2026-05-24 11:20",
-  },
-  {
-    id: "I-007",
-    fileName: "IMG_2026_007.jpg",
-    location: "道路工事 路盤 A区間",
-    status: "queued",
-    anomalies: [],
-    confidence: 0,
-    capturedAt: "2026-05-24 12:00",
-  },
-  {
-    id: "I-008",
-    fileName: "IMG_2026_008.jpg",
-    location: "大阪ビル 地下ピット",
-    status: "completed",
-    anomalies: ["錆び"],
-    confidence: 91,
-    capturedAt: "2026-05-24 13:10",
-  },
-  {
-    id: "I-009",
-    fileName: "IMG_2026_009.jpg",
-    location: "新宿ビル 外壁 南面",
-    status: "error",
-    anomalies: [],
-    confidence: 0,
-    capturedAt: "2026-05-24 13:45",
-  },
-  {
-    id: "I-010",
-    fileName: "IMG_2026_010.jpg",
-    location: "横浜工場 基礎 西側",
-    status: "queued",
-    anomalies: [],
-    confidence: 0,
-    capturedAt: "2026-05-24 14:00",
-  },
-];
 
 const STATUS_CONFIG = {
   queued: { label: "待機中", color: "bg-gray-100 text-gray-600" },
@@ -172,25 +79,27 @@ function toInspectionItem(r: InspectionResult, idx: number): InspectionItem {
 }
 
 export default function AIInspectionPage() {
-  const [items, setItems] = useState<InspectionItem[]>(MOCK_ITEMS);
+  const [items, setItems] = useState<InspectionItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const json = await get<
         InspectionResult[] | { items: InspectionResult[] }
-      >("/advanced/inspections?per_page=20").catch(() => null);
-      if (json) {
-        const apiItems: InspectionResult[] = Array.isArray(json)
-          ? json
-          : (json.items ?? []);
-        if (apiItems.length > 0) {
-          setItems(apiItems.map((r, i) => toInspectionItem(r, i)));
-        }
-      }
-    } catch {
-      // fallback to mock data — already set as default state
+      >("/advanced/inspections?per_page=20");
+      const apiItems: InspectionResult[] = Array.isArray(json)
+        ? json
+        : (json?.items ?? []);
+      setItems(apiItems.map((r, i) => toInspectionItem(r, i)));
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -243,6 +152,17 @@ export default function AIInspectionPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && items.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

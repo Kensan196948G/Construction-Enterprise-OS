@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Globe,
   Layers,
@@ -39,124 +39,6 @@ interface TwinSensor {
   syncStatus: "synced" | "delayed" | "error";
   twinId: string;
 }
-
-const MOCK_TWINS: DigitalTwin[] = [
-  {
-    id: "DT-001",
-    name: "品川タワー BIMモデル",
-    targetSite: "品川タワー新築工事",
-    modelAccuracy: 98.5,
-    lastSync: "2026-05-24 11:30",
-    sensorCount: 24,
-    dataPoints: 1284560,
-    status: "active",
-  },
-  {
-    id: "DT-002",
-    name: "A工区橋梁モデル",
-    targetSite: "A工区橋梁建設工事",
-    modelAccuracy: 96.2,
-    lastSync: "2026-05-24 11:28",
-    sensorCount: 18,
-    dataPoints: 892340,
-    status: "syncing",
-  },
-  {
-    id: "DT-003",
-    name: "新宿ビル改修モデル",
-    targetSite: "新宿ビル大規模修繕",
-    modelAccuracy: 94.8,
-    lastSync: "2026-05-24 10:55",
-    sensorCount: 12,
-    dataPoints: 456720,
-    status: "active",
-  },
-  {
-    id: "DT-004",
-    name: "大阪工場設備モデル",
-    targetSite: "大阪工場設備更新工事",
-    modelAccuracy: 91.3,
-    lastSync: "2026-05-23 18:00",
-    sensorCount: 8,
-    dataPoints: 203180,
-    status: "offline",
-  },
-];
-
-const MOCK_SENSORS: TwinSensor[] = [
-  {
-    id: "S-001",
-    sensorName: "構造変位センサー #1",
-    type: "displacement",
-    updateFrequency: "1秒",
-    lastUpdated: "2026-05-24 11:30:55",
-    syncStatus: "synced",
-    twinId: "DT-001",
-  },
-  {
-    id: "S-002",
-    sensorName: "振動センサー（基礎）",
-    type: "vibration",
-    updateFrequency: "100ms",
-    lastUpdated: "2026-05-24 11:30:55",
-    syncStatus: "synced",
-    twinId: "DT-001",
-  },
-  {
-    id: "S-003",
-    sensorName: "温度センサー（外壁）",
-    type: "temperature",
-    updateFrequency: "1分",
-    lastUpdated: "2026-05-24 11:30:00",
-    syncStatus: "synced",
-    twinId: "DT-001",
-  },
-  {
-    id: "S-004",
-    sensorName: "風速計（屋上）",
-    type: "wind",
-    updateFrequency: "5秒",
-    lastUpdated: "2026-05-24 11:30:50",
-    syncStatus: "synced",
-    twinId: "DT-001",
-  },
-  {
-    id: "S-005",
-    sensorName: "橋梁荷重センサー",
-    type: "load",
-    updateFrequency: "500ms",
-    lastUpdated: "2026-05-24 11:30:55",
-    syncStatus: "synced",
-    twinId: "DT-002",
-  },
-  {
-    id: "S-006",
-    sensorName: "LiDARスキャナー",
-    type: "lidar",
-    updateFrequency: "10秒",
-    lastUpdated: "2026-05-24 11:30:45",
-    syncStatus: "delayed",
-    twinId: "DT-002",
-  },
-  {
-    id: "S-007",
-    sensorName: "湿度センサー（地下）",
-    type: "humidity",
-    updateFrequency: "5分",
-    lastUpdated: "2026-05-24 11:25:00",
-    syncStatus: "delayed",
-    twinId: "DT-003",
-  },
-  {
-    id: "S-008",
-    sensorName: "建設用カメラ #2",
-    type: "camera",
-    updateFrequency: "30秒",
-    lastUpdated: "2026-05-23 18:00:30",
-    syncStatus: "error",
-    twinId: "DT-004",
-  },
-];
 
 const twinStatusStyle: Record<
   DigitalTwin["status"],
@@ -203,9 +85,10 @@ const sensorTypeColor: Record<TwinSensor["type"], string> = {
 };
 
 export default function DigitalTwinPage() {
-  const [twins, setTwins] = useState<DigitalTwin[]>(MOCK_TWINS);
-  const [sensors, setSensors] = useState<TwinSensor[]>(MOCK_SENSORS);
+  const [twins, setTwins] = useState<DigitalTwin[]>([]);
+  const [sensors, setSensors] = useState<TwinSensor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -214,68 +97,82 @@ export default function DigitalTwinPage() {
         get<{
           data?: { items?: Record<string, unknown>[] };
           items?: Record<string, unknown>[];
-        }>("/autonomous/digital-twins?per_page=50").catch(() => null),
+        }>("/autonomous/digital-twins?per_page=50"),
         get<{
           data?: { items?: Record<string, unknown>[] };
           items?: Record<string, unknown>[];
-        }>("/autonomous/twin-sensors?per_page=50").catch(() => null),
+        }>("/autonomous/twin-sensors?per_page=50"),
       ]);
 
       if (twinsResult.status === "fulfilled") {
         const json = twinsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setTwins(
-            items.map(
-              (item: Record<string, unknown>): DigitalTwin => ({
-                id: String(item.id ?? ""),
-                name: String(item.name ?? ""),
-                targetSite: String(item.targetSite ?? item.target_site ?? ""),
-                modelAccuracy: Number(
-                  item.modelAccuracy ?? item.model_accuracy ?? 0,
-                ),
-                lastSync: String(item.lastSync ?? item.last_sync ?? ""),
-                sensorCount: Number(item.sensorCount ?? item.sensor_count ?? 0),
-                dataPoints: Number(item.dataPoints ?? item.data_points ?? 0),
-                status: String(
-                  item.status ?? "offline",
-                ) as DigitalTwin["status"],
-              }),
-            ),
-          );
-        }
+        setTwins(
+          Array.isArray(items)
+            ? items.map(
+                (item: Record<string, unknown>): DigitalTwin => ({
+                  id: String(item.id ?? ""),
+                  name: String(item.name ?? ""),
+                  targetSite: String(item.targetSite ?? item.target_site ?? ""),
+                  modelAccuracy: Number(
+                    item.modelAccuracy ?? item.model_accuracy ?? 0,
+                  ),
+                  lastSync: String(item.lastSync ?? item.last_sync ?? ""),
+                  sensorCount: Number(
+                    item.sensorCount ?? item.sensor_count ?? 0,
+                  ),
+                  dataPoints: Number(item.dataPoints ?? item.data_points ?? 0),
+                  status: String(
+                    item.status ?? "offline",
+                  ) as DigitalTwin["status"],
+                }),
+              )
+            : [],
+        );
       }
 
       if (sensorsResult.status === "fulfilled") {
         const json = sensorsResult.value;
         const items: Record<string, unknown>[] =
           json?.data?.items ?? json?.items ?? [];
-        if (Array.isArray(items) && items.length > 0) {
-          setSensors(
-            items.map(
-              (item: Record<string, unknown>): TwinSensor => ({
-                id: String(item.id ?? ""),
-                sensorName: String(item.sensorName ?? item.sensor_name ?? ""),
-                type: String(item.type ?? "temperature") as TwinSensor["type"],
-                updateFrequency: String(
-                  item.updateFrequency ?? item.update_frequency ?? "",
-                ),
-                lastUpdated: String(
-                  item.lastUpdated ?? item.last_updated ?? "",
-                ),
-                syncStatus: String(
-                  item.syncStatus ?? item.sync_status ?? "error",
-                ) as TwinSensor["syncStatus"],
-                twinId: String(item.twinId ?? item.twin_id ?? ""),
-              }),
-            ),
-          );
-        }
+        setSensors(
+          Array.isArray(items)
+            ? items.map(
+                (item: Record<string, unknown>): TwinSensor => ({
+                  id: String(item.id ?? ""),
+                  sensorName: String(item.sensorName ?? item.sensor_name ?? ""),
+                  type: String(
+                    item.type ?? "temperature",
+                  ) as TwinSensor["type"],
+                  updateFrequency: String(
+                    item.updateFrequency ?? item.update_frequency ?? "",
+                  ),
+                  lastUpdated: String(
+                    item.lastUpdated ?? item.last_updated ?? "",
+                  ),
+                  syncStatus: String(
+                    item.syncStatus ?? item.sync_status ?? "error",
+                  ) as TwinSensor["syncStatus"],
+                  twinId: String(item.twinId ?? item.twin_id ?? ""),
+                }),
+              )
+            : [],
+        );
       }
-    } catch {
-      setTwins(MOCK_TWINS);
-      setSensors(MOCK_SENSORS);
+
+      const rejected = [twinsResult, sensorsResult].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -303,6 +200,17 @@ export default function DigitalTwinPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && twins.length === 0 && sensors.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   TrendingUp,
   BarChart3,
@@ -28,124 +28,6 @@ interface WorkReport {
   zone: string;
   note: string | null;
 }
-
-const MOCK_ZONES: ZoneProgress[] = [
-  {
-    id: "z1",
-    zone_name: "A工区（基礎）",
-    plan_pct: 100,
-    actual_pct: 100,
-    diff: 0,
-    status: "on_track",
-  },
-  {
-    id: "z2",
-    zone_name: "B工区（躯体）",
-    plan_pct: 72,
-    actual_pct: 68,
-    diff: -4,
-    status: "delay",
-  },
-  {
-    id: "z3",
-    zone_name: "C工区（仕上）",
-    plan_pct: 45,
-    actual_pct: 50,
-    diff: 5,
-    status: "ahead",
-  },
-  {
-    id: "z4",
-    zone_name: "D工区（外構）",
-    plan_pct: 30,
-    actual_pct: 18,
-    diff: -12,
-    status: "critical",
-  },
-];
-
-const MOCK_REPORTS: WorkReport[] = [
-  {
-    id: "r01",
-    time: "07:30",
-    content: "朝礼・安全確認実施",
-    worker: "田中 一郎",
-    zone: "全工区",
-    note: null,
-  },
-  {
-    id: "r02",
-    time: "08:00",
-    content: "B工区 3F スラブコンクリート打設開始",
-    worker: "鈴木 健太",
-    zone: "B工区",
-    note: "生コン車 3台手配済",
-  },
-  {
-    id: "r03",
-    time: "09:15",
-    content: "C工区 内装ボード張り作業",
-    worker: "佐藤 誠",
-    zone: "C工区",
-    note: null,
-  },
-  {
-    id: "r04",
-    time: "09:45",
-    content: "D工区 排水管埋設工事再開",
-    worker: "山田 浩二",
-    zone: "D工区",
-    note: "前日中断分の継続",
-  },
-  {
-    id: "r05",
-    time: "10:30",
-    content: "B工区 コンクリート打設完了・養生開始",
-    worker: "鈴木 健太",
-    zone: "B工区",
-    note: "打設量 42m³",
-  },
-  {
-    id: "r06",
-    time: "11:00",
-    content: "C工区 クロス下地処理",
-    worker: "伊藤 隆",
-    zone: "C工区",
-    note: null,
-  },
-  {
-    id: "r07",
-    time: "12:00",
-    content: "昼休憩（全作業員）",
-    worker: "田中 一郎",
-    zone: "全工区",
-    note: null,
-  },
-  {
-    id: "r08",
-    time: "13:00",
-    content: "D工区 配管検査立会い",
-    worker: "中村 修",
-    zone: "D工区",
-    note: "設計監理確認予定",
-  },
-  {
-    id: "r09",
-    time: "14:30",
-    content: "B工区 型枠脱型作業",
-    worker: "渡辺 大輔",
-    zone: "B工区",
-    note: null,
-  },
-  {
-    id: "r10",
-    time: "16:00",
-    content: "本日作業終了・安全確認・後片付け",
-    worker: "田中 一郎",
-    zone: "全工区",
-    note: "明日の段取り確認済",
-  },
-];
 
 const statusStyle: Record<string, { label: string; className: string }> = {
   on_track: { label: "順調", className: "bg-green-100 text-green-700" },
@@ -184,43 +66,57 @@ function ProgressBar({ plan, actual }: { plan: number; actual: number }) {
 }
 
 export default function FieldProgressPage() {
-  const [zones, setZones] = useState<ZoneProgress[]>(MOCK_ZONES);
-  const [reports, setReports] = useState<WorkReport[]>(MOCK_REPORTS);
+  const [zones, setZones] = useState<ZoneProgress[]>([]);
+  const [reports, setReports] = useState<WorkReport[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [zonesRes, reportsRes] = await Promise.allSettled([
-      get<{ data?: ZoneProgress[] }>("/field/progress/zones").catch(() => null),
-      get<{ data?: WorkReport[] }>("/field/progress/reports/today").catch(
-        () => null,
-      ),
-    ]);
-    if (
-      zonesRes.status === "fulfilled" &&
-      Array.isArray(zonesRes.value?.data)
-    ) {
-      setZones(zonesRes.value.data);
+    try {
+      const [zonesRes, reportsRes] = await Promise.allSettled([
+        get<{ data?: ZoneProgress[] }>("/field/progress/zones"),
+        get<{ data?: WorkReport[] }>("/field/progress/reports/today"),
+      ]);
+      if (zonesRes.status === "fulfilled") {
+        setZones(
+          Array.isArray(zonesRes.value?.data) ? zonesRes.value.data : [],
+        );
+      }
+      if (reportsRes.status === "fulfilled") {
+        setReports(
+          Array.isArray(reportsRes.value?.data) ? reportsRes.value.data : [],
+        );
+      }
+      const rejected = [zonesRes, reportsRes].filter(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      setError(
+        rejected.length === 0
+          ? null
+          : rejected.some(
+                (r) => r.reason instanceof ApiError && r.reason.status === 403,
+              )
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
     }
-    if (
-      reportsRes.status === "fulfilled" &&
-      Array.isArray(reportsRes.value?.data)
-    ) {
-      setReports(reportsRes.value.data);
-    }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const totalPlan = Math.round(
-    zones.reduce((s, z) => s + z.plan_pct, 0) / zones.length,
-  );
-  const totalActual = Math.round(
-    zones.reduce((s, z) => s + z.actual_pct, 0) / zones.length,
-  );
+  const totalPlan =
+    zones.length > 0
+      ? Math.round(zones.reduce((s, z) => s + z.plan_pct, 0) / zones.length)
+      : 0;
+  const totalActual =
+    zones.length > 0
+      ? Math.round(zones.reduce((s, z) => s + z.actual_pct, 0) / zones.length)
+      : 0;
   const delayZones = zones.filter(
     (z) => z.status === "delay" || z.status === "critical",
   ).length;
@@ -290,6 +186,17 @@ export default function FieldProgressPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && zones.length === 0 && reports.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

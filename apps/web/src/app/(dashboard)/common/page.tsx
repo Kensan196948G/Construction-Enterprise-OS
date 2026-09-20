@@ -12,7 +12,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 const CATEGORIES = [
   {
@@ -99,13 +99,6 @@ type ServiceStatus = {
   version?: string;
 };
 
-const SERVICES: ServiceStatus[] = [
-  { name: "PostgreSQL", status: "running", latency: "2ms" },
-  { name: "Redis", status: "running", latency: "0.5ms" },
-  { name: "MinIO", status: "running", latency: "8ms" },
-  { name: "Kafka", status: "warning", latency: "45ms" },
-];
-
 const SERVICES_DISPLAY = [
   {
     name: "PostgreSQL",
@@ -129,8 +122,9 @@ const SERVICES_DISPLAY = [
 ];
 
 export default function CommonPage() {
-  const [services, setServices] = useState<ServiceStatus[]>(SERVICES);
+  const [services, setServices] = useState<ServiceStatus[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -141,18 +135,23 @@ export default function CommonPage() {
       }>("/health/services");
       const rawServices: Record<string, unknown>[] =
         json?.services ?? json?.data ?? [];
-      if (Array.isArray(rawServices) && rawServices.length > 0) {
-        setServices(
-          rawServices.map((s: Record<string, unknown>) => ({
-            name: String(s.name ?? ""),
-            status: String(s.status ?? "operational"),
-            latency: s.latency ? String(s.latency) : undefined,
-            version: s.version ? String(s.version) : undefined,
-          })),
-        );
-      }
-    } catch {
-      setServices(SERVICES);
+      setServices(
+        Array.isArray(rawServices)
+          ? rawServices.map((s: Record<string, unknown>) => ({
+              name: String(s.name ?? ""),
+              status: String(s.status ?? "operational"),
+              latency: s.latency ? String(s.latency) : undefined,
+              version: s.version ? String(s.version) : undefined,
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -203,6 +202,17 @@ export default function CommonPage() {
           );
         })}
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && services.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200">

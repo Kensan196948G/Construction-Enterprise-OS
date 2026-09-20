@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Webhook, Bell, CheckCircle, Activity } from "lucide-react";
 
 type WebhookStatus = "active" | "inactive" | "error";
@@ -18,75 +18,6 @@ type WebhookItem = {
   status: WebhookStatus;
 };
 
-const WEBHOOKS: WebhookItem[] = [
-  {
-    id: 1,
-    name: "安全アラート通知",
-    url: "https://safety-monitor.construction-os.jp/hook/alert",
-    shortUrl: "https://safety-monitor.../hook/alert",
-    events: ["safety:incident", "safety:near-miss"],
-    auth: "HMAC-SHA256",
-    lastFired: "2024-11-30 09:15",
-    successRate: 99.2,
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "プロジェクト進捗更新",
-    url: "https://pms.construction-os.jp/webhook/progress",
-    shortUrl: "https://pms.../webhook/progress",
-    events: ["project:updated", "project:milestone"],
-    auth: "Bearer Token",
-    lastFired: "2024-11-30 08:30",
-    successRate: 98.5,
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "ワークフロー承認通知",
-    url: "https://workflow.construction-os.jp/notify/approve",
-    shortUrl: "https://workflow.../notify/approve",
-    events: ["workflow:approved", "workflow:rejected"],
-    auth: "HMAC-SHA256",
-    lastFired: "2024-11-29 17:00",
-    successRate: 100.0,
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "IoTデバイスアラート",
-    url: "https://iot-hub.construction-os.jp/webhook/device",
-    shortUrl: "https://iot-hub.../webhook/device",
-    events: ["iot:alert", "iot:threshold"],
-    auth: "API Key",
-    lastFired: "2024-11-30 09:22",
-    successRate: 97.8,
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "文書承認通知（Slack）",
-    url: "https://hooks.slack.com/services/T00000/B00000/XXXXXX",
-    shortUrl: "https://hooks.slack.com/.../XXXXXX",
-    events: ["document:approved"],
-    auth: "なし",
-    lastFired: "2024-11-29 14:45",
-    successRate: 95.0,
-    status: "active",
-  },
-  {
-    id: 6,
-    name: "旧システム通知（廃止予定）",
-    url: "https://legacy.construction-os.jp/api/notify",
-    shortUrl: "https://legacy.../api/notify",
-    events: ["project:updated"],
-    auth: "Basic認証",
-    lastFired: "2024-10-01 10:00",
-    successRate: 78.5,
-    status: "inactive",
-  },
-];
-
 const EVENT_COLORS: Record<string, string> = {
   "safety:incident": "bg-red-100 text-red-800",
   "safety:near-miss": "bg-orange-100 text-orange-800",
@@ -100,8 +31,9 @@ const EVENT_COLORS: Record<string, string> = {
 };
 
 export default function WebhooksPage() {
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>(WEBHOOKS);
+  const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -111,29 +43,34 @@ export default function WebhooksPage() {
         items?: Record<string, unknown>[];
       }>("/notification/webhooks?per_page=50");
       const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setWebhooks(
-          items.map(
-            (item): WebhookItem => ({
-              id: String(item.id ?? ""),
-              name: String(item.name ?? ""),
-              url: String(item.url ?? ""),
-              shortUrl: String(
-                item.shortUrl ?? item.short_url ?? item.url ?? "",
-              ),
-              events: Array.isArray(item.events)
-                ? (item.events as string[]).map(String)
-                : [],
-              auth: String(item.auth ?? ""),
-              lastFired: String(item.lastFired ?? item.last_fired ?? ""),
-              successRate: Number(item.successRate ?? item.success_rate ?? 0),
-              status: String(item.status ?? "inactive") as WebhookStatus,
-            }),
-          ),
-        );
-      }
-    } catch {
-      setWebhooks(WEBHOOKS);
+      setWebhooks(
+        Array.isArray(items)
+          ? items.map(
+              (item): WebhookItem => ({
+                id: String(item.id ?? ""),
+                name: String(item.name ?? ""),
+                url: String(item.url ?? ""),
+                shortUrl: String(
+                  item.shortUrl ?? item.short_url ?? item.url ?? "",
+                ),
+                events: Array.isArray(item.events)
+                  ? (item.events as string[]).map(String)
+                  : [],
+                auth: String(item.auth ?? ""),
+                lastFired: String(item.lastFired ?? item.last_fired ?? ""),
+                successRate: Number(item.successRate ?? item.success_rate ?? 0),
+                status: String(item.status ?? "inactive") as WebhookStatus,
+              }),
+            )
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -210,6 +147,17 @@ export default function WebhooksPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && webhooks.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (

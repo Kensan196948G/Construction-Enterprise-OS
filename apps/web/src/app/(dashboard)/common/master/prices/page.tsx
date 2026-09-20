@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, RefreshCw, TrendingUp, FileText } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 type PriceItem = {
   id: number;
@@ -22,109 +22,6 @@ type HistoryItem = {
   after: number;
   rate: number;
 };
-
-const MOCK_PRICES: PriceItem[] = [
-  {
-    id: 1,
-    name: "土砂掘削工（機械）",
-    unit: "m³",
-    price: 850,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "建設機械賃料含む",
-  },
-  {
-    id: 2,
-    name: "コンクリート打設工",
-    unit: "m³",
-    price: 3200,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "型枠費用別途",
-  },
-  {
-    id: 3,
-    name: "鉄筋組立工",
-    unit: "t",
-    price: 85000,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "材料費別途",
-  },
-  {
-    id: 4,
-    name: "型枠工（パネル）",
-    unit: "m²",
-    price: 4500,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "脱型・清掃含む",
-  },
-  {
-    id: 5,
-    name: "左官工（モルタル塗）",
-    unit: "m²",
-    price: 2800,
-    region: "首都圏",
-    validFrom: "2024-07-01",
-    validTo: "2025-03-31",
-    note: "7月改定",
-  },
-  {
-    id: 6,
-    name: "電気工事（低圧）",
-    unit: "点",
-    price: 12000,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "コンセント・照明等",
-  },
-  {
-    id: 7,
-    name: "給排水工事",
-    unit: "m",
-    price: 18000,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "管材費含む",
-  },
-  {
-    id: 8,
-    name: "道路舗装工（アスファルト）",
-    unit: "m²",
-    price: 3600,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "T=50mm",
-  },
-  {
-    id: 9,
-    name: "外壁タイル工",
-    unit: "m²",
-    price: 9500,
-    region: "首都圏",
-    validFrom: "2024-10-01",
-    validTo: "2025-03-31",
-    note: "10月改定",
-  },
-  {
-    id: 10,
-    name: "足場組立・解体工",
-    unit: "m²",
-    price: 1200,
-    region: "首都圏",
-    validFrom: "2024-04-01",
-    validTo: "2025-03-31",
-    note: "建物延べ面積あたり",
-  },
-];
 
 const HISTORY: HistoryItem[] = [
   {
@@ -158,8 +55,9 @@ const HISTORY: HistoryItem[] = [
 ];
 
 export default function PricesPage() {
-  const [prices, setPrices] = useState<PriceItem[]>(MOCK_PRICES);
+  const [prices, setPrices] = useState<PriceItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -167,24 +65,29 @@ export default function PricesPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/erp/costs?cost_type=unit_price&per_page=50").catch(() => null);
+      }>("/erp/costs?cost_type=unit_price&per_page=50");
       const data = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setPrices(
-          data.map((item: Record<string, unknown>) => ({
-            id: Number(item.id ?? 0),
-            name: String(item.item_name ?? item.name ?? ""),
-            unit: String(item.unit ?? ""),
-            price: Number(item.unit_price ?? item.price ?? 0),
-            region: String(item.region ?? "首都圏"),
-            validFrom: String(item.effective_date ?? item.valid_from ?? ""),
-            validTo: String(item.expiry_date ?? item.valid_to ?? ""),
-            note: String(item.note ?? item.description ?? ""),
-          })),
-        );
-      }
-    } catch {
-      /* fallback to mock */
+      setPrices(
+        Array.isArray(data)
+          ? data.map((item: Record<string, unknown>) => ({
+              id: Number(item.id ?? 0),
+              name: String(item.item_name ?? item.name ?? ""),
+              unit: String(item.unit ?? ""),
+              price: Number(item.unit_price ?? item.price ?? 0),
+              region: String(item.region ?? "首都圏"),
+              validFrom: String(item.effective_date ?? item.valid_from ?? ""),
+              validTo: String(item.expiry_date ?? item.valid_to ?? ""),
+              note: String(item.note ?? item.description ?? ""),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -259,6 +162,17 @@ export default function PricesPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && prices.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 単価テーブル */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

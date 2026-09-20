@@ -2,19 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Calculator, TrendingDown, BarChart2 } from "lucide-react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 
 // Mock data (fallback)
-const MOCK_COST_WORK_TYPES = [
-  { id: 1, name: "土工事", planned: 45000000, actual: 42300000 },
-  { id: 2, name: "基礎工事", planned: 78000000, actual: 82500000 },
-  { id: 3, name: "躯体工事", planned: 210000000, actual: 198000000 },
-  { id: 4, name: "外装工事", planned: 95000000, actual: 91200000 },
-  { id: 5, name: "内装工事", planned: 125000000, actual: 138000000 },
-  { id: 6, name: "設備工事", planned: 88000000, actual: 84600000 },
-  { id: 7, name: "電気工事", planned: 62000000, actual: 65800000 },
-  { id: 8, name: "外構工事", planned: 32000000, actual: 29400000 },
-];
 
 const MONTHLY_COSTS = [
   { month: "1月", cost: 58200000 },
@@ -46,9 +36,9 @@ function diffRateColor(rate: number): string {
 }
 
 export default function CostPage() {
-  const [costWorkTypes, setCostWorkTypes] =
-    useState<CostWorkType[]>(MOCK_COST_WORK_TYPES);
+  const [costWorkTypes, setCostWorkTypes] = useState<CostWorkType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -56,22 +46,27 @@ export default function CostPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/erp/costs?per_page=50").catch(() => null);
+      }>("/erp/costs?per_page=50");
       const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setCostWorkTypes(
-          items.map((item) => ({
-            id: Number(item.id ?? 0),
-            name: String(
-              item.cost_type ?? item.project_name ?? item.name ?? "",
-            ),
-            planned: Number(item.planned ?? item.budget_amount ?? 0),
-            actual: Number(item.amount ?? item.actual_amount ?? 0),
-          })),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setCostWorkTypes(
+        Array.isArray(items)
+          ? items.map((item) => ({
+              id: Number(item.id ?? 0),
+              name: String(
+                item.cost_type ?? item.project_name ?? item.name ?? "",
+              ),
+              planned: Number(item.planned ?? item.budget_amount ?? 0),
+              actual: Number(item.amount ?? item.actual_amount ?? 0),
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -96,6 +91,17 @@ export default function CostPage() {
           工種別の計画原価と実際原価を比較し、差異を分析します
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && costWorkTypes.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

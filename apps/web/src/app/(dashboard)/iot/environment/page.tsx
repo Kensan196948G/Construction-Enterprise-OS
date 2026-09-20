@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import { Thermometer, Droplets, Wind, Activity } from "lucide-react";
 
 type SensorState = "normal" | "warning" | "critical" | "offline";
@@ -18,105 +18,6 @@ interface EnvSensor {
   lastUpdated: string;
   history: number[]; // 過去6時間 (1時間おき, index 0 = 6時間前)
 }
-
-const MOCK_SENSORS: EnvSensor[] = [
-  {
-    id: "1",
-    name: "外気温センサー",
-    location: "現場北側",
-    currentValue: 28.4,
-    unit: "°C",
-    normalMin: -5,
-    normalMax: 40,
-    state: "normal",
-    lastUpdated: "09:00",
-    history: [24.1, 25.3, 26.8, 27.5, 28.0, 28.4],
-  },
-  {
-    id: "2",
-    name: "湿度センサー A",
-    location: "資材倉庫内",
-    currentValue: 87,
-    unit: "%",
-    normalMin: 30,
-    normalMax: 85,
-    state: "warning",
-    lastUpdated: "09:00",
-    history: [72, 75, 79, 82, 85, 87],
-  },
-  {
-    id: "3",
-    name: "CO₂センサー",
-    location: "地下作業エリア",
-    currentValue: 850,
-    unit: "ppm",
-    normalMin: 0,
-    normalMax: 1000,
-    state: "normal",
-    lastUpdated: "09:00",
-    history: [420, 550, 680, 750, 810, 850],
-  },
-  {
-    id: "4",
-    name: "騒音センサー",
-    location: "現場東境界",
-    currentValue: 78,
-    unit: "dB",
-    normalMin: 0,
-    normalMax: 85,
-    state: "normal",
-    lastUpdated: "09:00",
-    history: [45, 62, 75, 80, 78, 78],
-  },
-  {
-    id: "5",
-    name: "PM2.5センサー",
-    location: "掘削エリア周辺",
-    currentValue: 42,
-    unit: "μg/m³",
-    normalMin: 0,
-    normalMax: 35,
-    state: "warning",
-    lastUpdated: "08:58",
-    history: [12, 18, 28, 35, 40, 42],
-  },
-  {
-    id: "6",
-    name: "照度センサー A",
-    location: "トンネル内部",
-    currentValue: 180,
-    unit: "lux",
-    normalMin: 200,
-    normalMax: 10000,
-    state: "warning",
-    lastUpdated: "09:00",
-    history: [220, 210, 200, 195, 185, 180],
-  },
-  {
-    id: "7",
-    name: "湿度センサー B",
-    location: "コンクリート養生テント",
-    currentValue: 65,
-    unit: "%",
-    normalMin: 60,
-    normalMax: 95,
-    state: "normal",
-    lastUpdated: "09:00",
-    history: [58, 60, 63, 64, 65, 65],
-  },
-  {
-    id: "8",
-    name: "気圧センサー",
-    location: "現場管理棟屋上",
-    currentValue: 0,
-    unit: "hPa",
-    normalMin: 950,
-    normalMax: 1050,
-    state: "offline",
-    lastUpdated: "07:22",
-    history: [1013, 1012, 1011, 0, 0, 0],
-  },
-];
 
 const STATE_CONFIG: Record<
   SensorState,
@@ -192,8 +93,9 @@ function normalizeSensorState(raw: string): SensorState {
 }
 
 export default function EnvironmentPage() {
-  const [sensors, setSensors] = useState<EnvSensor[]>(MOCK_SENSORS);
+  const [sensors, setSensors] = useState<EnvSensor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -201,27 +103,32 @@ export default function EnvironmentPage() {
       const json = await get<{
         data?: { items?: Record<string, unknown>[] };
         items?: Record<string, unknown>[];
-      }>("/iot/sensors?per_page=50").catch(() => null);
+      }>("/iot/sensors?per_page=50");
       const data: Record<string, unknown>[] =
         json?.data?.items ?? json?.items ?? [];
-      if (Array.isArray(data) && data.length > 0) {
-        setSensors(
-          data.map((item) => ({
-            id: String(item.id ?? ""),
-            name: String(item.name ?? ""),
-            location: String(item.location ?? ""),
-            currentValue: Number(item.value ?? 0),
-            unit: String(item.unit ?? ""),
-            normalMin: 0,
-            normalMax: 100,
-            state: normalizeSensorState(String(item.status ?? "")),
-            lastUpdated: String(item.last_reading_at ?? ""),
-            history: [],
-          })),
-        );
-      }
-    } catch {
-      // fallback to mock data
+      setSensors(
+        Array.isArray(data)
+          ? data.map((item) => ({
+              id: String(item.id ?? ""),
+              name: String(item.name ?? ""),
+              location: String(item.location ?? ""),
+              currentValue: Number(item.value ?? 0),
+              unit: String(item.unit ?? ""),
+              normalMin: 0,
+              normalMax: 100,
+              state: normalizeSensorState(String(item.status ?? "")),
+              lastUpdated: String(item.last_reading_at ?? ""),
+              history: [],
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
+      );
     } finally {
       setLoading(false);
     }
@@ -274,6 +181,17 @@ export default function EnvironmentPage() {
           <Activity className="w-8 h-8 text-teal-600" />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && sensors.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* 統計カード */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

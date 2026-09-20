@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { get } from "@/lib/api-client";
+import { get, ApiError } from "@/lib/api-client";
 import {
   Plane,
   Bot,
@@ -87,79 +87,6 @@ const ROBOTICS_CARDS: RoboticsCard[] = [
   },
 ];
 
-const MOCK_ACTIVITIES: RecentActivity[] = [
-  {
-    id: "act-001",
-    timestamp: "11:30",
-    category: "drone",
-    content: "DRN-2026-031 品川タワー上空フライト継続中 — 進捗 65%",
-    status: "info",
-  },
-  {
-    id: "act-002",
-    timestamp: "11:28",
-    category: "twin",
-    content: "品川タワー BIMモデル データ同期完了 — 1,284,560 ポイント更新",
-    status: "success",
-  },
-  {
-    id: "act-003",
-    timestamp: "11:15",
-    category: "rpa",
-    content: "請求書自動処理タスク完了 — 本日24件処理済み",
-    status: "success",
-  },
-  {
-    id: "act-004",
-    timestamp: "10:45",
-    category: "twin",
-    content: "Esri ArcGIS GISデータ同期失敗 — 認証エラー",
-    status: "error",
-  },
-  {
-    id: "act-005",
-    timestamp: "10:00",
-    category: "autonomous",
-    content: "CAT-D8-01 A工区造成エリア自律施工継続中 — 完了率 78%",
-    status: "info",
-  },
-  {
-    id: "act-006",
-    timestamp: "09:15",
-    category: "autonomous",
-    content: "CAT-D6-03 GPS信号喪失エラー発生 → 復旧済み",
-    status: "warning",
-  },
-  {
-    id: "act-007",
-    timestamp: "09:00",
-    category: "rpa",
-    content: "日報自動集計タスク完了 — 管理者へメール送信済み",
-    status: "success",
-  },
-  {
-    id: "act-008",
-    timestamp: "08:30",
-    category: "drone",
-    content: "DRN-2026-030 新宿ビル北側フライト完了 — 100% カバレッジ",
-    status: "success",
-  },
-  {
-    id: "act-009",
-    timestamp: "08:00",
-    category: "rpa",
-    content: "安全点検チェックリスト自動配信完了 — 12現場へ送信",
-    status: "success",
-  },
-  {
-    id: "act-010",
-    timestamp: "07:42",
-    category: "autonomous",
-    content: "KOM-PC360-02 障害物検知 → セーフモード移行後に復帰",
-    status: "warning",
-  },
-];
-
 const categoryIcon: Record<RecentActivity["category"], React.ReactNode> = {
   drone: <Plane className="h-4 w-4" />,
   rpa: <Bot className="h-4 w-4" />,
@@ -182,16 +109,9 @@ const activityStatusDot: Record<RecentActivity["status"], string> = {
 };
 
 export default function RoboticsPage() {
-  const [activities, setActivities] = useState<Activity[]>(
-    MOCK_ACTIVITIES.map((a) => ({
-      id: a.id,
-      time: a.timestamp,
-      type: a.category,
-      message: a.content,
-      severity: a.status,
-    })),
-  );
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -201,26 +121,23 @@ export default function RoboticsPage() {
         items?: Record<string, unknown>[];
       }>("/autonomous/activities?per_page=20");
       const items = json?.data?.items ?? json?.items ?? json?.data ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        setActivities(
-          items.map((item: Record<string, unknown>) => ({
-            id: String(item.id ?? ""),
-            time: String(item.time ?? item.created_at ?? ""),
-            type: String(item.type ?? ""),
-            message: String(item.message ?? ""),
-            severity: item.severity ? String(item.severity) : undefined,
-          })),
-        );
-      }
-    } catch {
       setActivities(
-        MOCK_ACTIVITIES.map((a) => ({
-          id: a.id,
-          time: a.timestamp,
-          type: a.category,
-          message: a.content,
-          severity: a.status,
-        })),
+        Array.isArray(items)
+          ? items.map((item: Record<string, unknown>) => ({
+              id: String(item.id ?? ""),
+              time: String(item.time ?? item.created_at ?? ""),
+              type: String(item.type ?? ""),
+              message: String(item.message ?? ""),
+              severity: item.severity ? String(item.severity) : undefined,
+            }))
+          : [],
+      );
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "権限がありません。"
+          : "データを取得できませんでした。",
       );
     } finally {
       setLoading(false);
@@ -266,6 +183,17 @@ export default function RoboticsPage() {
           ドローン・RPA・自律施工・デジタルツインの統合管理ダッシュボード
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!loading && !error && activities.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

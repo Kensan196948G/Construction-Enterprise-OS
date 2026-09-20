@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Map, MapPin, Layers, Navigation, AlertTriangle } from "lucide-react";
 import { listSites, sitesFromGeoJSON } from "@/lib/api/gis";
+import { ApiError } from "@/lib/api-client";
 import type { MapSitePin } from "@/components/gis/LeafletMap";
 
 // Leaflet requires DOM; load only on client side
@@ -25,54 +26,6 @@ const mapLayers = [
 ];
 
 type SitePin = MapSitePin;
-
-const MOCK_SITE_PINS: SitePin[] = [
-  {
-    id: 1,
-    name: "品川タワー新築工事",
-    lat: 35.6285,
-    lng: 139.7387,
-    status: "active",
-    workers: 42,
-    alerts: 0,
-  },
-  {
-    id: 2,
-    name: "横浜分譲マンション建設",
-    lat: 35.4437,
-    lng: 139.638,
-    status: "active",
-    workers: 28,
-    alerts: 0,
-  },
-  {
-    id: 3,
-    name: "大田区道路改良工事",
-    lat: 35.5614,
-    lng: 139.7161,
-    status: "active",
-    workers: 15,
-    alerts: 0,
-  },
-  {
-    id: 4,
-    name: "川崎物流センター建設",
-    lat: 35.531,
-    lng: 139.7025,
-    status: "alert",
-    workers: 33,
-    alerts: 3,
-  },
-  {
-    id: 5,
-    name: "新宿再開発ビル工事",
-    lat: 35.6895,
-    lng: 139.6917,
-    status: "planning",
-    workers: 0,
-    alerts: 0,
-  },
-];
 
 const nearbyAlerts = [
   {
@@ -133,28 +86,32 @@ const equipmentStatus = {
 };
 
 export default function GISPage() {
-  const [sitePins, setSitePins] = useState<SitePin[]>(MOCK_SITE_PINS);
+  const [sitePins, setSitePins] = useState<SitePin[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     listSites()
-      .catch(() => null)
       .then((data) => {
-        if (!data) return;
         const sites = sitesFromGeoJSON(data);
-        if (sites.length > 0) {
-          const mapped: SitePin[] = sites.map((s, i) => ({
-            id: i + 1,
-            name: s.name,
-            lat: s.latitude,
-            lng: s.longitude,
-            status: s.status ?? "active",
-            workers: 0,
-            alerts: 0,
-          }));
-          setSitePins(mapped);
-        }
+        const mapped: SitePin[] = sites.map((s, i) => ({
+          id: i + 1,
+          name: s.name,
+          lat: s.latitude,
+          lng: s.longitude,
+          status: s.status ?? "active",
+          workers: 0,
+          alerts: 0,
+        }));
+        setSitePins(mapped);
+        setError(null);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? "権限がありません。"
+            : "データを取得できませんでした。",
+        );
+      });
   }, []);
 
   return (
@@ -178,6 +135,17 @@ export default function GISPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-danger-500/30 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
+      )}
+      {!error && sitePins.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          該当データがありません。
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map Placeholder */}
