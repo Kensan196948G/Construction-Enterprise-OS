@@ -12,6 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+async function readResponseBody<T>(res: Response): Promise<T> {
+  if (res.status === 204 || res.status === 205) return undefined as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("auth_token");
@@ -31,9 +38,9 @@ async function attemptTokenRefresh(): Promise<string | null> {
 
   isRefreshing = true;
   refreshPromise = (async () => {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) return null;
     try {
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) return null;
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,7 +100,7 @@ export async function apiRequest<T>(
         const body = await retryRes.text().catch(() => "");
         throw new ApiError(retryRes.status, body || retryRes.statusText);
       }
-      return retryRes.json() as Promise<T>;
+      return readResponseBody<T>(retryRes);
     }
     // Refresh failed — throw 401 for the caller to handle (e.g. redirect to login)
     throw new ApiError(
@@ -107,7 +114,7 @@ export async function apiRequest<T>(
     throw new ApiError(res.status, body || res.statusText);
   }
 
-  return res.json() as Promise<T>;
+  return readResponseBody<T>(res);
 }
 
 /**

@@ -26,7 +26,7 @@ function mockOkResponse(body: unknown) {
     ok: true,
     status: 200,
     json: () => Promise.resolve(body),
-    text: () => Promise.resolve(""),
+    text: () => Promise.resolve(JSON.stringify(body)),
   });
 }
 
@@ -40,7 +40,12 @@ function mockErrorResponse(status: number) {
   });
 }
 
-const fakeUser = { id: "1", email: "test@example.com", name: "田中 健一", role: "現場監督" };
+const fakeUser = {
+  id: "1",
+  email: "test@example.com",
+  name: "田中 健一",
+  role: "現場監督",
+};
 
 describe("useAuthStore — login", () => {
   it("sets user and tokens on successful login", async () => {
@@ -113,7 +118,11 @@ describe("useAuthStore — logout", () => {
   });
 
   it("clears state even if logout API call fails", async () => {
-    useAuthStore.setState({ user: fakeUser, token: "tok", refreshToken: "ref" });
+    useAuthStore.setState({
+      user: fakeUser,
+      token: "tok",
+      refreshToken: "ref",
+    });
     localStorage.setItem("auth_token", "tok");
 
     mockFetch.mockReturnValueOnce(mockErrorResponse(500));
