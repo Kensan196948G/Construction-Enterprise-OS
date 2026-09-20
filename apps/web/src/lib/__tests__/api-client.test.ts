@@ -4,6 +4,7 @@ import { ApiError, apiRequest, get, post, put, del } from "../api-client";
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  mockFetch.mockReset();
   vi.stubGlobal("fetch", mockFetch);
   localStorage.clear();
 });
@@ -101,6 +102,23 @@ describe("apiRequest", () => {
     });
   });
 
+  it("recovers refresh after a 401 that had no refresh token", async () => {
+    localStorage.setItem("auth_token", "expired-token");
+
+    mockFetch.mockReturnValueOnce(mockResponse({}, 401));
+    await expect(apiRequest("/first")).rejects.toMatchObject({ status: 401 });
+
+    localStorage.setItem("auth_refresh_token", "valid-refresh");
+    mockFetch.mockReturnValueOnce(mockResponse({}, 401));
+    mockFetch.mockReturnValueOnce(
+      mockResponse({ data: { access_token: "new-token" } }),
+    );
+    mockFetch.mockReturnValueOnce(mockResponse({ data: "ok" }));
+
+    await expect(apiRequest("/second")).resolves.toEqual({ data: "ok" });
+    expect(localStorage.getItem("auth_token")).toBe("new-token");
+  });
+
   it("does not auto-refresh for /auth/* paths on 401", async () => {
     localStorage.setItem("auth_token", "bad-token");
 
@@ -137,5 +155,59 @@ describe("HTTP helpers", () => {
     mockFetch.mockReturnValueOnce(mockResponse({ success: true }));
     await del("/items/1");
     expect(mockFetch.mock.calls[0][1].method).toBe("DELETE");
+  });
+});
+
+describe("204 / empty body handling", () => {
+  function mockNoBody(status: number, statusText: string) {
+    const json = vi.fn(() =>
+      Promise.reject(new Error("json must not be called")),
+    );
+    return {
+      response: Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        statusText,
+        json,
+        text: () => Promise.resolve(""),
+      }),
+      json,
+    };
+  }
+
+  it("resolves with undefined for 204 without parsing JSON", async () => {
+    const { response, json } = mockNoBody(204, "No Content");
+    mockFetch.mockReturnValueOnce(response);
+
+    await expect(apiRequest("/items/1")).resolves.toBeUndefined();
+    expect(json).not.toHaveBeenCalled();
+  });
+
+  it("del() resolves on 204 No Content", async () => {
+    const { response } = mockNoBody(204, "No Content");
+    mockFetch.mockReturnValueOnce(response);
+
+    await expect(del("/items/1")).resolves.toBeUndefined();
+  });
+
+  it("resolves with undefined for an OK response with an empty body", async () => {
+    const { response } = mockNoBody(200, "OK");
+    mockFetch.mockReturnValueOnce(response);
+
+    await expect(apiRequest("/items")).resolves.toBeUndefined();
+  });
+
+  it("retries with 204 after a 401 refresh", async () => {
+    localStorage.setItem("auth_token", "expired-token");
+    localStorage.setItem("auth_refresh_token", "valid-refresh");
+
+    mockFetch.mockReturnValueOnce(mockResponse({}, 401));
+    mockFetch.mockReturnValueOnce(
+      mockResponse({ data: { access_token: "new-token" } }),
+    );
+    const { response } = mockNoBody(204, "No Content");
+    mockFetch.mockReturnValueOnce(response);
+
+    await expect(apiRequest("/protected")).resolves.toBeUndefined();
   });
 });
