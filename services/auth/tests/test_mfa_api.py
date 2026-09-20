@@ -180,7 +180,7 @@ def test_mfa_verify_refuses_when_not_enabled():
     )
 
     assert res.status_code == 400
-    assert res.json()["detail"]["code"] == "MFA_NOT_ENABLED"
+    assert res.json()["detail"]["code"] == "MFA_UNAVAILABLE"
 
 
 def test_mfa_verify_consumes_backup_code():
