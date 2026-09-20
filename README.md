@@ -180,10 +180,10 @@ construction-enterprise-os/
 
 ---
 
-## 📊 開発状況 — 全22サービス
+## 📊 開発状況 — 全23サービス
 
 ```mermaid
-pie title テストカバレッジ (451 tests)
+pie title テスト構成（サービス別の目安）
     "Foundation 層" : 76
     "Data & AI 層" : 184
     "Platform 層" : 117
@@ -227,7 +227,7 @@ pie title テストカバレッジ (451 tests)
 |                  | 🌊 海洋ロボティクス | 未着手                       | —         | ⚪      |
 |                  | 🎮 自律制御         | 未着手                       | —         | ⚪      |
 
-> **総計: 22サービス + 7パッケージ + 3アプリ = 582ファイル | 451 tests ALL PASS**
+> **総計: 23サービス + 5パッケージ + 2アプリ | サービスPython 694 + Web 229 テスト（CI 実行）**
 
 ---
 
@@ -428,6 +428,7 @@ make test
 | 📄 ドキュメント                                                       | 📝 内容                                       |
 | --------------------------------------------------------------------- | --------------------------------------------- |
 | [🏛️ 全体アーキテクチャ設計](docs/architecture/00-overview.md)         | 5レイヤ構造、開発計画、ADR                    |
+| [🏛️ ADR-0001: CEOS の責任範囲](docs/architecture/ADR-0001-ceos-responsibility-boundary.md) | 工程・原価・契約の正本と MCIP/CDE/ArcSphere/MCAH の境界（V3.5準拠） |
 | [🔐 統合認証基盤 詳細設計](docs/architecture/01-auth-platform.md)     | データモデル/API/トークン/セキュリティ        |
 | [🗄️ 統合データ基盤 詳細設計](docs/architecture/02-data-platform.md)   | PostgreSQL+PostGIS+TimescaleDB/マルチスキーマ |
 | [🌐 API Gateway & イベント基盤](docs/architecture/03-api-gateway.md)  | Gateway+EventBus+Webhook設計                  |
@@ -446,8 +447,8 @@ make test
 | 🔐 項目      | 🛠️ 方式              | 📋 詳細                |
 | ------------ | -------------------- | ---------------------- |
 | パスワード   | bcrypt               | cost >= 12             |
-| JWT          | HS256 共有鍵          | ⚠️ 実装は HS256。鍵未設定時は公開された開発用既定値にフォールバックするため、本番前に `JWT_SECRET_KEY` の注入と RS256 化が必要(未実施) |
-| MFA          | TOTP (RFC 6238)      | バックアップコード付き |
+| JWT          | HS256 共有鍵          | 非開発環境で鍵未設定なら起動を拒否（fail-fast, #57）。本番前に RS256 化を検討 |
+| MFA          | TOTP (RFC 6238)      | 有効化（/mfa/activate）・バックアップコードをハッシュ保存し単回消費 |
 | ロックアウト | 5回連続失敗          | 15分ロック             |
 | レート制限   | `/auth/login`        | 10回/分/IP             |
 | 監査ログ     | 全認証イベント記録   | 改ざん検知             |
@@ -461,4 +462,4 @@ make test
 
 ---
 
-> 💚 **最終更新**: 2026-05-24 | 🏗️ **ビルド番号**: 18 | 🟢 **ステータス**: STABLE | 🧪 **451 tests ALL PASS** | ⚙️ **22サービス稼働中**
+> 💚 **最終更新**: 2026-09-20 | 🟢 **ステータス**: STABLE | 🧪 **サービスPython 694 + Web 229 テスト CI 成功** | ⚙️ **23サービス** | 🏛️ **ADR-0001 で責任範囲を定義**
