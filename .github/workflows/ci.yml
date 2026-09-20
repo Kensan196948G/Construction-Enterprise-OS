@@ -80,6 +80,37 @@ jobs:
         run: python ../../scripts/db/generate_base_schema.py --check "$(basename "$PWD")"
 
   # ============================================
+  # MCP サービス (読み取り専用 / services/mcp)
+  # ============================================
+  # MCP サービスは DB を持たないため、python-checks の DB スキーマ検証の対象外。
+  # 専用ジョブで lint / 型 / テスト を実行する（既存マトリクスは変更しない）。
+  mcp-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint (Ruff)
+        run: ruff check .
+
+      - name: Type check (MyPy)
+        run: mypy src/
+
+      - name: Test (Pytest)
+        run: pytest tests/ --cov=src --cov-report=xml -p no:flask
+
+  # ============================================
   # TypeScript フロントエンド / 共有パッケージ
   # ============================================
   frontend-checks:
@@ -186,6 +217,9 @@ jobs:
 
       - name: Build workflow service
         run: docker build -t construction-enterprise-os/workflow:test services/workflow/
+
+      - name: Build MCP service
+        run: docker build -t construction-enterprise-os/mcp:test services/mcp/
 
       - name: Build web app
         run: docker build -t construction-enterprise-os/web:test apps/web/
