@@ -132,6 +132,7 @@ async def list_erp_materials(
     category: str | None = Query(None, description="資材カテゴリでフィルタ"),
     supplier_code: str | None = Query(None, description="仕入先コードでフィルタ"),
     low_stock: bool | None = Query(None, description="在庫発注点以下の資材のみ表示"),
+
     _user: TokenData = Depends(get_current_user),
 ) -> ErpMaterialListResponse:
     """ERP 資材マスタ一覧を返す（購買・原価管理用）。"""

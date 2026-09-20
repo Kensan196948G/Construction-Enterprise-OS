@@ -21,14 +21,20 @@ async def get_budget(db: AsyncSession, budget_id: uuid.UUID) -> Budget | None:
     return await db.get(Budget, budget_id)
 
 
-async def list_budgets(db: AsyncSession, ledger_id: uuid.UUID) -> list[Budget]:
+async def list_budgets(
+    db: AsyncSession, ledger_id: uuid.UUID
+) -> list[Budget]:
     result = await db.execute(
-        select(Budget).where(Budget.ledger_id == ledger_id).order_by(Budget.category)
+        select(Budget)
+        .where(Budget.ledger_id == ledger_id)
+        .order_by(Budget.category)
     )
     return list(result.scalars().all())
 
 
-async def update_budget(db: AsyncSession, budget: Budget, data: dict) -> Budget:
+async def update_budget(
+    db: AsyncSession, budget: Budget, data: dict
+) -> Budget:
     for key, value in data.items():
         if value is not None:
             setattr(budget, key, value)
@@ -38,7 +44,9 @@ async def update_budget(db: AsyncSession, budget: Budget, data: dict) -> Budget:
     return budget
 
 
-async def get_budget_summary(db: AsyncSession, ledger_id: uuid.UUID) -> dict:
+async def get_budget_summary(
+    db: AsyncSession, ledger_id: uuid.UUID
+) -> dict:
     budgets = await list_budgets(db, ledger_id)
     total_planned = sum(float(b.planned_amount) for b in budgets)
     total_actual = sum(float(b.actual_amount) for b in budgets)

@@ -28,9 +28,7 @@ def _inspection_to_response(insp) -> dict:
         "inspection_type": insp.inspection_type,
         "status": insp.status,
         "inspector_id": str(insp.inspector_id),
-        "inspection_date": insp.inspection_date.isoformat()
-        if insp.inspection_date
-        else None,
+        "inspection_date": insp.inspection_date.isoformat() if insp.inspection_date else None,
         "location": insp.location,
         "findings": insp.findings,
         "corrective_actions": insp.corrective_actions,

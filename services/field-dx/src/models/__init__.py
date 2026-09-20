@@ -22,7 +22,6 @@ from .base import Base
 
 class DailyReport(Base):
     """作業日報"""
-
     __tablename__ = "daily_reports"
     __table_args__ = (
         Index("ix_daily_reports_organization_id", "organization_id"),
@@ -34,9 +33,7 @@ class DailyReport(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     site_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     report_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -62,7 +59,6 @@ class DailyReport(Base):
 
 class ProgressRecord(Base):
     """出来形・進捗記録"""
-
     __tablename__ = "progress_records"
     __table_args__ = (
         Index("ix_progress_records_organization_id", "organization_id"),
@@ -73,9 +69,7 @@ class ProgressRecord(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     activity_name: Mapped[str] = mapped_column(String(500), nullable=False)
     activity_code: Mapped[str | None] = mapped_column(String(100))
@@ -100,7 +94,6 @@ class ProgressRecord(Base):
 
 class QualityCheck(Base):
     """品質管理"""
-
     __tablename__ = "quality_checks"
     __table_args__ = (
         Index("ix_quality_checks_organization_id", "organization_id"),
@@ -112,9 +105,7 @@ class QualityCheck(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     check_item: Mapped[str] = mapped_column(String(500), nullable=False)
     check_type: Mapped[str] = mapped_column(String(50), nullable=False)

@@ -54,7 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 _settings.MINIO_BUCKET,
             )
     except Exception:
-        logger.exception("Failed to initialize MinIO bucket — storage may not be ready")
+        logger.exception(
+            "Failed to initialize MinIO bucket — storage may not be ready"
+        )
 
     yield
 

@@ -403,11 +403,7 @@ async def get_inspection_schedules(
         stmt = stmt.where(InspectionSchedule.organization_id == organization_id)
     if status:
         stmt = stmt.where(InspectionSchedule.status == status)
-    stmt = (
-        stmt.order_by(InspectionSchedule.next_inspection_date.asc())
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = stmt.order_by(InspectionSchedule.next_inspection_date.asc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

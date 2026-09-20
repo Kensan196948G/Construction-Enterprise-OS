@@ -34,9 +34,7 @@ def _rule_to_response(rule) -> RuleResponse:
     return RuleResponse.model_validate(rule)
 
 
-@router.post(
-    "", response_model=APIResponse[RuleResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[RuleResponse], status_code=status.HTTP_201_CREATED)
 async def create_rule_endpoint(
     request: Request,
     body: RuleCreateRequest,

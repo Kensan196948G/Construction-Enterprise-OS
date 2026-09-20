@@ -36,7 +36,9 @@ async def create_cost(
     return await cost_service.create_cost(db, ledger_id, body.model_dump())
 
 
-@router.get("/ledger/{ledger_id}/costs", response_model=CostListResponse)
+@router.get(
+    "/ledger/{ledger_id}/costs", response_model=CostListResponse
+)
 async def list_costs(
     ledger_id: UUID,
     status: str | None = Query(None),
@@ -99,5 +101,7 @@ async def delete_cost(
         raise HTTPException(status_code=404, detail="原価明細が見つかりません")
     deleted = await cost_service.delete_cost(db, cost)
     if not deleted:
-        raise HTTPException(status_code=400, detail="承認済みの原価は削除できません")
+        raise HTTPException(
+            status_code=400, detail="承認済みの原価は削除できません"
+        )
     return None

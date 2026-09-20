@@ -27,9 +27,7 @@ def _ctrl_to_response(ctrl) -> ControlResponse:
     return ControlResponse.model_validate(ctrl)
 
 
-@router.post(
-    "", response_model=APIResponse[ControlResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[ControlResponse], status_code=status.HTTP_201_CREATED)
 async def send_command_endpoint(
     request: Request,
     body: ControlSendRequest,
@@ -82,17 +80,12 @@ async def get_command(
     if not ctrl:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "CONTROL_NOT_FOUND",
-                "message": "制御指令が見つかりません。",
-            },
+            detail={"code": "CONTROL_NOT_FOUND", "message": "制御指令が見つかりません。"},
         )
     return APIResponse(data=_ctrl_to_response(ctrl))
 
 
-@router.get(
-    "/target/{target_type}/{target_id}", response_model=APIResponse[ControlListResponse]
-)
+@router.get("/target/{target_type}/{target_id}", response_model=APIResponse[ControlListResponse])
 async def get_target_command_history(
     request: Request,
     target_type: str,

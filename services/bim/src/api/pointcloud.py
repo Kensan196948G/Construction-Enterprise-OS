@@ -90,7 +90,9 @@ async def list_pointclouds(
     pointclouds = result.scalars().all()
 
     meta = MetaInfo(page=page, per_page=per_page, total=total, total_pages=total_pages)
-    return _api_response(data=[_pc_to_response(pc) for pc in pointclouds], meta=meta)
+    return _api_response(
+        data=[_pc_to_response(pc) for pc in pointclouds], meta=meta
+    )
 
 
 @router.get("/{pointcloud_id}")
@@ -99,7 +101,9 @@ async def get_pointcloud(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(PointCloud).where(PointCloud.id == pointcloud_id))
+    result = await db.execute(
+        select(PointCloud).where(PointCloud.id == pointcloud_id)
+    )
     pc = result.scalar_one_or_none()
     if not pc:
         raise HTTPException(
@@ -116,7 +120,9 @@ async def update_pointcloud(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(PointCloud).where(PointCloud.id == pointcloud_id))
+    result = await db.execute(
+        select(PointCloud).where(PointCloud.id == pointcloud_id)
+    )
     pc = result.scalar_one_or_none()
     if not pc:
         raise HTTPException(
@@ -142,7 +148,9 @@ async def delete_pointcloud(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(PointCloud).where(PointCloud.id == pointcloud_id))
+    result = await db.execute(
+        select(PointCloud).where(PointCloud.id == pointcloud_id)
+    )
     pc = result.scalar_one_or_none()
     if not pc:
         raise HTTPException(

@@ -28,14 +28,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
-
         configure_auth(
-            jwt_public_key=getattr(
-                settings,
-                "jwt_public_key",
-                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
-            ),
-            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
+            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
+            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -65,12 +60,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(incidents.router, prefix="/api/v1/security", tags=["incidents"])
+    app.include_router(
+        incidents.router, prefix="/api/v1/security", tags=["incidents"]
+    )
     app.include_router(
         vulnerabilities.router, prefix="/api/v1/security", tags=["vulnerabilities"]
     )
-    app.include_router(policies.router, prefix="/api/v1/security", tags=["policies"])
-    app.include_router(dashboard.router, prefix="/api/v1/security", tags=["dashboard"])
+    app.include_router(
+        policies.router, prefix="/api/v1/security", tags=["policies"]
+    )
+    app.include_router(
+        dashboard.router, prefix="/api/v1/security", tags=["dashboard"]
+    )
     app.include_router(health.router, tags=["health"])
 
     @app.exception_handler(Exception)

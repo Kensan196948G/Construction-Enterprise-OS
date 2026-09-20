@@ -168,7 +168,9 @@ async def get_hazard_zone(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(HazardZone).where(HazardZone.id == zone_id))
+    result = await db.execute(
+        select(HazardZone).where(HazardZone.id == zone_id)
+    )
     zone = result.scalar_one_or_none()
     if not zone:
         raise HTTPException(
@@ -185,7 +187,9 @@ async def update_hazard_zone(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(HazardZone).where(HazardZone.id == zone_id))
+    result = await db.execute(
+        select(HazardZone).where(HazardZone.id == zone_id)
+    )
     zone = result.scalar_one_or_none()
     if not zone:
         raise HTTPException(
@@ -213,7 +217,9 @@ async def delete_hazard_zone(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(HazardZone).where(HazardZone.id == zone_id))
+    result = await db.execute(
+        select(HazardZone).where(HazardZone.id == zone_id)
+    )
     zone = result.scalar_one_or_none()
     if not zone:
         raise HTTPException(

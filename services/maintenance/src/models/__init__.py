@@ -53,7 +53,9 @@ class DisasterReport(Base):
     )
     casualties: Mapped[int] = mapped_column(Integer, default=0)
     evacuation_required: Mapped[bool] = mapped_column(Boolean, default=False)
-    reported_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    reported_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
@@ -85,13 +87,19 @@ class RecoveryPlan(Base):
     estimated_cost: Mapped[Decimal | None] = mapped_column(
         Numeric(15, 2), nullable=True
     )
-    actual_cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
+    actual_cost: Mapped[Decimal | None] = mapped_column(
+        Numeric(15, 2), nullable=True
+    )
     start_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     completed_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     contractor: Mapped[str | None] = mapped_column(String(255), nullable=True)
     resources_needed: Mapped[str | None] = mapped_column(Text, nullable=True)
-    progress_percent: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), default=0)
-    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    progress_percent: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2), default=0
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
@@ -118,7 +126,9 @@ class MaintenanceRecord(Base):
     asset_name: Mapped[str] = mapped_column(String(500), nullable=False)
     asset_type: Mapped[str] = mapped_column(String(50), nullable=False)
     maintenance_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="scheduled"
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     work_performed: Mapped[str | None] = mapped_column(Text, nullable=True)
     cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
@@ -157,7 +167,9 @@ class InspectionSchedule(Base):
     frequency: Mapped[str] = mapped_column(String(20), nullable=False)
     last_inspection_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     next_inspection_date: Mapped[datetime] = mapped_column(Date, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="scheduled"
+    )
     inspector: Mapped[str | None] = mapped_column(String(255), nullable=True)
     checklist: Mapped[dict | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

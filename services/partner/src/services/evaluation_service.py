@@ -47,7 +47,10 @@ async def list_evaluations(
 
     offset = (page - 1) * per_page
     query = (
-        base_query.order_by(Evaluation.created_at.desc()).offset(offset).limit(per_page)
+        base_query
+        .order_by(Evaluation.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
     )
     result = await db.execute(query)
     evaluations = list(result.scalars().all())
@@ -57,9 +60,7 @@ async def list_evaluations(
 async def get_partner_evaluations(
     db: AsyncSession, partner_id: uuid.UUID, page: int = 1, per_page: int = 20
 ) -> tuple[list[Evaluation], int]:
-    return await list_evaluations(
-        db, page=page, per_page=per_page, partner_id=partner_id
-    )
+    return await list_evaluations(db, page=page, per_page=per_page, partner_id=partner_id)
 
 
 async def get_partner_rating(
@@ -76,7 +77,9 @@ async def get_partner_rating(
     return rating, count
 
 
-async def update_partner_rating(db: AsyncSession, partner_id: uuid.UUID) -> None:
+async def update_partner_rating(
+    db: AsyncSession, partner_id: uuid.UUID
+) -> None:
     rating, _ = await get_partner_rating(db, partner_id)
     result = await db.execute(select(Partner).where(Partner.id == partner_id))
     partner = result.scalar_one_or_none()

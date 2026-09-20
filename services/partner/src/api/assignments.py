@@ -35,25 +35,15 @@ def _assignment_to_response(assignment) -> AssignmentResponse:
     )
 
 
-@assign_router.post(
-    "",
-    response_model=APIResponse[AssignmentResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@assign_router.post("", response_model=APIResponse[AssignmentResponse], status_code=status.HTTP_201_CREATED)
 async def create_assignment(
     request: Request,
     body: AssignmentCreate,
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    org_id = (
-        UUID(current_user.org)
-        if current_user.org
-        else UUID("00000000-0000-0000-0000-000000000001")
-    )
-    assignment = await assignment_service.create_assignment(
-        db, org_id, body.model_dump()
-    )
+    org_id = UUID(current_user.org) if current_user.org else UUID("00000000-0000-0000-0000-000000000001")
+    assignment = await assignment_service.create_assignment(db, org_id, body.model_dump())
     await db.flush()
     await db.refresh(assignment)
     return APIResponse(data=_assignment_to_response(assignment))
@@ -90,9 +80,7 @@ async def list_assignments(
     )
 
 
-@project_router.get(
-    "/{project_id}/assignments", response_model=APIResponse[list[AssignmentResponse]]
-)
+@project_router.get("/{project_id}/assignments", response_model=APIResponse[list[AssignmentResponse]])
 async def get_project_assignments(
     request: Request,
     project_id: UUID,

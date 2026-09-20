@@ -41,14 +41,7 @@ def _auto_refresh(obj):
         obj.created_at = datetime.now(timezone.utc)
     if hasattr(obj, "updated_at") and obj.updated_at is None:
         obj.updated_at = datetime.now(timezone.utc)
-    for attr in (
-        "actual_cost",
-        "budget_amount",
-        "progress_rate",
-        "actual_amount",
-        "tax_amount",
-        "estimated_profit",
-    ):
+    for attr in ("actual_cost", "budget_amount", "progress_rate", "actual_amount", "tax_amount", "estimated_profit"):
         if hasattr(obj, attr) and getattr(obj, attr, None) is None:
             setattr(obj, attr, 0)
     if hasattr(obj, "status") and getattr(obj, "status", None) is None:
@@ -90,9 +83,7 @@ def app(mock_db):
         yield mock_db
 
     async def mock_get_current_user():
-        return TokenData(
-            sub="test-user-id", type="user", org="test-org", roles=["admin"]
-        )
+        return TokenData(sub="test-user-id", type="user", org="test-org", roles=["admin"])
 
     _app.dependency_overrides[get_db] = mock_get_db
     _app.dependency_overrides[get_current_user] = mock_get_current_user
@@ -146,15 +137,11 @@ class TestAuthRequired:
         assert response.status_code == 401
 
     def test_create_budget_requires_auth(self, client_no_auth):
-        response = client_no_auth.post(
-            f"/api/v1/erp/ledger/{uuid.uuid4()}/budgets", json={}
-        )
+        response = client_no_auth.post(f"/api/v1/erp/ledger/{uuid.uuid4()}/budgets", json={})
         assert response.status_code == 401
 
     def test_create_cost_requires_auth(self, client_no_auth):
-        response = client_no_auth.post(
-            f"/api/v1/erp/ledger/{uuid.uuid4()}/costs", json={}
-        )
+        response = client_no_auth.post(f"/api/v1/erp/ledger/{uuid.uuid4()}/costs", json={})
         assert response.status_code == 401
 
     def test_create_invoice_requires_auth(self, client_no_auth):
@@ -256,7 +243,9 @@ class TestLedgerCRUD:
         )
 
         mock_db.get = AsyncMock(return_value=ledger)
-        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[]))
+        mock_db.execute = AsyncMock(
+            return_value=MockScalarResult(items=[])
+        )
 
         response = client.get(
             f"/api/v1/erp/ledger/{ledger_id}",
@@ -398,7 +387,9 @@ class TestBudgetCRUD:
         )
 
         mock_db.get = AsyncMock(return_value=ledger)
-        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[budget]))
+        mock_db.execute = AsyncMock(
+            return_value=MockScalarResult(items=[budget])
+        )
 
         response = client.get(
             f"/api/v1/erp/ledger/{ledger_id}/budgets",
@@ -452,7 +443,9 @@ class TestBudgetCRUD:
         )
 
         mock_db.get = AsyncMock(return_value=ledger)
-        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[b1, b2]))
+        mock_db.execute = AsyncMock(
+            return_value=MockScalarResult(items=[b1, b2])
+        )
 
         response = client.get(
             f"/api/v1/erp/ledger/{ledger_id}/budget-summary",
@@ -705,7 +698,9 @@ class TestInvoiceManagement:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[inv], total=1))
+        mock_db.execute = AsyncMock(
+            return_value=MockScalarResult(items=[inv], total=1)
+        )
 
         response = client.get(
             "/api/v1/erp/invoices?status=issued",

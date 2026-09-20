@@ -12,7 +12,9 @@ from ..models import DailyReport, ProgressRecord, QualityCheck
 # ============================================
 # 作業日報
 # ============================================
-async def create_daily_report(db: AsyncSession, data: dict) -> DailyReport:
+async def create_daily_report(
+    db: AsyncSession, data: dict
+) -> DailyReport:
     report = DailyReport(**data)
     db.add(report)
     await db.flush()
@@ -78,7 +80,9 @@ async def update_daily_report(
     return report
 
 
-async def submit_daily_report(db: AsyncSession, report: DailyReport) -> DailyReport:
+async def submit_daily_report(
+    db: AsyncSession, report: DailyReport
+) -> DailyReport:
     if report.status != "draft":
         raise ValueError("下書き以外の日報は提出できません。")
     report.status = "submitted"
@@ -104,7 +108,9 @@ async def approve_daily_report(
 # ============================================
 # 出来形・進捗記録
 # ============================================
-async def create_progress_record(db: AsyncSession, data: dict) -> ProgressRecord:
+async def create_progress_record(
+    db: AsyncSession, data: dict
+) -> ProgressRecord:
     record = ProgressRecord(**data)
     db.add(record)
     await db.flush()
@@ -131,9 +137,7 @@ async def list_progress_records(
 
     if organization_id:
         query = query.where(ProgressRecord.organization_id == organization_id)
-        count_query = count_query.where(
-            ProgressRecord.organization_id == organization_id
-        )
+        count_query = count_query.where(ProgressRecord.organization_id == organization_id)
     if project_id:
         query = query.where(ProgressRecord.project_id == project_id)
         count_query = count_query.where(ProgressRecord.project_id == project_id)
@@ -164,7 +168,9 @@ async def update_progress_record(
     return record
 
 
-async def get_progress_summary(db: AsyncSession, project_id: uuid.UUID) -> dict:
+async def get_progress_summary(
+    db: AsyncSession, project_id: uuid.UUID
+) -> dict:
     result = await db.execute(
         select(ProgressRecord).where(ProgressRecord.project_id == project_id)
     )
@@ -180,9 +186,7 @@ async def get_progress_summary(db: AsyncSession, project_id: uuid.UUID) -> dict:
         if r.progress_percent is not None:
             progress_sum += float(r.progress_percent)
 
-    overall_progress = (
-        (progress_sum / total_activities) if total_activities > 0 else 0.0
-    )
+    overall_progress = (progress_sum / total_activities) if total_activities > 0 else 0.0
 
     return {
         "project_id": project_id,
@@ -198,7 +202,9 @@ async def get_progress_summary(db: AsyncSession, project_id: uuid.UUID) -> dict:
 # ============================================
 # 品質管理
 # ============================================
-async def create_quality_check(db: AsyncSession, data: dict) -> QualityCheck:
+async def create_quality_check(
+    db: AsyncSession, data: dict
+) -> QualityCheck:
     check = QualityCheck(**data)
     db.add(check)
     await db.flush()
@@ -260,7 +266,9 @@ async def update_quality_check(
     return check
 
 
-async def get_quality_stats(db: AsyncSession, project_id: uuid.UUID) -> dict:
+async def get_quality_stats(
+    db: AsyncSession, project_id: uuid.UUID
+) -> dict:
     result = await db.execute(
         select(QualityCheck).where(QualityCheck.project_id == project_id)
     )

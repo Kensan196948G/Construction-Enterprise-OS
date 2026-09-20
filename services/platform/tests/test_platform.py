@@ -123,10 +123,7 @@ class TestSceneManagement:
             f"/platform/viewer/configs/{config_id}/scenes",
             json={
                 "name": "Scene 1",
-                "camera_state": {
-                    "position": {"x": 0, "y": 0, "z": 10},
-                    "target": {"x": 0, "y": 0, "z": 0},
-                },
+                "camera_state": {"position": {"x": 0, "y": 0, "z": 10}, "target": {"x": 0, "y": 0, "z": 0}},
             },
         )
         assert response.status_code == 401
@@ -225,9 +222,7 @@ class TestSchemaValidation:
             "organization_id": str(uuid4()),
             "name": "Factory Dashboard",
             "description": "工場モニタリング",
-            "layout": {
-                "widgets": [{"type": "gauge", "config": {"deviceId": str(uuid4())}}]
-            },
+            "layout": {"widgets": [{"type": "gauge", "config": {"deviceId": str(uuid4())}}]},
             "refresh_interval_seconds": 10,
             "is_public": False,
             "created_at": "2024-01-01T00:00:00Z",
@@ -264,17 +259,8 @@ class TestSchemaValidation:
             "config_id": str(uuid4()),
             "name": "Front View",
             "description": "正面からの視点",
-            "camera_state": {
-                "position": {"x": 0, "y": 10, "z": 5},
-                "target": {"x": 0, "y": 0, "z": 0},
-            },
-            "annotations": [
-                {
-                    "position": {"x": 1, "y": 2, "z": 3},
-                    "text": "注釈",
-                    "color": "#ff0000",
-                }
-            ],
+            "camera_state": {"position": {"x": 0, "y": 10, "z": 5}, "target": {"x": 0, "y": 0, "z": 0}},
+            "annotations": [{"position": {"x": 1, "y": 2, "z": 3}, "text": "注釈", "color": "#ff0000"}],
             "measurements": [],
             "created_at": "2024-01-01T00:00:00Z",
         }

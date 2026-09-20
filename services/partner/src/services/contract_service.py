@@ -24,7 +24,9 @@ async def create_contract(
 async def get_contract_by_id(
     db: AsyncSession, contract_id: uuid.UUID
 ) -> Contract | None:
-    result = await db.execute(select(Contract).where(Contract.id == contract_id))
+    result = await db.execute(
+        select(Contract).where(Contract.id == contract_id)
+    )
     return result.scalar_one_or_none()
 
 
@@ -60,7 +62,10 @@ async def list_contracts(
 
     offset = (page - 1) * per_page
     query = (
-        base_query.order_by(Contract.created_at.desc()).offset(offset).limit(per_page)
+        base_query
+        .order_by(Contract.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
     )
     result = await db.execute(query)
     contracts = list(result.scalars().all())
@@ -81,10 +86,7 @@ async def update_contract(
 
 
 async def sign_contract(
-    db: AsyncSession,
-    contract_id: uuid.UUID,
-    signed_by_our: uuid.UUID,
-    signed_by_partner: str,
+    db: AsyncSession, contract_id: uuid.UUID, signed_by_our: uuid.UUID, signed_by_partner: str
 ) -> Contract | None:
     contract = await get_contract_by_id(db, contract_id)
     if not contract:

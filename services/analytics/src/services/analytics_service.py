@@ -56,7 +56,9 @@ async def list_datasources(
     return items, total
 
 
-async def update_datasource(db: AsyncSession, ds: DataSource, data: dict) -> DataSource:
+async def update_datasource(
+    db: AsyncSession, ds: DataSource, data: dict
+) -> DataSource:
     for key, value in data.items():
         if value is not None:
             setattr(ds, key, value)
@@ -103,7 +105,9 @@ async def list_pipelines(
 
     if organization_id:
         query = query.where(DataPipeline.organization_id == organization_id)
-        count_query = count_query.where(DataPipeline.organization_id == organization_id)
+        count_query = count_query.where(
+            DataPipeline.organization_id == organization_id
+        )
     if status:
         query = query.where(DataPipeline.status == status)
         count_query = count_query.where(DataPipeline.status == status)
@@ -116,7 +120,9 @@ async def list_pipelines(
 
     offset = (page - 1) * per_page
     query = (
-        query.order_by(DataPipeline.created_at.desc()).offset(offset).limit(per_page)
+        query.order_by(DataPipeline.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
     )
     result = await db.execute(query)
     items = list(result.scalars().all())
@@ -137,7 +143,9 @@ async def delete_pipeline(db: AsyncSession, pipeline: DataPipeline) -> None:
     await db.delete(pipeline)
 
 
-async def trigger_pipeline_run(db: AsyncSession, pipeline: DataPipeline) -> dict:
+async def trigger_pipeline_run(
+    db: AsyncSession, pipeline: DataPipeline
+) -> dict:
     now = datetime.now(timezone.utc)
     pipeline.status = "running"
     pipeline.last_run = now
@@ -193,7 +201,9 @@ async def list_reports(
 
     offset = (page - 1) * per_page
     query = (
-        query.order_by(AnalyticsReport.created_at.desc()).offset(offset).limit(per_page)
+        query.order_by(AnalyticsReport.created_at.desc())
+        .offset(offset)
+        .limit(per_page)
     )
     result = await db.execute(query)
     items = list(result.scalars().all())
@@ -214,7 +224,9 @@ async def delete_report(db: AsyncSession, report: AnalyticsReport) -> None:
     await db.delete(report)
 
 
-async def generate_report(db: AsyncSession, report: AnalyticsReport) -> dict:
+async def generate_report(
+    db: AsyncSession, report: AnalyticsReport
+) -> dict:
     return {
         "report_id": report.id,
         "generated_at": datetime.now(timezone.utc),

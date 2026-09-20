@@ -61,7 +61,9 @@ class ViewerConfig(Base):
 
 class ViewerScene(Base):
     __tablename__ = "viewer_scenes"
-    __table_args__ = (Index("ix_viewer_scenes_config", "config_id"),)
+    __table_args__ = (
+        Index("ix_viewer_scenes_config", "config_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

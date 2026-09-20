@@ -36,9 +36,7 @@ def _run_to_response(run) -> TaskRunResponse:
     return TaskRunResponse.model_validate(run)
 
 
-@router.post(
-    "", response_model=APIResponse[TaskResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[TaskResponse], status_code=status.HTTP_201_CREATED)
 async def create_task_endpoint(
     request: Request,
     body: TaskCreateRequest,

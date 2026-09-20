@@ -11,6 +11,7 @@ from src.models import BIMModel, PointCloud
 from src.schemas import BIMModelResponse, PointCloudResponse
 
 
+
 def test_BIMModelResponse_reads_orm_metadata_attribute():
     # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
     field = BIMModelResponse.model_fields["metadata"]

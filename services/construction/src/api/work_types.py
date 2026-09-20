@@ -104,6 +104,7 @@ async def list_work_types(
     per_page: int = Query(20, ge=1, le=100),
     category: str | None = Query(None, description="工種カテゴリでフィルタ"),
     is_active: bool | None = Query(None, description="有効/無効フィルタ"),
+
     _user: TokenData = Depends(get_current_user),
 ) -> WorkTypeListResponse:
     """工種マスタ一覧を返す。"""

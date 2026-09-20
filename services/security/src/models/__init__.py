@@ -25,7 +25,6 @@ def _utcnow():
 
 # ── SecurityIncident ──
 
-
 class SecurityIncident(Base):
     __tablename__ = "security_incidents"
 
@@ -69,7 +68,6 @@ class SecurityIncident(Base):
 
 # ── IncidentUpdate ──
 
-
 class IncidentUpdate(Base):
     __tablename__ = "incident_updates"
 
@@ -92,7 +90,6 @@ class IncidentUpdate(Base):
 
 
 # ── Vulnerability ──
-
 
 class Vulnerability(Base):
     __tablename__ = "vulnerabilities"
@@ -127,7 +124,6 @@ class Vulnerability(Base):
 
 # ── SecurityPolicy ──
 
-
 class SecurityPolicy(Base):
     __tablename__ = "security_policies"
 
@@ -157,7 +153,6 @@ class SecurityPolicy(Base):
 
 
 # ── SecurityAudit ──
-
 
 class SecurityAudit(Base):
     __tablename__ = "security_audits"

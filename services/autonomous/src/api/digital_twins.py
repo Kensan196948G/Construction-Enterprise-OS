@@ -33,9 +33,7 @@ def _twin_to_response(twin) -> TwinResponse:
     return TwinResponse.model_validate(twin)
 
 
-@router.post(
-    "", response_model=APIResponse[TwinResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[TwinResponse], status_code=status.HTTP_201_CREATED)
 async def create_twin_endpoint(
     request: Request,
     body: TwinCreateRequest,
@@ -94,10 +92,7 @@ async def get_twin(
     if not twin:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "TWIN_NOT_FOUND",
-                "message": "デジタルツインが見つかりません。",
-            },
+            detail={"code": "TWIN_NOT_FOUND", "message": "デジタルツインが見つかりません。"},
         )
     return APIResponse(data=_twin_to_response(twin))
 
@@ -114,10 +109,7 @@ async def update_twin_endpoint(
     if not twin:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "TWIN_NOT_FOUND",
-                "message": "デジタルツインが見つかりません。",
-            },
+            detail={"code": "TWIN_NOT_FOUND", "message": "デジタルツインが見つかりません。"},
         )
     return APIResponse(data=_twin_to_response(twin))
 
@@ -133,10 +125,7 @@ async def delete_twin_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "TWIN_NOT_FOUND",
-                "message": "デジタルツインが見つかりません。",
-            },
+            detail={"code": "TWIN_NOT_FOUND", "message": "デジタルツインが見つかりません。"},
         )
     return APIResponse(data={"message": "デジタルツインを削除しました。"})
 
@@ -153,10 +142,7 @@ async def sync_twin_endpoint(
     if not twin:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "TWIN_NOT_FOUND",
-                "message": "デジタルツインが見つかりません。",
-            },
+            detail={"code": "TWIN_NOT_FOUND", "message": "デジタルツインが見つかりません。"},
         )
     return APIResponse(data=_twin_to_response(twin))
 
@@ -172,9 +158,6 @@ async def get_twin_state_endpoint(
     if not state:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "TWIN_NOT_FOUND",
-                "message": "デジタルツインが見つかりません。",
-            },
+            detail={"code": "TWIN_NOT_FOUND", "message": "デジタルツインが見つかりません。"},
         )
     return APIResponse(data=TwinCurrentStateResponse(**state))

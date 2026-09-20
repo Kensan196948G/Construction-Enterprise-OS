@@ -11,6 +11,7 @@ from src.models import ConstructionSite, HazardZone, Infrastructure
 from src.schemas import HazardZoneResponse, InfrastructureResponse, SiteResponse
 
 
+
 def test_SiteResponse_reads_orm_metadata_attribute():
     # alias が外れると MetaData を読んで 500 になる。ここで設定自体を固定する。
     field = SiteResponse.model_fields["metadata"]

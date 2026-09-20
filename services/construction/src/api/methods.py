@@ -19,9 +19,7 @@ from ..services import construction_service
 router = APIRouter()
 
 
-@router.post(
-    "/methods", response_model=MethodResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/methods", response_model=MethodResponse, status_code=status.HTTP_201_CREATED)
 async def create_method(
     body: MethodCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -75,9 +73,7 @@ async def update_method(
     method = await construction_service.get_method(db, method_id)
     if not method:
         raise HTTPException(status_code=404, detail="施工計画書が見つかりません")
-    return await construction_service.update_method(
-        db, method, body.model_dump(exclude_none=True)
-    )
+    return await construction_service.update_method(db, method, body.model_dump(exclude_none=True))
 
 
 @router.delete("/methods/{method_id}", status_code=status.HTTP_204_NO_CONTENT)

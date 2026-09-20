@@ -35,11 +35,7 @@ def _robot_to_response(robot) -> MarineRobotResponse:
     return MarineRobotResponse.model_validate(robot)
 
 
-@router.post(
-    "",
-    response_model=APIResponse[MarineRobotResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("", response_model=APIResponse[MarineRobotResponse], status_code=status.HTTP_201_CREATED)
 async def create_marine_robot_endpoint(
     request: Request,
     body: MarineRobotCreateRequest,
@@ -98,10 +94,7 @@ async def get_marine_robot(
     if not robot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=_robot_to_response(robot))
 
@@ -118,10 +111,7 @@ async def update_marine_robot_endpoint(
     if not robot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=_robot_to_response(robot))
 
@@ -137,10 +127,7 @@ async def delete_marine_robot_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data={"message": "海洋ロボットを削除しました。"})
 
@@ -156,10 +143,7 @@ async def deploy_marine_robot_endpoint(
     if not robot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=_robot_to_response(robot))
 
@@ -175,17 +159,12 @@ async def recover_marine_robot_endpoint(
     if not robot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=_robot_to_response(robot))
 
 
-@router.get(
-    "/{robot_id}/telemetry", response_model=APIResponse[MarineRobotTelemetryResponse]
-)
+@router.get("/{robot_id}/telemetry", response_model=APIResponse[MarineRobotTelemetryResponse])
 async def get_marine_robot_telemetry_endpoint(
     request: Request,
     robot_id: UUID,
@@ -196,10 +175,7 @@ async def get_marine_robot_telemetry_endpoint(
     if not telemetry:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=MarineRobotTelemetryResponse(**telemetry))
 
@@ -216,9 +192,6 @@ async def set_mission_plan_endpoint(
     if not robot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "ROBOT_NOT_FOUND",
-                "message": "海洋ロボットが見つかりません。",
-            },
+            detail={"code": "ROBOT_NOT_FOUND", "message": "海洋ロボットが見つかりません。"},
         )
     return APIResponse(data=_robot_to_response(robot))

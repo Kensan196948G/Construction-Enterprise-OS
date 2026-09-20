@@ -37,12 +37,8 @@ def _to_response(record) -> MarineConstructionResponse:
         tide_info=record.tide_info,
         wave_condition=record.wave_condition,
         equipment_deployed=record.equipment_deployed,
-        material_volume=float(record.material_volume)
-        if record.material_volume
-        else None,
-        progress_percent=float(record.progress_percent)
-        if record.progress_percent
-        else None,
+        material_volume=float(record.material_volume) if record.material_volume else None,
+        progress_percent=float(record.progress_percent) if record.progress_percent else None,
         location=record.location,
         start_date=record.start_date,
         end_date=record.end_date,
@@ -52,11 +48,7 @@ def _to_response(record) -> MarineConstructionResponse:
     )
 
 
-@router.post(
-    "",
-    response_model=APIResponse[MarineConstructionResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("", response_model=APIResponse[MarineConstructionResponse], status_code=status.HTTP_201_CREATED)
 async def create_marine(
     request: Request,
     body: MarineConstructionCreateRequest,
@@ -125,9 +117,7 @@ async def update_marine(
     db: AsyncSession = Depends(get_db),
     _current_user=Depends(get_current_user),
 ):
-    record = await update_marine_construction(
-        db, record_id, body.model_dump(exclude_unset=True)
-    )
+    record = await update_marine_construction(db, record_id, body.model_dump(exclude_unset=True))
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -152,9 +142,7 @@ async def delete_marine(
     return APIResponse(data={"message": "施工記録を削除しました。"})
 
 
-@router.patch(
-    "/{record_id}/progress", response_model=APIResponse[MarineConstructionResponse]
-)
+@router.patch("/{record_id}/progress", response_model=APIResponse[MarineConstructionResponse])
 async def update_progress(
     request: Request,
     record_id: UUID,

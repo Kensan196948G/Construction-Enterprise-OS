@@ -320,6 +320,7 @@ def _store_to_filesystem(document: Document, relative_path: str) -> StorageResul
     )
 
 
+
 def _onedrive_token(client: httpx.Client) -> str:
     settings = get_settings()
     url = (
@@ -349,9 +350,7 @@ def _onedrive_token(client: httpx.Client) -> str:
 
     if not token:
         raise StorageTransferError(
-            "ONEDRIVE_AUTH_FAILED",
-            "OneDrive のアクセストークンを取得できませんでした。",
-            503,
+            "ONEDRIVE_AUTH_FAILED", "OneDrive のアクセストークンを取得できませんでした。", 503
         )
     return token
 
@@ -413,8 +412,7 @@ def _store_to_onedrive(document: Document, relative_path: str) -> StorageResult:
     except OSError as exc:
         logger.exception("OneDrive staging failed: %s", item_path)
         raise StorageTransferError(
-            "TRANSFER_FAILED",
-            "OneDriveアップロード用の一時ファイル作成に失敗しました。",
+            "TRANSFER_FAILED", "OneDriveアップロード用の一時ファイル作成に失敗しました。"
         ) from exc
     finally:
         with contextlib.suppress(OSError):
@@ -423,6 +421,7 @@ def _store_to_onedrive(document: Document, relative_path: str) -> StorageResult:
     return StorageResult(
         backend=BACKEND_ONEDRIVE, relative_path=item_path, size_bytes=size
     )
+
 
 
 def _transfer(document: Document, relative_path: str) -> StorageResult:
@@ -434,9 +433,7 @@ def _transfer(document: Document, relative_path: str) -> StorageResult:
 
 async def store_canonical(document: Document) -> StorageResult:
     """正本を実体ファイルとして保存する。"""
-    return await asyncio.to_thread(
-        _transfer, document, canonical_relative_path(document)
-    )
+    return await asyncio.to_thread(_transfer, document, canonical_relative_path(document))
 
 
 async def store_work_area(document: Document, receipt_no: str) -> StorageResult:

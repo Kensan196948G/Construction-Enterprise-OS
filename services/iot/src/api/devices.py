@@ -63,9 +63,7 @@ def _device_to_response(device) -> DeviceResponse:
     )
 
 
-@router.post(
-    "", response_model=APIResponse[DeviceResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[DeviceResponse], status_code=status.HTTP_201_CREATED)
 async def create_device(
     request: Request,
     body: DeviceCreateRequest,
@@ -124,10 +122,7 @@ async def get_device(
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "DEVICE_NOT_FOUND",
-                "message": "デバイスが見つかりません。",
-            },
+            detail={"code": "DEVICE_NOT_FOUND", "message": "デバイスが見つかりません。"},
         )
     return APIResponse(data=_device_to_response(device))
 
@@ -144,10 +139,7 @@ async def update_device(
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "DEVICE_NOT_FOUND",
-                "message": "デバイスが見つかりません。",
-            },
+            detail={"code": "DEVICE_NOT_FOUND", "message": "デバイスが見つかりません。"},
         )
     return APIResponse(data=_device_to_response(device))
 
@@ -163,10 +155,7 @@ async def delete_device(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "DEVICE_NOT_FOUND",
-                "message": "デバイスが見つかりません。",
-            },
+            detail={"code": "DEVICE_NOT_FOUND", "message": "デバイスが見つかりません。"},
         )
     return APIResponse(data={"message": "デバイスを削除しました。"})
 
@@ -179,15 +168,10 @@ async def device_heartbeat(
     db: AsyncSession = Depends(get_db),
     _current_client=Depends(get_current_client),
 ):
-    device = await device_heartbeat_svc(
-        db, device_id, body.model_dump(exclude_unset=True)
-    )
+    device = await device_heartbeat_svc(db, device_id, body.model_dump(exclude_unset=True))
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "DEVICE_NOT_FOUND",
-                "message": "デバイスが見つかりません。",
-            },
+            detail={"code": "DEVICE_NOT_FOUND", "message": "デバイスが見つかりません。"},
         )
     return APIResponse(data=_device_to_response(device))

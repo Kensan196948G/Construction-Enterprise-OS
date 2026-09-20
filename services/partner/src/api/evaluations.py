@@ -30,9 +30,7 @@ def _evaluation_to_response(eval_) -> EvaluationResponse:
         safety_score=float(eval_.safety_score) if eval_.safety_score else None,
         schedule_score=float(eval_.schedule_score) if eval_.schedule_score else None,
         cost_score=float(eval_.cost_score) if eval_.cost_score else None,
-        communication_score=float(eval_.communication_score)
-        if eval_.communication_score
-        else None,
+        communication_score=float(eval_.communication_score) if eval_.communication_score else None,
         comment=eval_.comment,
         evaluation_period_start=eval_.evaluation_period_start,
         evaluation_period_end=eval_.evaluation_period_end,
@@ -40,22 +38,14 @@ def _evaluation_to_response(eval_) -> EvaluationResponse:
     )
 
 
-@eval_router.post(
-    "",
-    response_model=APIResponse[EvaluationResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@eval_router.post("", response_model=APIResponse[EvaluationResponse], status_code=status.HTTP_201_CREATED)
 async def create_evaluation(
     request: Request,
     body: EvaluationCreate,
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    org_id = (
-        UUID(current_user.org)
-        if current_user.org
-        else UUID("00000000-0000-0000-0000-000000000001")
-    )
+    org_id = UUID(current_user.org) if current_user.org else UUID("00000000-0000-0000-0000-000000000001")
     evaluator_id = UUID(current_user.sub)
     evaluation = await evaluation_service.create_evaluation(
         db, org_id, evaluator_id, body.model_dump()

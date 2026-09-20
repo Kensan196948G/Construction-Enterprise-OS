@@ -110,9 +110,7 @@ async def store_canonical(
             "Canonical storage failed: document=%s code=%s", document_id, exc.code
         )
         await _persist_storage_failure(db, document, "canonical_storage_error", exc)
-        raise HTTPException(
-            status_code=exc.status_code, detail=exc.as_detail()
-        ) from exc
+        raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
 
     document.canonical_stored_at = datetime.now(timezone.utc)
     document.canonical_path = result.relative_path
@@ -148,9 +146,7 @@ async def store_work_area(
             "Work area storage failed: document=%s code=%s", document_id, exc.code
         )
         await _persist_storage_failure(db, document, "work_area_storage_error", exc)
-        raise HTTPException(
-            status_code=exc.status_code, detail=exc.as_detail()
-        ) from exc
+        raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
 
     document.work_area_receipt_no = receipt_no
     document.work_area_stored_at = datetime.now(timezone.utc)

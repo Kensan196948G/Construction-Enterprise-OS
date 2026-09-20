@@ -35,7 +35,9 @@ async def create_budget(
     return await budget_service.create_budget(db, ledger_id, body.model_dump())
 
 
-@router.get("/ledger/{ledger_id}/budgets", response_model=list[BudgetItemResponse])
+@router.get(
+    "/ledger/{ledger_id}/budgets", response_model=list[BudgetItemResponse]
+)
 async def list_budgets(
     ledger_id: UUID,
     db: AsyncSession = Depends(get_db),

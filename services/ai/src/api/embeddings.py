@@ -33,7 +33,6 @@ async def create_embeddings(
     service = _get_embedding_service()
 
     from ..config import get_settings
-
     use_mock = not get_settings().LLM_API_KEY
 
     try:
@@ -71,7 +70,6 @@ async def search_embeddings(
     service = _get_embedding_service()
 
     from ..config import get_settings
-
     use_mock = not get_settings().LLM_API_KEY
 
     try:

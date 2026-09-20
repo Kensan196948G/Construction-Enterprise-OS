@@ -67,6 +67,7 @@ async def list_error_logs(
     severity: str | None = Query(None),
     status: str | None = Query(None),
     machine_no: str | None = Query(None),
+
     _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_ERROR_LOGS

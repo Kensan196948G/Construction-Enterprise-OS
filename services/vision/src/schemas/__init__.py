@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 
 # ── Common ──
 
-
 class APIResponse(BaseModel):
     success: bool = True
     data: dict | list | None = None
@@ -17,7 +16,6 @@ class APIResponse(BaseModel):
 
 
 # ── OCR ──
-
 
 class OCRProcessRequest(BaseModel):
     organization_id: UUID
@@ -54,7 +52,6 @@ class OCRResultResponse(BaseModel):
 
 # ── Image Analysis ──
 
-
 class ImageAnalyzeRequest(BaseModel):
     organization_id: UUID
     file_key: str = Field(min_length=1, max_length=1000)
@@ -77,7 +74,6 @@ class ImageAnalysisResponse(BaseModel):
 
 
 # ── Vector DB ──
-
 
 class VectorIndexCreate(BaseModel):
     organization_id: UUID

@@ -24,7 +24,6 @@ from .base import Base
 
 class WBSItem(Base):
     """WBS (Work Breakdown Structure)"""
-
     __tablename__ = "wbs_items"
     __table_args__ = (
         Index("ix_wbs_items_organization_id", "organization_id"),
@@ -36,9 +35,7 @@ class WBSItem(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("construction.wbs_items.id")
@@ -64,23 +61,14 @@ class WBSItem(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    children: Mapped[list["WBSItem"]] = relationship(
-        "WBSItem", backref="parent", remote_side="WBSItem.id"
-    )
-    resources: Mapped[list["Resource"]] = relationship(
-        "Resource", back_populates="wbs_item"
-    )
-    schedules: Mapped[list["Schedule"]] = relationship(
-        "Schedule", back_populates="wbs_item"
-    )
-    method_statements: Mapped[list["MethodStatement"]] = relationship(
-        "MethodStatement", back_populates="wbs_item"
-    )
+    children: Mapped[list["WBSItem"]] = relationship("WBSItem", backref="parent", remote_side="WBSItem.id")
+    resources: Mapped[list["Resource"]] = relationship("Resource", back_populates="wbs_item")
+    schedules: Mapped[list["Schedule"]] = relationship("Schedule", back_populates="wbs_item")
+    method_statements: Mapped[list["MethodStatement"]] = relationship("MethodStatement", back_populates="wbs_item")
 
 
 class Resource(Base):
     """資源管理（人・機械・資材）"""
-
     __tablename__ = "resources"
     __table_args__ = (
         Index("ix_resources_organization_id", "organization_id"),
@@ -92,9 +80,7 @@ class Resource(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     wbs_item_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("construction.wbs_items.id")
@@ -119,7 +105,6 @@ class Resource(Base):
 
 class Schedule(Base):
     """工程スケジュール"""
-
     __tablename__ = "schedules"
     __table_args__ = (
         Index("ix_schedules_organization_id", "organization_id"),
@@ -131,9 +116,7 @@ class Schedule(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     wbs_item_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("construction.wbs_items.id")
@@ -145,12 +128,8 @@ class Schedule(Base):
     actual_start: Mapped[date | None] = mapped_column(Date)
     actual_end: Mapped[date | None] = mapped_column(Date)
     duration_days: Mapped[int | None] = mapped_column(Integer)
-    predecessor_ids: Mapped[list[uuid.UUID]] = mapped_column(
-        ARRAY(UUID(as_uuid=True)), default=[]
-    )
-    successor_ids: Mapped[list[uuid.UUID]] = mapped_column(
-        ARRAY(UUID(as_uuid=True)), default=[]
-    )
+    predecessor_ids: Mapped[list[uuid.UUID]] = mapped_column(ARRAY(UUID(as_uuid=True)), default=[])
+    successor_ids: Mapped[list[uuid.UUID]] = mapped_column(ARRAY(UUID(as_uuid=True)), default=[])
     float_days: Mapped[int | None] = mapped_column(Integer)
     critical_path: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(20), default="planned")
@@ -167,7 +146,6 @@ class Schedule(Base):
 
 class MethodStatement(Base):
     """施工計画書/施工方法書"""
-
     __tablename__ = "method_statements"
     __table_args__ = (
         Index("ix_method_statements_organization_id", "organization_id"),
@@ -179,9 +157,7 @@ class MethodStatement(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     wbs_item_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("construction.wbs_items.id")
@@ -207,6 +183,4 @@ class MethodStatement(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    wbs_item: Mapped["WBSItem"] = relationship(
-        "WBSItem", back_populates="method_statements"
-    )
+    wbs_item: Mapped["WBSItem"] = relationship("WBSItem", back_populates="method_statements")

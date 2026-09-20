@@ -45,9 +45,7 @@ def _plan_to_response(rp) -> dict:
     return {
         "id": str(rp.id),
         "organization_id": str(rp.organization_id),
-        "disaster_report_id": str(rp.disaster_report_id)
-        if rp.disaster_report_id
-        else None,
+        "disaster_report_id": str(rp.disaster_report_id) if rp.disaster_report_id else None,
         "title": rp.title,
         "description": rp.description,
         "priority": rp.priority,
@@ -160,9 +158,7 @@ async def update_disaster(
     return APIResponse(data=_disaster_to_response(report))
 
 
-@router.post(
-    "/disasters/{disaster_id}/recovery-plans", status_code=status.HTTP_201_CREATED
-)
+@router.post("/disasters/{disaster_id}/recovery-plans", status_code=status.HTTP_201_CREATED)
 async def create_recovery_plan(
     disaster_id: UUID,
     body: RecoveryPlanCreate,

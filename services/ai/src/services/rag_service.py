@@ -76,9 +76,7 @@ class RAGService:
                 system_prompt = template.system_prompt
                 user_template = template.user_prompt_template
                 model = model or template.model
-                temperature = (
-                    temperature if temperature is not None else template.temperature
-                )
+                temperature = temperature if temperature is not None else template.temperature
                 max_tokens = max_tokens or template.max_tokens
             else:
                 system_prompt = DEFAULT_RAG_SYSTEM_PROMPT
@@ -91,8 +89,9 @@ class RAGService:
             max_tokens = max_tokens or 2000
 
         from jinja2 import Template
-
-        user_prompt = Template(user_template).render(query=query, chunks=context_chunks)
+        user_prompt = Template(user_template).render(
+            query=query, chunks=context_chunks
+        )
 
         messages = [
             {"role": "system", "content": system_prompt},

@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 
 # ── Common ──
 
-
 class APIResponse(BaseModel):
     success: bool = True
     data: dict | list | None = None
@@ -17,7 +16,6 @@ class APIResponse(BaseModel):
 
 
 # ── Incident ──
-
 
 class IncidentCreate(BaseModel):
     organization_id: UUID
@@ -79,7 +77,6 @@ class IncidentDetailResponse(IncidentResponse):
 
 # ── Vulnerability ──
 
-
 class VulnerabilityCreate(BaseModel):
     organization_id: UUID
     title: str = Field(min_length=1, max_length=500)
@@ -118,7 +115,6 @@ class VulnerabilityResponse(BaseModel):
 
 
 # ── Policy ──
-
 
 class PolicyCreate(BaseModel):
     organization_id: UUID
@@ -159,7 +155,6 @@ class PolicyResponse(BaseModel):
 
 
 # ── Dashboard ──
-
 
 class SeverityCounts(BaseModel):
     critical: int = 0

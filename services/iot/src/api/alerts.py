@@ -26,11 +26,7 @@ from ..services.alert_service import (
 router = APIRouter()
 
 
-@router.post(
-    "/alert-rules",
-    response_model=APIResponse[AlertRuleResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/alert-rules", response_model=APIResponse[AlertRuleResponse], status_code=status.HTTP_201_CREATED)
 async def create_alert_rule(
     request: Request,
     body: AlertRuleCreateRequest,
@@ -104,9 +100,7 @@ async def list_alerts(
     )
 
 
-@router.post(
-    "/alerts/{alert_id}/acknowledge", response_model=APIResponse[AlertHistoryResponse]
-)
+@router.post("/alerts/{alert_id}/acknowledge", response_model=APIResponse[AlertHistoryResponse])
 async def acknowledge(
     request: Request,
     alert_id: int,
@@ -114,7 +108,6 @@ async def acknowledge(
     current_user=Depends(get_current_user),
 ):
     from uuid import UUID as UUIDType
-
     user_id = UUIDType(current_user.sub)
     alert = await acknowledge_alert(db, alert_id, user_id)
     if not alert:
@@ -125,9 +118,7 @@ async def acknowledge(
     return APIResponse(data=AlertHistoryResponse.model_validate(alert))
 
 
-@router.post(
-    "/alerts/{alert_id}/resolve", response_model=APIResponse[AlertHistoryResponse]
-)
+@router.post("/alerts/{alert_id}/resolve", response_model=APIResponse[AlertHistoryResponse])
 async def resolve(
     request: Request,
     alert_id: int,

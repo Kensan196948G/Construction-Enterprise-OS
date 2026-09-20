@@ -38,7 +38,6 @@ def _group_to_response(g: DeviceGroup) -> dict:
 
 # === IoT Dashboards ===
 
-
 @router.post("/dashboards")
 async def create_dashboard(
     body: IoTDashboardCreate,
@@ -123,7 +122,6 @@ async def update_dashboard(
 
 # === Device Groups ===
 
-
 @router.post("/device-groups")
 async def create_device_group(
     body: DeviceGroupCreate,
@@ -173,7 +171,9 @@ async def list_device_groups(
     groups = result.scalars().all()
 
     meta = MetaInfo(page=page, per_page=per_page, total=total, total_pages=total_pages)
-    return _api_response(data=[_group_to_response(g) for g in groups], meta=meta)
+    return _api_response(
+        data=[_group_to_response(g) for g in groups], meta=meta
+    )
 
 
 @router.put("/device-groups/{group_id}/devices")
@@ -183,15 +183,14 @@ async def update_device_group_devices(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(DeviceGroup).where(DeviceGroup.id == group_id))
+    result = await db.execute(
+        select(DeviceGroup).where(DeviceGroup.id == group_id)
+    )
     group = result.scalar_one_or_none()
     if not group:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "NOT_FOUND",
-                "message": "デバイスグループが見つかりません。",
-            },
+            detail={"code": "NOT_FOUND", "message": "デバイスグループが見つかりません。"},
         )
 
     update_data = body.model_dump(exclude_unset=True)
@@ -209,14 +208,13 @@ async def get_device_group(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(DeviceGroup).where(DeviceGroup.id == group_id))
+    result = await db.execute(
+        select(DeviceGroup).where(DeviceGroup.id == group_id)
+    )
     group = result.scalar_one_or_none()
     if not group:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "NOT_FOUND",
-                "message": "デバイスグループが見つかりません。",
-            },
+            detail={"code": "NOT_FOUND", "message": "デバイスグループが見つかりません。"},
         )
     return _api_response(data=_group_to_response(group))

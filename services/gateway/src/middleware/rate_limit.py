@@ -54,11 +54,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def _evict_stale_clients(self, now: float) -> None:
         """窓が空になった IP を削除し、追跡数を上限内に保つ。"""
         window_start = now - 60
-        stale = [
-            ip
-            for ip, stamps in self._requests.items()
-            if not stamps or stamps[-1] <= window_start
-        ]
+        stale = [ip for ip, stamps in self._requests.items() if not stamps or stamps[-1] <= window_start]
         for ip in stale:
             self._requests.pop(ip, None)
 
@@ -76,3 +72,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
+

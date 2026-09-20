@@ -28,11 +28,7 @@ def _sim_to_response(sim) -> SimulationResponse:
     return SimulationResponse.model_validate(sim)
 
 
-@router.post(
-    "",
-    response_model=APIResponse[SimulationResponse],
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("", response_model=APIResponse[SimulationResponse], status_code=status.HTTP_201_CREATED)
 async def create_simulation_endpoint(
     request: Request,
     body: SimulationCreateRequest,
@@ -91,10 +87,7 @@ async def get_simulation(
     if not sim:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SIMULATION_NOT_FOUND",
-                "message": "シミュレーションが見つかりません。",
-            },
+            detail={"code": "SIMULATION_NOT_FOUND", "message": "シミュレーションが見つかりません。"},
         )
     return APIResponse(data=_sim_to_response(sim))
 
@@ -110,10 +103,7 @@ async def delete_simulation_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SIMULATION_NOT_FOUND",
-                "message": "シミュレーションが見つかりません。",
-            },
+            detail={"code": "SIMULATION_NOT_FOUND", "message": "シミュレーションが見つかりません。"},
         )
     return APIResponse(data={"message": "シミュレーションを削除しました。"})
 
@@ -129,9 +119,6 @@ async def run_simulation_endpoint(
     if not sim:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SIMULATION_NOT_FOUND",
-                "message": "シミュレーションが見つかりません。",
-            },
+            detail={"code": "SIMULATION_NOT_FOUND", "message": "シミュレーションが見つかりません。"},
         )
     return APIResponse(data=_sim_to_response(sim))

@@ -32,9 +32,7 @@ def _agent_to_response(agent) -> AgentResponse:
     return AgentResponse.model_validate(agent)
 
 
-@router.post(
-    "", response_model=APIResponse[AgentResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[AgentResponse], status_code=status.HTTP_201_CREATED)
 async def create_agent_endpoint(
     request: Request,
     body: AgentCreateRequest,
@@ -91,10 +89,7 @@ async def get_agent(
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data=_agent_to_response(agent))
 
@@ -111,10 +106,7 @@ async def update_agent_endpoint(
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data=_agent_to_response(agent))
 
@@ -130,10 +122,7 @@ async def delete_agent_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data={"message": "エージェントを削除しました。"})
 
@@ -149,10 +138,7 @@ async def start_agent_endpoint(
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data=_agent_to_response(agent))
 
@@ -168,10 +154,7 @@ async def stop_agent_endpoint(
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data=_agent_to_response(agent))
 
@@ -187,9 +170,6 @@ async def pause_agent_endpoint(
     if not agent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "AGENT_NOT_FOUND",
-                "message": "エージェントが見つかりません。",
-            },
+            detail={"code": "AGENT_NOT_FOUND", "message": "エージェントが見つかりません。"},
         )
     return APIResponse(data=_agent_to_response(agent))

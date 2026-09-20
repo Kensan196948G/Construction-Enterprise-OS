@@ -181,6 +181,7 @@ async def quality_stats(
 async def list_quality_check_stubs(
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
+
     _user: TokenData = Depends(get_current_user),
 ):
     start = (page - 1) * per_page
@@ -195,6 +196,7 @@ async def list_quality_check_stubs(
 async def list_corrective_actions(
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
+
     _user: TokenData = Depends(get_current_user),
 ):
     start = (page - 1) * per_page

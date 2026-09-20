@@ -234,9 +234,8 @@ class TestInternalStorageFailure:
         # 失敗記録がロールバックされないよう明示的にコミットしていること
         mock_db.commit.assert_awaited()
 
-    def test_missing_source_object_returns_502(
-        self, app, internal_api_key, storage, monkeypatch
-    ):
+    def test_missing_source_object_returns_502(self, app, internal_api_key, storage,
+                                              monkeypatch):
         monkeypatch.setattr(storage_service, "get_file_stream", lambda key: None)
         document = _make_document(uuid4())
         client, mock_db = _client_with_document(app, document)
@@ -291,9 +290,7 @@ class TestInternalStorageFailure:
         assert document.work_area_storage_error is None
         assert document.work_area_storage_backend == "filesystem"
 
-    def test_receipt_number_cannot_escape_storage_root(
-        self, app, internal_api_key, storage
-    ):
+    def test_receipt_number_cannot_escape_storage_root(self, app, internal_api_key, storage):
         document = _make_document(uuid4())
         client, _ = _client_with_document(app, document)
 
@@ -311,12 +308,11 @@ class TestInternalStorageFailure:
         assert target.exists()
 
 
+
 class TestStorageStatusIsObservable:
     """保存状態が API レスポンスから確認できること(DB を見ないと分からない状態を避ける)。"""
 
-    def test_detail_response_exposes_storage_status(
-        self, app, internal_api_key, storage
-    ):
+    def test_detail_response_exposes_storage_status(self, app, internal_api_key, storage):
         document = _make_document(uuid4())
         client, _ = _client_with_document(app, document)
         headers = {

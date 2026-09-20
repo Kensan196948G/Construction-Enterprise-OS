@@ -26,9 +26,7 @@ def _task_to_response(task) -> TaskResponse:
     return TaskResponse.model_validate(task)
 
 
-@router.post(
-    "", response_model=APIResponse[TaskResponse], status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=APIResponse[TaskResponse], status_code=status.HTTP_201_CREATED)
 async def create_task_endpoint(
     request: Request,
     body: TaskCreateRequest,
