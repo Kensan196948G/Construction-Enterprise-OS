@@ -128,11 +128,18 @@ jobs:
       - name: pip-audit
         run: |
           pip install pip-audit
+          ignore_args=()
+          if [ -f .github/security/pip-audit-ignore.txt ]; then
+            while IFS= read -r id; do
+              case "${id}" in ''|'#'*) continue;; esac
+              ignore_args+=("--ignore-vuln" "${id}")
+            done < .github/security/pip-audit-ignore.txt
+          fi
           failed=0
           for req in $(find services -name requirements.txt | sort); do
             svc="$(basename "$(dirname "$req")")"
             echo "::group::pip-audit ${req}"
-            pip-audit -r "${req}" -f json -o "pip-audit-${svc}.json" || failed=1
+            pip-audit -r "${req}" -f json -o "pip-audit-${svc}.json" "${ignore_args[@]}" || failed=1
             echo "::endgroup::"
           done
           exit "$failed"
