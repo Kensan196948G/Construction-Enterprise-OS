@@ -85,7 +85,6 @@ async def list_activities(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     activity_type: str | None = Query(None),
-
     _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_ACTIVITIES

@@ -28,8 +28,12 @@ def _inspection_to_response(insp) -> dict:
         "asset_type": insp.asset_type,
         "inspection_type": insp.inspection_type,
         "frequency": insp.frequency,
-        "last_inspection_date": insp.last_inspection_date.isoformat() if insp.last_inspection_date else None,
-        "next_inspection_date": insp.next_inspection_date.isoformat() if insp.next_inspection_date else None,
+        "last_inspection_date": insp.last_inspection_date.isoformat()
+        if insp.last_inspection_date
+        else None,
+        "next_inspection_date": insp.next_inspection_date.isoformat()
+        if insp.next_inspection_date
+        else None,
         "status": insp.status,
         "inspector": insp.inspector,
         "checklist": checklist,

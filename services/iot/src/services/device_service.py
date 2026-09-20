@@ -73,7 +73,9 @@ async def get_devices_paginated(
     return devices, total
 
 
-async def update_device(db: AsyncSession, device_id: UUID, data: dict) -> DeviceModel | None:
+async def update_device(
+    db: AsyncSession, device_id: UUID, data: dict
+) -> DeviceModel | None:
     result = await db.execute(select(DeviceModel).where(DeviceModel.id == device_id))
     device = result.scalar_one_or_none()
     if not device:
@@ -123,7 +125,9 @@ async def device_heartbeat(
     return device
 
 
-async def add_sensor(db: AsyncSession, device_id: UUID, data: dict) -> SensorModel | None:
+async def add_sensor(
+    db: AsyncSession, device_id: UUID, data: dict
+) -> SensorModel | None:
     result = await db.execute(select(DeviceModel).where(DeviceModel.id == device_id))
     device = result.scalar_one_or_none()
     if not device:

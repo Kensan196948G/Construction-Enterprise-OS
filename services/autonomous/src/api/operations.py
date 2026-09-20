@@ -36,7 +36,11 @@ def _op_to_response(op) -> OperationResponse:
     return OperationResponse.model_validate(op)
 
 
-@router.post("", response_model=APIResponse[OperationResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIResponse[OperationResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_operation_endpoint(
     request: Request,
     body: OperationCreateRequest,
@@ -95,7 +99,10 @@ async def get_operation(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -112,7 +119,10 @@ async def update_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -128,7 +138,10 @@ async def delete_operation_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data={"message": "施工オペレーションを削除しました。"})
 
@@ -144,7 +157,10 @@ async def start_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -160,7 +176,10 @@ async def pause_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -176,7 +195,10 @@ async def resume_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -192,7 +214,10 @@ async def abort_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -208,7 +233,10 @@ async def emergency_stop_operation_endpoint(
     if not op:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=_op_to_response(op))
 
@@ -224,6 +252,9 @@ async def get_operation_progress_endpoint(
     if not progress:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "OPERATION_NOT_FOUND", "message": "施工オペレーションが見つかりません。"},
+            detail={
+                "code": "OPERATION_NOT_FOUND",
+                "message": "施工オペレーションが見つかりません。",
+            },
         )
     return APIResponse(data=OperationProgressResponse(**progress))

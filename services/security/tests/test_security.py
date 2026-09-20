@@ -34,12 +34,16 @@ def _make_auth_header() -> dict:
     import base64
     import json
 
-    payload_b64 = base64.urlsafe_b64encode(
-        json.dumps(VALID_TOKEN_PAYLOAD).encode()
-    ).decode().rstrip("=")
-    header_b64 = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-    ).decode().rstrip("=")
+    payload_b64 = (
+        base64.urlsafe_b64encode(json.dumps(VALID_TOKEN_PAYLOAD).encode())
+        .decode()
+        .rstrip("=")
+    )
+    header_b64 = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+        .decode()
+        .rstrip("=")
+    )
     signature = "fake_signature"
     token = f"{header_b64}.{payload_b64}.{signature}"
     return {"Authorization": f"Bearer {token}"}
@@ -170,6 +174,7 @@ class MockAudit:
 # Test 1: Health check
 # ═══════════════════════════════════════════════
 
+
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -181,6 +186,7 @@ def test_health_check(client):
 # ═══════════════════════════════════════════════
 # Test 2-5: Auth required for endpoints
 # ═══════════════════════════════════════════════
+
 
 def test_incidents_require_auth(client):
     response = client.get("/api/v1/security/incidents")
@@ -205,6 +211,7 @@ def test_dashboard_requires_auth(client):
 # ═══════════════════════════════════════════════
 # Test 6: Incident CRUD + status transitions
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_incident_success(mock_jwt, app):
@@ -457,6 +464,7 @@ def test_get_active_incident_count(mock_jwt, app):
 # Test 12: Vulnerability CRUD
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_create_vulnerability_success(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -615,6 +623,7 @@ def test_get_open_vulnerabilities_by_severity(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 17-19: Policy management
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_policy_success(mock_jwt, app):
@@ -795,6 +804,7 @@ def test_review_policy(mock_jwt, app):
 # Test 22: Dashboard stats correctness
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_dashboard_statistics(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -803,8 +813,15 @@ def test_dashboard_statistics(mock_jwt, app):
     vuln_severity = [("critical", 0), ("high", 3), ("medium", 8), ("low", 15)]
     policies_due = 3
     recent = [
-        MockIncident(id=uuid.uuid4(), title="Recent Incident 1", severity="high", status="investigating"),
-        MockIncident(id=uuid.uuid4(), title="Recent Incident 2", severity="medium", status="open"),
+        MockIncident(
+            id=uuid.uuid4(),
+            title="Recent Incident 1",
+            severity="high",
+            status="investigating",
+        ),
+        MockIncident(
+            id=uuid.uuid4(), title="Recent Incident 2", severity="medium", status="open"
+        ),
     ]
     audit = MockAudit(status="completed")
 

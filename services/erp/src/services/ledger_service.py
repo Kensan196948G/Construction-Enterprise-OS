@@ -34,7 +34,9 @@ async def list_ledgers(
 
     if organization_id:
         query = query.where(ProjectLedger.organization_id == organization_id)
-        count_query = count_query.where(ProjectLedger.organization_id == organization_id)
+        count_query = count_query.where(
+            ProjectLedger.organization_id == organization_id
+        )
     if status:
         query = query.where(ProjectLedger.status == status)
         count_query = count_query.where(ProjectLedger.status == status)
@@ -66,12 +68,8 @@ async def update_ledger(
     return ledger
 
 
-async def get_ledger_detail(
-    db: AsyncSession, ledger: ProjectLedger
-) -> dict:
-    result = await db.execute(
-        select(Budget).where(Budget.ledger_id == ledger.id)
-    )
+async def get_ledger_detail(db: AsyncSession, ledger: ProjectLedger) -> dict:
+    result = await db.execute(select(Budget).where(Budget.ledger_id == ledger.id))
     budgets = list(result.scalars().all())
 
     result = await db.execute(

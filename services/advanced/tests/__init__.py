@@ -36,7 +36,9 @@ def make_mock_user(sub="00000000-0000-0000-0000-000000000001"):
 
 def make_mock_db_execute(return_value=None, return_values=None):
     mock_db = AsyncMock()
-    mock_db.execute = AsyncMock(return_value=MockScalarResult(return_value, return_values))
+    mock_db.execute = AsyncMock(
+        return_value=MockScalarResult(return_value, return_values)
+    )
     mock_db.commit = AsyncMock()
     mock_db.rollback = AsyncMock()
     mock_db.close = AsyncMock()

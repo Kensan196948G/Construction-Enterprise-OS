@@ -31,7 +31,6 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "dev-only-do-not-use-in-production"
     JWT_ALGORITHM: str = "HS256"
 
-
     # JWT_PUBLIC_KEY と JWT_SECRET_KEY の両方を受け付ける。
     # 他17サービスは JWT_PUBLIC_KEY を参照しており、これら5サービスだけが
     # JWT_SECRET_KEY を参照していたため、JWT_PUBLIC_KEY を一括設定しても
@@ -58,4 +57,3 @@ def get_settings() -> Settings:
                 "環境変数 JWT_PUBLIC_KEY を設定してください。"
             )
     return settings
-

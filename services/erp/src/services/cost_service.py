@@ -9,9 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.models import Budget, CostItem, ProjectLedger
 
 
-async def create_cost(
-    db: AsyncSession, ledger_id: uuid.UUID, data: dict
-) -> CostItem:
+async def create_cost(db: AsyncSession, ledger_id: uuid.UUID, data: dict) -> CostItem:
     cost = CostItem(ledger_id=ledger_id, **data)
     db.add(cost)
     await db.flush()
@@ -31,9 +29,7 @@ async def list_costs(
     per_page: int = 20,
 ) -> tuple[list[CostItem], int]:
     query = select(CostItem).where(CostItem.ledger_id == ledger_id)
-    count_query = select(func.count(CostItem.id)).where(
-        CostItem.ledger_id == ledger_id
-    )
+    count_query = select(func.count(CostItem.id)).where(CostItem.ledger_id == ledger_id)
 
     if status:
         query = query.where(CostItem.status == status)
@@ -50,9 +46,7 @@ async def list_costs(
     return items, total
 
 
-async def update_cost(
-    db: AsyncSession, cost: CostItem, data: dict
-) -> CostItem:
+async def update_cost(db: AsyncSession, cost: CostItem, data: dict) -> CostItem:
     if cost.status != "pending":
         raise ValueError("承認済みまたは却下された原価は編集できません")
     for key, value in data.items():
@@ -85,8 +79,8 @@ async def approve_cost(
         ledger = await db.get(ProjectLedger, cost.ledger_id)
         if ledger:
             ledger.actual_cost = float(ledger.actual_cost) + float(cost.amount)
-            ledger.estimated_profit = (
-                float(ledger.contract_amount) - float(ledger.actual_cost)
+            ledger.estimated_profit = float(ledger.contract_amount) - float(
+                ledger.actual_cost
             )
             ledger.updated_at = datetime.now(timezone.utc)
 

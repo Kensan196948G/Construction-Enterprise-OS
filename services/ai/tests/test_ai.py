@@ -30,7 +30,11 @@ class MockScalarResult:
         return self._value if isinstance(self._value, list) else [self._value]
 
     def first(self):
-        return self._value if not isinstance(self._value, list) else (self._value[0] if self._value else None)
+        return (
+            self._value
+            if not isinstance(self._value, list)
+            else (self._value[0] if self._value else None)
+        )
 
     def fetchall(self):
         if self._value is None:
@@ -58,7 +62,11 @@ class MockResult:
         return self._value if isinstance(self._value, list) else [self._value]
 
     def first(self):
-        return self._value if not isinstance(self._value, list) else (self._value[0] if self._value else None)
+        return (
+            self._value
+            if not isinstance(self._value, list)
+            else (self._value[0] if self._value else None)
+        )
 
     def fetchall(self):
         if self._value is None:
@@ -95,7 +103,7 @@ def client(app):
 
 
 def _auth_headers(user_id: str | None = None, org_id: str | None = None) -> dict:
-    from jose import jwt
+    import jwt
 
     from src.config import get_settings
 
@@ -107,7 +115,9 @@ def _auth_headers(user_id: str | None = None, org_id: str | None = None) -> dict
         "roles": ["admin"],
         "scopes": ["ai:read", "ai:write"],
     }
-    token = jwt.encode(payload, settings.jwt_public_key, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(
+        payload, settings.jwt_public_key, algorithm=settings.JWT_ALGORITHM
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -138,7 +148,9 @@ class TestAuthRequired:
                 response = client.get(url)
             else:
                 response = client.post(url, json={})
-            assert response.status_code == 401, f"{method} {url} returned {response.status_code}"
+            assert response.status_code == 401, (
+                f"{method} {url} returned {response.status_code}"
+            )
 
     def test_delete_embeddings_requires_auth(self, client):
         response = client.delete(f"/api/v1/ai/embeddings/document/{uuid4()}")
@@ -194,9 +206,10 @@ class TestLLMService:
         provider = MockLLMProvider()
 
         import asyncio
-        result = asyncio.run(provider.complete([
-            {"role": "user", "content": "Hello, how are you?"}
-        ]))
+
+        result = asyncio.run(
+            provider.complete([{"role": "user", "content": "Hello, how are you?"}])
+        )
         assert "Mock response to:" in result
         assert "Hello" in result
 
@@ -209,9 +222,9 @@ class TestLLMService:
 
         async def collect_stream():
             chunks = []
-            async for chunk in provider.stream_complete([
-                {"role": "user", "content": "Hello world"}
-            ]):
+            async for chunk in provider.stream_complete(
+                [{"role": "user", "content": "Hello world"}]
+            ):
                 chunks.append(chunk)
             return "".join(chunks)
 
@@ -252,9 +265,7 @@ class TestLLMService:
         response = client.post(
             "/api/v1/ai/chat/stream",
             json={
-                "messages": [
-                    {"role": "user", "content": "Hello"}
-                ],
+                "messages": [{"role": "user", "content": "Hello"}],
             },
             headers=headers,
         )
@@ -318,6 +329,7 @@ class TestMockEmbedding:
         service = EmbeddingService(base_url="http://test", api_key="test")
 
         import asyncio
+
         vec = asyncio.run(service.mock_embedding("test text"))
         assert len(vec) == 1536
         assert all(-1.0 <= v <= 1.0 for v in vec)
@@ -328,6 +340,7 @@ class TestMockEmbedding:
         service = EmbeddingService(base_url="http://test", api_key="test")
 
         import asyncio
+
         vec1 = asyncio.run(service.mock_embedding("text one"))
         vec2 = asyncio.run(service.mock_embedding("text two"))
         assert vec1 != vec2
@@ -400,7 +413,13 @@ class TestDefaultPrompts:
     def test_default_templates_have_required_fields(self):
         from src.services.prompt_service import DEFAULT_TEMPLATES
 
-        required = ["name", "description", "category", "system_prompt", "user_prompt_template"]
+        required = [
+            "name",
+            "description",
+            "category",
+            "system_prompt",
+            "user_prompt_template",
+        ]
         for tmpl in DEFAULT_TEMPLATES:
             for field in required:
                 assert field in tmpl, f"Missing {field} in {tmpl['name']}"

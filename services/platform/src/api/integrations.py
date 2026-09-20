@@ -178,7 +178,6 @@ async def list_integrations(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str | None = Query(None),
-
     _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_SYSTEMS
@@ -196,7 +195,6 @@ async def list_integration_logs(
     per_page: int = Query(20, ge=1, le=100),
     system_id: str | None = Query(None),
     status: str | None = Query(None),
-
     _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_LOGS

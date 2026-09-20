@@ -21,6 +21,7 @@ from .base import Base
 
 class ProjectLedger(Base):
     """工事台帳"""
+
     __tablename__ = "project_ledger"
     __table_args__ = (
         Index("ix_project_ledger_organization_id", "organization_id"),
@@ -31,7 +32,9 @@ class ProjectLedger(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     project_code: Mapped[str] = mapped_column(String(50), nullable=False)
     project_name: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -56,13 +59,18 @@ class ProjectLedger(Base):
     )
 
     budgets: Mapped[list["Budget"]] = relationship("Budget", back_populates="ledger")
-    cost_items: Mapped[list["CostItem"]] = relationship("CostItem", back_populates="ledger")
+    cost_items: Mapped[list["CostItem"]] = relationship(
+        "CostItem", back_populates="ledger"
+    )
     invoices: Mapped[list["Invoice"]] = relationship("Invoice", back_populates="ledger")
-    labor_costs: Mapped[list["LaborCost"]] = relationship("LaborCost", back_populates="ledger")
+    labor_costs: Mapped[list["LaborCost"]] = relationship(
+        "LaborCost", back_populates="ledger"
+    )
 
 
 class Budget(Base):
     """予算項目"""
+
     __tablename__ = "budgets"
     __table_args__ = (
         Index("ix_budgets_ledger_id", "ledger_id"),
@@ -72,7 +80,9 @@ class Budget(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     ledger_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("erp.project_ledger.id")
     )
@@ -87,8 +97,12 @@ class Budget(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    ledger: Mapped["ProjectLedger"] = relationship("ProjectLedger", back_populates="budgets")
-    cost_items: Mapped[list["CostItem"]] = relationship("CostItem", back_populates="budget")
+    ledger: Mapped["ProjectLedger"] = relationship(
+        "ProjectLedger", back_populates="budgets"
+    )
+    cost_items: Mapped[list["CostItem"]] = relationship(
+        "CostItem", back_populates="budget"
+    )
 
     @property
     def variance(self) -> float:
@@ -97,6 +111,7 @@ class Budget(Base):
 
 class CostItem(Base):
     """原価明細"""
+
     __tablename__ = "cost_items"
     __table_args__ = (
         Index("ix_cost_items_ledger_id", "ledger_id"),
@@ -108,7 +123,9 @@ class CostItem(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     ledger_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("erp.project_ledger.id")
     )
@@ -130,12 +147,15 @@ class CostItem(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    ledger: Mapped["ProjectLedger"] = relationship("ProjectLedger", back_populates="cost_items")
+    ledger: Mapped["ProjectLedger"] = relationship(
+        "ProjectLedger", back_populates="cost_items"
+    )
     budget: Mapped["Budget"] = relationship("Budget", back_populates="cost_items")
 
 
 class Invoice(Base):
     """請求書"""
+
     __tablename__ = "invoices"
     __table_args__ = (
         Index("ix_invoices_ledger_id", "ledger_id"),
@@ -146,11 +166,15 @@ class Invoice(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     ledger_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("erp.project_ledger.id")
     )
-    invoice_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    invoice_number: Mapped[str] = mapped_column(
+        String(100), unique=True, nullable=False
+    )
     invoice_type: Mapped[str] = mapped_column(String(20), nullable=False)
     vendor_name: Mapped[str] = mapped_column(String(255), nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(15, 2), nullable=False)
@@ -169,11 +193,14 @@ class Invoice(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    ledger: Mapped["ProjectLedger"] = relationship("ProjectLedger", back_populates="invoices")
+    ledger: Mapped["ProjectLedger"] = relationship(
+        "ProjectLedger", back_populates="invoices"
+    )
 
 
 class LaborCost(Base):
     """労務費"""
+
     __tablename__ = "labor_costs"
     __table_args__ = (
         Index("ix_labor_costs_ledger_id", "ledger_id"),
@@ -183,7 +210,9 @@ class LaborCost(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     ledger_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("erp.project_ledger.id")
     )
@@ -198,4 +227,6 @@ class LaborCost(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    ledger: Mapped["ProjectLedger"] = relationship("ProjectLedger", back_populates="labor_costs")
+    ledger: Mapped["ProjectLedger"] = relationship(
+        "ProjectLedger", back_populates="labor_costs"
+    )

@@ -23,8 +23,12 @@ from .base import Base
 class AutonomousAgent(Base):
     __tablename__ = "autonomous_agents"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     agent_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="idle")
@@ -46,14 +50,20 @@ class AutonomousAgent(Base):
 class DigitalTwin(Base):
     __tablename__ = "digital_twins"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     twin_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="initializing")
     bim_model_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    iot_device_ids: Mapped[list] = mapped_column("iot_device_ids", ARRAY(UUID), default=list)
+    iot_device_ids: Mapped[list] = mapped_column(
+        "iot_device_ids", ARRAY(UUID), default=list
+    )
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     sync_interval_seconds: Mapped[int] = mapped_column(Integer, default=60)
     data_sources: Mapped[dict] = mapped_column("data_sources", JSONB, default=dict)
@@ -70,15 +80,21 @@ class DigitalTwin(Base):
         "AutonomousTask", back_populates="digital_twin", cascade="all, delete-orphan"
     )
     simulations: Mapped[list["ConstructionSimulation"]] = relationship(
-        "ConstructionSimulation", back_populates="digital_twin", cascade="all, delete-orphan"
+        "ConstructionSimulation",
+        back_populates="digital_twin",
+        cascade="all, delete-orphan",
     )
 
 
 class AutonomousTask(Base):
     __tablename__ = "autonomous_tasks"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("autonomous.autonomous_agents.id")
     )
@@ -99,15 +115,23 @@ class AutonomousTask(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    agent: Mapped["AutonomousAgent"] = relationship("AutonomousAgent", back_populates="tasks")
-    digital_twin: Mapped["DigitalTwin"] = relationship("DigitalTwin", back_populates="tasks")
+    agent: Mapped["AutonomousAgent"] = relationship(
+        "AutonomousAgent", back_populates="tasks"
+    )
+    digital_twin: Mapped["DigitalTwin"] = relationship(
+        "DigitalTwin", back_populates="tasks"
+    )
 
 
 class ConstructionSimulation(Base):
     __tablename__ = "construction_simulations"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     digital_twin_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("autonomous.digital_twins.id")
@@ -125,14 +149,20 @@ class ConstructionSimulation(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    digital_twin: Mapped["DigitalTwin"] = relationship("DigitalTwin", back_populates="simulations")
+    digital_twin: Mapped["DigitalTwin"] = relationship(
+        "DigitalTwin", back_populates="simulations"
+    )
 
 
 class AutonomousOperation(Base):
     __tablename__ = "autonomous_operations"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     digital_twin_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("autonomous.digital_twins.id")
@@ -159,8 +189,12 @@ class AutonomousOperation(Base):
 class MarineRobot(Base):
     __tablename__ = "marine_robotics"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     robot_name: Mapped[str] = mapped_column(String(255), nullable=False)
     robot_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -182,8 +216,12 @@ class MarineRobot(Base):
 class AutonomousControl(Base):
     __tablename__ = "autonomous_controls"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     target_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     target_type: Mapped[str] = mapped_column(String(50), nullable=False)
     command_type: Mapped[str] = mapped_column(String(50), nullable=False)

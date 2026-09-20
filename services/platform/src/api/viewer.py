@@ -38,6 +38,7 @@ def _scene_to_response(s: ViewerScene) -> dict:
 
 # === Viewer Configs ===
 
+
 @router.post("/configs")
 async def create_viewer_config(
     body: ViewerConfigCreate,
@@ -92,9 +93,7 @@ async def list_viewer_configs(
     configs = result.scalars().all()
 
     meta = MetaInfo(page=page, per_page=per_page, total=total, total_pages=total_pages)
-    return _api_response(
-        data=[_config_to_response(c) for c in configs], meta=meta
-    )
+    return _api_response(data=[_config_to_response(c) for c in configs], meta=meta)
 
 
 @router.get("/configs/{config_id}")
@@ -124,9 +123,7 @@ async def delete_viewer_config(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ViewerConfig).where(ViewerConfig.id == config_id)
-    )
+    result = await db.execute(select(ViewerConfig).where(ViewerConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
         raise HTTPException(
@@ -140,6 +137,7 @@ async def delete_viewer_config(
 
 # === Viewer Scenes ===
 
+
 @router.post("/configs/{config_id}/scenes")
 async def create_viewer_scene(
     config_id: UUID,
@@ -147,9 +145,7 @@ async def create_viewer_scene(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ViewerConfig).where(ViewerConfig.id == config_id)
-    )
+    result = await db.execute(select(ViewerConfig).where(ViewerConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
         raise HTTPException(
@@ -178,9 +174,7 @@ async def get_viewer_scene(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ViewerScene).where(ViewerScene.id == scene_id)
-    )
+    result = await db.execute(select(ViewerScene).where(ViewerScene.id == scene_id))
     scene = result.scalar_one_or_none()
     if not scene:
         raise HTTPException(

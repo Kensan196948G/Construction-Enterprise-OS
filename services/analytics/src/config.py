@@ -45,4 +45,3 @@ def get_settings() -> Settings:
                 "環境変数 JWT_PUBLIC_KEY を設定してください。"
             )
     return settings
-

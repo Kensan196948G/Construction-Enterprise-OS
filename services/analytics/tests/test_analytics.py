@@ -176,9 +176,7 @@ class TestDataSourceCRUD:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[ds], total=1)
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[ds], total=1))
 
         response = client.get(
             f"/api/v1/analytics/datasources?organization_id={org_id}",

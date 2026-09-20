@@ -66,14 +66,20 @@ def _contact_to_response(contact) -> PartnerContactResponse:
     )
 
 
-@router.post("", response_model=APIResponse[PartnerResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=APIResponse[PartnerResponse], status_code=status.HTTP_201_CREATED
+)
 async def create_partner(
     request: Request,
     body: PartnerCreate,
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    org_id = UUID(current_user.org) if current_user.org else UUID("00000000-0000-0000-0000-000000000001")
+    org_id = (
+        UUID(current_user.org)
+        if current_user.org
+        else UUID("00000000-0000-0000-0000-000000000001")
+    )
     partner = await partner_service.create_partner(db, org_id, body.model_dump())
     await db.flush()
     await db.refresh(partner)
@@ -124,20 +130,33 @@ async def get_partner(
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "PARTNER_NOT_FOUND", "message": "協力会社が見つかりません。"},
+            detail={
+                "code": "PARTNER_NOT_FOUND",
+                "message": "協力会社が見つかりません。",
+            },
         )
 
-    contracts, _ = await contract_service.list_contracts_for_partner(db, partner_id, page=1, per_page=5)
+    contracts, _ = await contract_service.list_contracts_for_partner(
+        db, partner_id, page=1, per_page=5
+    )
     contracts_summary = [
-        {"id": c.id, "title": c.title, "contract_type": c.contract_type, "status": c.status, "amount": float(c.amount)}
+        {
+            "id": c.id,
+            "title": c.title,
+            "contract_type": c.contract_type,
+            "status": c.status,
+            "amount": float(c.amount),
+        }
         for c in contracts
     ]
 
-    return APIResponse(data=PartnerDetailResponse(
-        **_partner_to_response(partner).model_dump(),
-        contacts=[_contact_to_response(c) for c in partner.contacts],
-        contracts_summary=contracts_summary,
-    ))
+    return APIResponse(
+        data=PartnerDetailResponse(
+            **_partner_to_response(partner).model_dump(),
+            contacts=[_contact_to_response(c) for c in partner.contacts],
+            contracts_summary=contracts_summary,
+        )
+    )
 
 
 @router.put("/{partner_id}", response_model=APIResponse[PartnerResponse])
@@ -148,16 +167,25 @@ async def update_partner(
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    partner = await partner_service.update_partner(db, partner_id, body.model_dump(exclude_unset=True))
+    partner = await partner_service.update_partner(
+        db, partner_id, body.model_dump(exclude_unset=True)
+    )
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "PARTNER_NOT_FOUND", "message": "協力会社が見つかりません。"},
+            detail={
+                "code": "PARTNER_NOT_FOUND",
+                "message": "協力会社が見つかりません。",
+            },
         )
     return APIResponse(data=_partner_to_response(partner))
 
 
-@router.post("/{partner_id}/contacts", response_model=APIResponse[PartnerContactResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{partner_id}/contacts",
+    response_model=APIResponse[PartnerContactResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_contact(
     request: Request,
     partner_id: UUID,
@@ -169,7 +197,10 @@ async def add_contact(
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "PARTNER_NOT_FOUND", "message": "協力会社が見つかりません。"},
+            detail={
+                "code": "PARTNER_NOT_FOUND",
+                "message": "協力会社が見つかりません。",
+            },
         )
 
     contact = await partner_service.add_contact(db, partner_id, body.model_dump())
@@ -178,7 +209,9 @@ async def add_contact(
     return APIResponse(data=_contact_to_response(contact))
 
 
-@router.get("/{partner_id}/contacts", response_model=APIResponse[list[PartnerContactResponse]])
+@router.get(
+    "/{partner_id}/contacts", response_model=APIResponse[list[PartnerContactResponse]]
+)
 async def list_contacts(
     request: Request,
     partner_id: UUID,
@@ -189,14 +222,19 @@ async def list_contacts(
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "PARTNER_NOT_FOUND", "message": "協力会社が見つかりません。"},
+            detail={
+                "code": "PARTNER_NOT_FOUND",
+                "message": "協力会社が見つかりません。",
+            },
         )
 
     contacts = await partner_service.list_contacts(db, partner_id)
     return APIResponse(data=[_contact_to_response(c) for c in contacts])
 
 
-@router.get("/{partner_id}/contracts", response_model=APIResponse[list[ContractResponse]])
+@router.get(
+    "/{partner_id}/contracts", response_model=APIResponse[list[ContractResponse]]
+)
 async def get_partner_contracts(
     request: Request,
     partner_id: UUID,
@@ -220,7 +258,9 @@ async def get_partner_contracts(
     )
 
 
-@router.get("/{partner_id}/evaluations", response_model=APIResponse[list[EvaluationResponse]])
+@router.get(
+    "/{partner_id}/evaluations", response_model=APIResponse[list[EvaluationResponse]]
+)
 async def get_partner_evaluations(
     request: Request,
     partner_id: UUID,
@@ -252,8 +292,10 @@ async def get_partner_rating(
     current_user: TokenData = Depends(get_current_user),
 ):
     rating, count = await evaluation_service.get_partner_rating(db, partner_id)
-    return APIResponse(data=PartnerRatingResponse(
-        partner_id=partner_id,
-        average_rating=rating,
-        evaluation_count=count,
-    ))
+    return APIResponse(
+        data=PartnerRatingResponse(
+            partner_id=partner_id,
+            average_rating=rating,
+            evaluation_count=count,
+        )
+    )

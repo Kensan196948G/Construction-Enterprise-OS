@@ -47,7 +47,11 @@ def _to_response(record) -> PredictiveModelResponse:
     )
 
 
-@router.post("", response_model=APIResponse[PredictiveModelResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIResponse[PredictiveModelResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_model(
     request: Request,
     body: PredictiveModelCreateRequest,
@@ -116,7 +120,9 @@ async def update_model(
     db: AsyncSession = Depends(get_db),
     _current_user=Depends(get_current_user),
 ):
-    record = await update_predictive_model(db, model_id, body.model_dump(exclude_unset=True))
+    record = await update_predictive_model(
+        db, model_id, body.model_dump(exclude_unset=True)
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -141,7 +147,9 @@ async def delete_model(
     return APIResponse(data={"message": "予知保全モデルを削除しました。"})
 
 
-@router.get("/{model_id}/prediction", response_model=APIResponse[PredictionResultResponse])
+@router.get(
+    "/{model_id}/prediction", response_model=APIResponse[PredictionResultResponse]
+)
 async def get_prediction(
     request: Request,
     model_id: UUID,

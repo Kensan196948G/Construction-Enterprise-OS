@@ -53,7 +53,10 @@ async def list_reports(
         per_page=per_page,
     )
     return ReportListResponse(
-        items=items, total=total, page=page, per_page=per_page  # type: ignore[arg-type]
+        items=items,
+        total=total,
+        page=page,
+        per_page=per_page,  # type: ignore[arg-type]
     )
 
 
@@ -79,9 +82,7 @@ async def update_report(
     report = await service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="レポートが見つかりません")
-    return await service.update_report(
-        db, report, body.model_dump(exclude_none=True)
-    )
+    return await service.update_report(db, report, body.model_dump(exclude_none=True))
 
 
 @router.delete("/reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

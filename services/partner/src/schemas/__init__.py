@@ -35,8 +35,15 @@ class TokenData(BaseModel):
 # 協力会社 (Partner)
 # ============================================
 COMPANY_TYPES = [
-    "subcontractor", "supplier", "consultant", "designer", "surveyor",
-    "equipment_rental", "material_supplier", "transportation", "other",
+    "subcontractor",
+    "supplier",
+    "consultant",
+    "designer",
+    "surveyor",
+    "equipment_rental",
+    "material_supplier",
+    "transportation",
+    "other",
 ]
 PARTNER_STATUSES = ["active", "inactive", "blacklisted", "pending_review"]
 
@@ -134,7 +141,13 @@ class PartnerDetailResponse(PartnerResponse):
 # 契約 (Contract)
 # ============================================
 CONTRACT_TYPES = [
-    "main_contract", "subcontract", "supply", "service", "lease", "consulting", "other",
+    "main_contract",
+    "subcontract",
+    "supply",
+    "service",
+    "lease",
+    "consulting",
+    "other",
 ]
 CONTRACT_STATUSES = ["draft", "pending_approval", "active", "completed", "terminated"]
 

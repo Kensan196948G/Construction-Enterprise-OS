@@ -48,7 +48,11 @@ def _to_response(record) -> InspectionRecordResponse:
     )
 
 
-@router.post("", response_model=APIResponse[InspectionRecordResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIResponse[InspectionRecordResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_inspection(
     request: Request,
     body: InspectionRecordCreateRequest,
@@ -128,7 +132,9 @@ async def update_inspection(
     db: AsyncSession = Depends(get_db),
     _current_user=Depends(get_current_user),
 ):
-    record = await update_inspection_record(db, record_id, body.model_dump(exclude_unset=True))
+    record = await update_inspection_record(
+        db, record_id, body.model_dump(exclude_unset=True)
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

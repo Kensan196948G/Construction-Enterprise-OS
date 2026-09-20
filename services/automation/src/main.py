@@ -27,9 +27,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware
@@ -62,7 +67,9 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["health"])
     app.include_router(rules.router, prefix="/api/v1/automation/rules", tags=["rules"])
     app.include_router(tasks.router, prefix="/api/v1/automation/tasks", tags=["tasks"])
-    app.include_router(triggers.router, prefix="/api/v1/automation/triggers", tags=["triggers"])
+    app.include_router(
+        triggers.router, prefix="/api/v1/automation/triggers", tags=["triggers"]
+    )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

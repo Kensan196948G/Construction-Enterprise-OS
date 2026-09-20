@@ -25,6 +25,7 @@ def _make_mock_user(sub="00000000-0000-0000-0000-000000000001"):
 
 def _make_mock_marine(mid=None):
     from datetime import datetime, timezone
+
     m = MagicMock()
     m.id = mid or uuid4()
     m.organization_id = uuid4()
@@ -49,6 +50,7 @@ def _make_mock_marine(mid=None):
 
 def _make_mock_inspection(iid=None):
     from datetime import date, datetime, timezone
+
     m = MagicMock()
     m.id = iid or uuid4()
     m.organization_id = uuid4()
@@ -72,6 +74,7 @@ def _make_mock_inspection(iid=None):
 
 def _make_mock_design_review(did=None):
     from datetime import datetime, timezone
+
     m = MagicMock()
     m.id = did or uuid4()
     m.organization_id = uuid4()
@@ -80,7 +83,12 @@ def _make_mock_design_review(did=None):
     m.review_type = "structural"
     m.status = "pending"
     m.ai_suggestions = []
-    m.compliance_checks = {"standard": "ISO 19901", "passed": 10, "failed": 2, "violations": [{"clause": "4.2.1", "message": "不足"}]}
+    m.compliance_checks = {
+        "standard": "ISO 19901",
+        "passed": 10,
+        "failed": 2,
+        "violations": [{"clause": "4.2.1", "message": "不足"}],
+    }
     m.reviewer_id = None
     m.reviewed_at = None
     m.created_at = datetime.now(timezone.utc)
@@ -89,6 +97,7 @@ def _make_mock_design_review(did=None):
 
 def _make_mock_predictive(pid=None):
     from datetime import date, datetime, timezone
+
     m = MagicMock()
     m.id = pid or uuid4()
     m.organization_id = uuid4()
@@ -166,6 +175,7 @@ def app():
 @pytest.fixture
 def client(app):
     from fastapi.testclient import TestClient
+
     return TestClient(app)
 
 
@@ -195,6 +205,7 @@ def unauth_client():
 
     _app.dependency_overrides[get_db] = mock_get_db
     from fastapi.testclient import TestClient
+
     return TestClient(_app)
 
 
@@ -218,17 +229,23 @@ def test_marine_create_requires_auth(unauth_client):
 
 
 def test_inspection_requires_auth(unauth_client):
-    response = unauth_client.post("/api/v1/advanced/inspections", json={"asset_name": "test"})
+    response = unauth_client.post(
+        "/api/v1/advanced/inspections", json={"asset_name": "test"}
+    )
     assert response.status_code == 401
 
 
 def test_design_review_requires_auth(unauth_client):
-    response = unauth_client.post("/api/v1/advanced/design-reviews", json={"review_type": "structural"})
+    response = unauth_client.post(
+        "/api/v1/advanced/design-reviews", json={"review_type": "structural"}
+    )
     assert response.status_code == 401
 
 
 def test_predictive_requires_auth(unauth_client):
-    response = unauth_client.post("/api/v1/advanced/predictive", json={"asset_name": "test"})
+    response = unauth_client.post(
+        "/api/v1/advanced/predictive", json={"asset_name": "test"}
+    )
     assert response.status_code == 401
 
 
@@ -239,6 +256,7 @@ def test_create_marine_construction(client, auth_headers):
     mock_marine = _make_mock_marine()
 
     import src.api.marine as marine_module
+
     marine_module.create_marine_construction = AsyncMock(return_value=mock_marine)
 
     response = client.post(
@@ -262,6 +280,7 @@ def test_get_marine_construction(client, auth_headers):
     mock_marine = _make_mock_marine(mid=mid)
 
     import src.api.marine as marine_module
+
     marine_module.get_marine_construction_by_id = AsyncMock(return_value=mock_marine)
 
     response = client.get(f"/api/v1/advanced/marine/{mid}", headers=auth_headers)
@@ -277,6 +296,7 @@ def test_update_marine_progress(client, auth_headers):
     mock_marine.progress_percent = 75.0
 
     import src.api.marine as marine_module
+
     marine_module.update_marine_construction = AsyncMock(return_value=mock_marine)
 
     response = client.patch(
@@ -292,6 +312,7 @@ def test_update_marine_progress(client, auth_headers):
 
 def test_marine_construction_not_found(client, auth_headers):
     import src.api.marine as marine_module
+
     marine_module.get_marine_construction_by_id = AsyncMock(return_value=None)
 
     response = client.get(
@@ -308,6 +329,7 @@ def test_create_inspection_record(client, auth_headers):
     mock_inspection = _make_mock_inspection()
 
     import src.api.inspections_ai as insp_module
+
     insp_module.create_inspection_record = AsyncMock(return_value=mock_inspection)
 
     response = client.post(
@@ -382,6 +404,7 @@ def test_create_design_review(client, auth_headers):
     mock_review = _make_mock_design_review()
 
     import src.api.design_review as dr_module
+
     dr_module.create_design_review = AsyncMock(return_value=mock_review)
 
     response = client.post(
@@ -405,6 +428,7 @@ def test_get_compliance_report(client, auth_headers):
     rid = uuid4()
 
     import src.api.design_review as dr_module
+
     dr_module.get_compliance_report = AsyncMock(
         return_value={
             "review_id": rid,
@@ -414,7 +438,9 @@ def test_get_compliance_report(client, auth_headers):
             "passed_count": 10,
             "failed_count": 2,
             "violations": [{"clause": "4.2.1", "message": "不足"}],
-            "suggestions": [{"issue": "weak_point", "severity": "high", "suggestion": "補強必要"}],
+            "suggestions": [
+                {"issue": "weak_point", "severity": "high", "suggestion": "補強必要"}
+            ],
         }
     )
 
@@ -437,6 +463,7 @@ def test_create_predictive_model(client, auth_headers):
     mock_model = _make_mock_predictive()
 
     import src.api.predictive as pred_module
+
     pred_module.create_predictive_model = AsyncMock(return_value=mock_model)
 
     response = client.post(
@@ -465,6 +492,7 @@ def test_get_prediction_result(client, auth_headers):
     from datetime import date
 
     import src.api.predictive as pred_module
+
     pred_module.get_prediction_result = AsyncMock(
         return_value={
             "model_id": pid,
@@ -475,7 +503,9 @@ def test_get_prediction_result(client, auth_headers):
             "failure_probability": 0.15,
             "remaining_life_days": 180,
             "next_maintenance_predicted": date(2026, 6, 15),
-            "recommendations": [{"action": "replace_hydraulic_seal", "priority": "high"}],
+            "recommendations": [
+                {"action": "replace_hydraulic_seal", "priority": "high"}
+            ],
         }
     )
 
@@ -497,13 +527,16 @@ def test_list_marine_constructions(client, auth_headers):
     mock_marine = _make_mock_marine()
 
     import src.api.marine as marine_module
-    marine_module.list_marine_constructions = AsyncMock(
-        return_value=([mock_marine], 1)
-    )
+
+    marine_module.list_marine_constructions = AsyncMock(return_value=([mock_marine], 1))
 
     response = client.get(
         "/api/v1/advanced/marine",
-        params={"organization_id": "00000000-0000-0000-0000-000000000001", "page": 1, "per_page": 20},
+        params={
+            "organization_id": "00000000-0000-0000-0000-000000000001",
+            "page": 1,
+            "per_page": 20,
+        },
         headers=auth_headers,
     )
     assert response.status_code == 200

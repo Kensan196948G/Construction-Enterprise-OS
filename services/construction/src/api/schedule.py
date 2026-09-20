@@ -19,7 +19,9 @@ from ..services import construction_service
 router = APIRouter()
 
 
-@router.post("/schedules", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/schedules", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_schedule(
     body: ScheduleCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -73,7 +75,9 @@ async def update_schedule(
     schedule = await construction_service.get_schedule(db, schedule_id)
     if not schedule:
         raise HTTPException(status_code=404, detail="スケジュールが見つかりません")
-    return await construction_service.update_schedule(db, schedule, body.model_dump(exclude_none=True))
+    return await construction_service.update_schedule(
+        db, schedule, body.model_dump(exclude_none=True)
+    )
 
 
 @router.delete("/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -88,7 +92,9 @@ async def delete_schedule(
     await db.delete(schedule)
 
 
-@router.get("/projects/{project_id}/critical-path", response_model=list[ScheduleResponse])
+@router.get(
+    "/projects/{project_id}/critical-path", response_model=list[ScheduleResponse]
+)
 async def get_critical_path(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),

@@ -56,7 +56,7 @@ def client(app):
 
 
 def _auth_headers(user_id: str | None = None, org_id: str | None = None) -> dict:
-    from jose import jwt
+    import jwt
 
     from src.config import get_settings
 

@@ -29,8 +29,12 @@ class MarineConstruction(Base):
         Index("ix_marine_construction_type", "construction_type"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     construction_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -39,7 +43,9 @@ class MarineConstruction(Base):
     tide_info: Mapped[dict | None] = mapped_column(JSONB)
     wave_condition: Mapped[dict | None] = mapped_column(JSONB)
     equipment_deployed: Mapped[list[str] | None] = mapped_column(ARRAY(String))
-    material_volume: Mapped[float | None] = mapped_column("material_volume", NUMERIC(15, 2))
+    material_volume: Mapped[float | None] = mapped_column(
+        "material_volume", NUMERIC(15, 2)
+    )
     progress_percent: Mapped[float | None] = mapped_column(NUMERIC(5, 2), default=0)
     location: Mapped[str | None] = mapped_column(Text)
     start_date: Mapped[date | None] = mapped_column(Date)
@@ -62,8 +68,12 @@ class InspectionRecord(Base):
         Index("ix_inspection_records_severity", "severity"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     asset_name: Mapped[str] = mapped_column(String(500), nullable=False)
     asset_type: Mapped[str] = mapped_column(String(50), nullable=False)
     inspection_method: Mapped[str | None] = mapped_column(String(50))
@@ -92,8 +102,12 @@ class DesignReview(Base):
         Index("ix_design_reviews_type", "review_type"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     design_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     review_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -116,8 +130,12 @@ class PredictiveModel(Base):
         Index("ix_predictive_models_type", "model_type"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     asset_name: Mapped[str] = mapped_column(String(500), nullable=False)
     asset_type: Mapped[str] = mapped_column(String(50), nullable=False)
     model_type: Mapped[str] = mapped_column(String(50), nullable=False)

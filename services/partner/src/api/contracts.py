@@ -43,14 +43,22 @@ def _contract_to_response(contract) -> ContractResponse:
     )
 
 
-@router.post("", response_model=APIResponse[ContractResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIResponse[ContractResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_contract(
     request: Request,
     body: ContractCreate,
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    org_id = UUID(current_user.org) if current_user.org else UUID("00000000-0000-0000-0000-000000000001")
+    org_id = (
+        UUID(current_user.org)
+        if current_user.org
+        else UUID("00000000-0000-0000-0000-000000000001")
+    )
     contract = await contract_service.create_contract(db, org_id, body.model_dump())
     await db.flush()
     await db.refresh(contract)
@@ -114,7 +122,9 @@ async def update_contract(
     db: AsyncSession = Depends(get_db),
     current_user: TokenData = Depends(get_current_user),
 ):
-    contract = await contract_service.update_contract(db, contract_id, body.model_dump(exclude_unset=True))
+    contract = await contract_service.update_contract(
+        db, contract_id, body.model_dump(exclude_unset=True)
+    )
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

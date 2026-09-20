@@ -25,14 +25,21 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Starting API Gateway on {settings.GATEWAY_HOST}:{settings.GATEWAY_PORT}")
+    logger.info(
+        f"Starting API Gateway on {settings.GATEWAY_HOST}:{settings.GATEWAY_PORT}"
+    )
 
     # Initialize shared auth middleware
     try:
         from construction_enterprise_os_auth import configure_auth  # type: ignore[import-not-found]
+
         configure_auth(
-            jwt_public_key=getattr(settings, 'jwt_public_key', getattr(settings, 'JWT_PUBLIC_KEY', "dev-key")),
-            jwt_algorithm=getattr(settings, 'JWT_ALGORITHM', "HS256"),
+            jwt_public_key=getattr(
+                settings,
+                "jwt_public_key",
+                getattr(settings, "JWT_PUBLIC_KEY", "dev-key"),
+            ),
+            jwt_algorithm=getattr(settings, "JWT_ALGORITHM", "HS256"),
         )
     except ImportError:
         pass  # Auth package not installed, using local middleware

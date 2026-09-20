@@ -17,6 +17,7 @@ def _utcnow():
 # Inspections
 # ═══════════════════════════════════════════════════════
 
+
 async def create_inspection(
     db: AsyncSession,
     organization_id: UUID,
@@ -174,6 +175,7 @@ async def get_inspection_stats(
 # Hazard Reports
 # ═══════════════════════════════════════════════════════
 
+
 async def create_hazard(
     db: AsyncSession,
     organization_id: UUID,
@@ -230,9 +232,7 @@ async def get_hazards(
     return list(result.scalars().all())
 
 
-async def get_hazard_by_id(
-    db: AsyncSession, hazard_id: UUID
-) -> HazardReport | None:
+async def get_hazard_by_id(db: AsyncSession, hazard_id: UUID) -> HazardReport | None:
     stmt = select(HazardReport).where(HazardReport.id == hazard_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -285,6 +285,7 @@ async def update_hazard(
 # ═══════════════════════════════════════════════════════
 # Safety Incidents
 # ═══════════════════════════════════════════════════════
+
 
 async def create_safety_incident(
     db: AsyncSession,

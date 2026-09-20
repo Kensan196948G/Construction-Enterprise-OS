@@ -59,9 +59,7 @@ async def list_elements(
     elements = result.scalars().all()
 
     meta = MetaInfo(page=page, per_page=per_page, total=total, total_pages=total_pages)
-    return _api_response(
-        data=[_element_to_response(e) for e in elements], meta=meta
-    )
+    return _api_response(data=[_element_to_response(e) for e in elements], meta=meta)
 
 
 @router.get("/elements/{element_id}")
@@ -70,9 +68,7 @@ async def get_element(
     token_data: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(BIMElement).where(BIMElement.id == element_id)
-    )
+    result = await db.execute(select(BIMElement).where(BIMElement.id == element_id))
     element = result.scalar_one_or_none()
     if not element:
         raise HTTPException(
@@ -89,7 +85,8 @@ async def elements_by_category(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(BIMElement).where(BIMElement.model_id == model_id)
+        select(BIMElement)
+        .where(BIMElement.model_id == model_id)
         .order_by(BIMElement.category, BIMElement.name)
     )
     elements = result.scalars().all()
@@ -113,7 +110,8 @@ async def elements_by_level(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(BIMElement).where(BIMElement.model_id == model_id)
+        select(BIMElement)
+        .where(BIMElement.model_id == model_id)
         .order_by(BIMElement.level_name, BIMElement.name)
     )
     elements = result.scalars().all()
@@ -164,6 +162,4 @@ async def search_elements(
     elements = result.scalars().all()
 
     meta = MetaInfo(page=page, per_page=per_page, total=total, total_pages=total_pages)
-    return _api_response(
-        data=[_element_to_response(e) for e in elements], meta=meta
-    )
+    return _api_response(data=[_element_to_response(e) for e in elements], meta=meta)

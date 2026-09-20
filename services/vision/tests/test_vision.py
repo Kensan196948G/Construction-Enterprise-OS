@@ -142,6 +142,7 @@ class MockVectorIndex:
 # Test 1: Health check
 # ═══════════════════════════════════════════════
 
+
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -153,6 +154,7 @@ def test_health_check(client):
 # ═══════════════════════════════════════════════
 # Test 2-4: Auth required for endpoints
 # ═══════════════════════════════════════════════
+
 
 def test_ocr_requires_auth(client):
     response = client.get("/api/v1/ocr/results")
@@ -172,6 +174,7 @@ def test_vectors_require_auth(client):
 # ═══════════════════════════════════════════════
 # Test 5-7: OCR CRUD
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_submit_ocr_process(mock_jwt, app):
@@ -282,6 +285,7 @@ def test_get_ocr_result_detail(mock_jwt, app):
 # Test 8-9: Image Analysis CRUD
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_submit_image_analysis(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -353,6 +357,7 @@ def test_list_image_analyses(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 10-13: Vector DB operations
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_vector_index(mock_jwt, app):
@@ -458,7 +463,10 @@ def test_index_documents(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
     vi = MockVectorIndex(
-        id=TEST_INDEX_ID, collection_name="regulations", document_count=10, total_vectors=10
+        id=TEST_INDEX_ID,
+        collection_name="regulations",
+        document_count=10,
+        total_vectors=10,
     )
 
     db_mock = AsyncMock()

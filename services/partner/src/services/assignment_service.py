@@ -49,8 +49,7 @@ async def list_assignments(
 
     offset = (page - 1) * per_page
     query = (
-        base_query
-        .order_by(ProjectAssignment.created_at.desc())
+        base_query.order_by(ProjectAssignment.created_at.desc())
         .offset(offset)
         .limit(per_page)
     )
@@ -62,4 +61,6 @@ async def list_assignments(
 async def get_project_assignments(
     db: AsyncSession, project_id: uuid.UUID, page: int = 1, per_page: int = 20
 ) -> tuple[list[ProjectAssignment], int]:
-    return await list_assignments(db, page=page, per_page=per_page, project_id=project_id)
+    return await list_assignments(
+        db, page=page, per_page=per_page, project_id=project_id
+    )

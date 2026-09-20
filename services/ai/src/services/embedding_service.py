@@ -37,7 +37,9 @@ class EmbeddingService:
             )
         return self._client
 
-    def chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    def chunk_text(
+        self, text: str, chunk_size: int = 500, overlap: int = 50
+    ) -> list[str]:
         if not text.strip():
             return []
         if len(text) <= chunk_size:
@@ -63,6 +65,7 @@ class EmbeddingService:
 
     async def mock_embedding(self, text: str) -> list[float]:
         import hashlib
+
         dims = 1536
         h = hashlib.sha256(text.encode()).digest()
         vec = []

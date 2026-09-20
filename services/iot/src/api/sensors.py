@@ -17,7 +17,11 @@ from ..services.device_service import add_sensor, get_sensors_by_device
 router = APIRouter()
 
 
-@router.post("/{device_id}/sensors", response_model=APIResponse[SensorResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{device_id}/sensors",
+    response_model=APIResponse[SensorResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_sensor(
     request: Request,
     device_id: UUID,
@@ -29,7 +33,10 @@ async def create_sensor(
     if not sensor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "DEVICE_NOT_FOUND", "message": "デバイスが見つかりません。"},
+            detail={
+                "code": "DEVICE_NOT_FOUND",
+                "message": "デバイスが見つかりません。",
+            },
         )
     return APIResponse(data=SensorResponse.model_validate(sensor))
 

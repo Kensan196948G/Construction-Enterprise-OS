@@ -103,12 +103,18 @@ def test_request_id_forwarded(client):
 
 def test_proxy_request_with_valid_token_format(client):
     """有効なJWT形式のトークンでプロキシーリクエスト（上流未起動のため502）"""
-    from jose import jwt as jose_jwt
+    import jwt as jose_jwt
     from src.config import get_settings
 
     settings = get_settings()
     token = jose_jwt.encode(
-        {"sub": "test-user", "type": "user", "roles": [], "scopes": [], "exp": 9999999999},
+        {
+            "sub": "test-user",
+            "type": "user",
+            "roles": [],
+            "scopes": [],
+            "exp": 9999999999,
+        },
         # ミドルウェアと同じ解決済み鍵で署名する(既定値ではなく)
         settings.jwt_public_key,
         algorithm=settings.JWT_ALGORITHM,

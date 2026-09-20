@@ -82,7 +82,9 @@ def app(mock_db):
         yield mock_db
 
     async def mock_get_current_user():
-        return TokenData(sub="test-user-id", type="user", org="test-org", roles=["admin"])
+        return TokenData(
+            sub="test-user-id", type="user", org="test-org", roles=["admin"]
+        )
 
     _app.dependency_overrides[get_db] = mock_get_db
     _app.dependency_overrides[get_current_user] = mock_get_current_user
@@ -498,9 +500,7 @@ class TestProgressTracking:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[r1, r2, r3])
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[r1, r2, r3]))
 
         response = client.get(
             f"/api/v1/field/progress/{project_id}/summary",
@@ -627,9 +627,7 @@ class TestQualityCheck:
             updated_at=datetime.now(timezone.utc),
         )
 
-        mock_db.execute = AsyncMock(
-            return_value=MockScalarResult(items=[c1, c2, c3])
-        )
+        mock_db.execute = AsyncMock(return_value=MockScalarResult(items=[c1, c2, c3]))
 
         response = client.get(
             f"/api/v1/field/quality/{project_id}/stats",

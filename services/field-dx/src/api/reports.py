@@ -55,7 +55,10 @@ async def list_reports(
         per_page=per_page,
     )
     return DailyReportListResponse(
-        items=items, total=total, page=page, per_page=per_page  # type: ignore[arg-type]
+        items=items,
+        total=total,
+        page=page,
+        per_page=per_page,  # type: ignore[arg-type]
     )
 
 

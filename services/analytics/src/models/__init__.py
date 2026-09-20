@@ -19,6 +19,7 @@ from .base import Base
 
 class DataSource(Base):
     """データソース接続定義"""
+
     __tablename__ = "data_sources"
     __table_args__ = (
         Index("ix_data_sources_organization_id", "organization_id"),
@@ -29,7 +30,9 @@ class DataSource(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     source_type: Mapped[str] = mapped_column(
         String(50), nullable=False
@@ -55,6 +58,7 @@ class DataSource(Base):
 
 class DataPipeline(Base):
     """ETLパイプライン定義"""
+
     __tablename__ = "data_pipelines"
     __table_args__ = (
         Index("ix_data_pipelines_organization_id", "organization_id"),
@@ -66,7 +70,9 @@ class DataPipeline(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     source_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("analytics.data_sources.id")
@@ -96,6 +102,7 @@ class DataPipeline(Base):
 
 class AnalyticsReport(Base):
     """BIレポート定義"""
+
     __tablename__ = "analytics_reports"
     __table_args__ = (
         Index("ix_analytics_reports_organization_id", "organization_id"),
@@ -106,7 +113,9 @@ class AnalyticsReport(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     report_type: Mapped[str] = mapped_column(
         String(50), nullable=False

@@ -29,7 +29,11 @@ class ProxyService:
 
         headers = self._prepare_headers(request)
 
-        body = await request.body() if request.method in ("POST", "PUT", "PATCH", "DELETE") else None
+        body = (
+            await request.body()
+            if request.method in ("POST", "PUT", "PATCH", "DELETE")
+            else None
+        )
 
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:

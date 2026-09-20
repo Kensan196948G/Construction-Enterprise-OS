@@ -42,7 +42,11 @@ def _to_response(record) -> DesignReviewResponse:
     )
 
 
-@router.post("", response_model=APIResponse[DesignReviewResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIResponse[DesignReviewResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_review(
     request: Request,
     body: DesignReviewCreateRequest,
@@ -111,7 +115,9 @@ async def update_review(
     db: AsyncSession = Depends(get_db),
     _current_user=Depends(get_current_user),
 ):
-    record = await update_design_review(db, review_id, body.model_dump(exclude_unset=True))
+    record = await update_design_review(
+        db, review_id, body.model_dump(exclude_unset=True)
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -136,7 +142,10 @@ async def delete_review(
     return APIResponse(data={"message": "設計照査を削除しました。"})
 
 
-@router.get("/{review_id}/compliance-report", response_model=APIResponse[ComplianceReportResponse])
+@router.get(
+    "/{review_id}/compliance-report",
+    response_model=APIResponse[ComplianceReportResponse],
+)
 async def compliance_report_endpoint(
     request: Request,
     review_id: UUID,

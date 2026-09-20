@@ -86,7 +86,9 @@ class TestAuthRequired:
         assert response.status_code == 401
 
     def test_sites_nearby_requires_auth(self, client):
-        response = client.get("/api/v1/gis/sites/nearby?lat=35.0&lng=139.0&radius_m=1000")
+        response = client.get(
+            "/api/v1/gis/sites/nearby?lat=35.0&lng=139.0&radius_m=1000"
+        )
         assert response.status_code == 401
 
     def test_sites_in_area_requires_auth(self, client):
@@ -150,9 +152,7 @@ class TestGeoJSONConversion:
             ],
         )
         result = geojson_to_wkt(geom)
-        expected = (
-            "SRID=4326;POLYGON((139.0 35.0, 140.0 35.0, 140.0 36.0, 139.0 36.0, 139.0 35.0))"
-        )
+        expected = "SRID=4326;POLYGON((139.0 35.0, 140.0 35.0, 140.0 36.0, 139.0 36.0, 139.0 35.0))"
         assert result == expected
 
     def test_linestring_to_wkt(self):

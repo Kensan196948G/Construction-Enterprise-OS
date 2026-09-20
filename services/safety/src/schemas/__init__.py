@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 # ── Common ──
 
+
 class APIResponse(BaseModel):
     success: bool = True
     data: dict | list | None = None
@@ -16,6 +17,7 @@ class APIResponse(BaseModel):
 
 
 # ── SafetyInspection ──
+
 
 class InspectionCreate(BaseModel):
     organization_id: UUID
@@ -49,6 +51,7 @@ class InspectionComplete(BaseModel):
 
 # ── HazardReport ──
 
+
 class HazardCreate(BaseModel):
     organization_id: UUID
     project_id: UUID | None = None
@@ -74,6 +77,7 @@ class HazardUpdate(BaseModel):
 
 
 # ── SafetyIncident ──
+
 
 class IncidentCreate(BaseModel):
     organization_id: UUID

@@ -60,9 +60,7 @@ async def get_policies(
     return list(result.scalars().all())
 
 
-async def get_policy_by_id(
-    db: AsyncSession, policy_id: UUID
-) -> SecurityPolicy | None:
+async def get_policy_by_id(db: AsyncSession, policy_id: UUID) -> SecurityPolicy | None:
     stmt = select(SecurityPolicy).where(SecurityPolicy.id == policy_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()

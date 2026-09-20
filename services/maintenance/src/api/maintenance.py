@@ -28,7 +28,9 @@ def _record_to_response(mr) -> dict:
         "contractor": mr.contractor,
         "scheduled_date": mr.scheduled_date.isoformat() if mr.scheduled_date else None,
         "completed_date": mr.completed_date.isoformat() if mr.completed_date else None,
-        "next_maintenance_date": mr.next_maintenance_date.isoformat() if mr.next_maintenance_date else None,
+        "next_maintenance_date": mr.next_maintenance_date.isoformat()
+        if mr.next_maintenance_date
+        else None,
         "location": mr.location,
         "performed_by": str(mr.performed_by) if mr.performed_by else None,
         "notes": mr.notes,

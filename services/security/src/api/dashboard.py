@@ -1,6 +1,5 @@
 """Security dashboard API endpoint."""
 
-
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,16 +39,14 @@ async def get_dashboard(
     current_user: TokenData = Depends(get_current_user),
 ):
     inc_severity = await incident_service.get_incident_count_by_severity(db)
-    vuln_severity = await vulnerability_service.get_open_vulnerability_count_by_severity(db)
+    vuln_severity = (
+        await vulnerability_service.get_open_vulnerability_count_by_severity(db)
+    )
     policies_due = await policy_service.count_policies_due_review(db)
 
     recent_incidents = await incident_service.get_incidents(db, skip=0, limit=5)
 
-    stmt = (
-        select(SecurityAudit)
-        .order_by(SecurityAudit.created_at.desc())
-        .limit(1)
-    )
+    stmt = select(SecurityAudit).order_by(SecurityAudit.created_at.desc()).limit(1)
     result = await db.execute(stmt)
     latest_audit = result.scalar_one_or_none()
 

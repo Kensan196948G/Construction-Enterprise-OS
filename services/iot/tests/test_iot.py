@@ -66,6 +66,7 @@ def _make_mock_client(sub="00000000-0000-0000-0000-000000000002"):
 
 def _make_mock_device(device_id=None):
     from datetime import datetime, timezone
+
     d = MagicMock()
     d.id = device_id or uuid4()
     d.organization_id = uuid4()
@@ -200,7 +201,9 @@ def test_create_device_requires_auth(unauth_client):
 
 
 def test_telemetry_query_requires_auth(unauth_client):
-    response = unauth_client.get("/api/v1/iot/telemetry/00000000-0000-0000-0000-000000000001?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z")
+    response = unauth_client.get(
+        "/api/v1/iot/telemetry/00000000-0000-0000-0000-000000000001?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z"
+    )
     assert response.status_code == 401
 
 
@@ -221,6 +224,7 @@ def test_create_device_with_auth(client, auth_headers):
     mock_device = _make_mock_device()
 
     import src.api.devices as devices_module
+
     devices_module.register_device = AsyncMock(return_value=mock_device)
 
     response = client.post(
@@ -243,6 +247,7 @@ def test_heartbeat_with_m2m_auth(client, m2m_headers):
     mock_device = _make_mock_device(device_id=device_id)
 
     import src.api.devices as devices_module
+
     devices_module.device_heartbeat_svc = AsyncMock(return_value=mock_device)
 
     response = client.post(
@@ -263,6 +268,7 @@ def test_telemetry_ingest_batch(client, m2m_headers):
     sensor_id = str(uuid4())
 
     import src.api.telemetry as telemetry_module
+
     telemetry_module.ingest_telemetry = AsyncMock(return_value=2)
     telemetry_module.check_alert_rules = AsyncMock(return_value=[])
 
@@ -308,41 +314,48 @@ def test_telemetry_ingest_empty_batch(client, m2m_headers):
 class TestAlertConditionEvaluation:
     def test_gt_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("gt", 30.0, 25.0) is True
         assert _evaluate_condition("gt", 25.0, 25.0) is False
         assert _evaluate_condition("gt", 20.0, 25.0) is False
 
     def test_lt_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("lt", 20.0, 25.0) is True
         assert _evaluate_condition("lt", 25.0, 25.0) is False
         assert _evaluate_condition("lt", 30.0, 25.0) is False
 
     def test_gte_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("gte", 30.0, 25.0) is True
         assert _evaluate_condition("gte", 25.0, 25.0) is True
         assert _evaluate_condition("gte", 20.0, 25.0) is False
 
     def test_lte_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("lte", 20.0, 25.0) is True
         assert _evaluate_condition("lte", 25.0, 25.0) is True
         assert _evaluate_condition("lte", 30.0, 25.0) is False
 
     def test_eq_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("eq", 25.0, 25.0) is True
         assert _evaluate_condition("eq", 26.0, 25.0) is False
 
     def test_invalid_condition(self):
         from src.services.alert_service import _evaluate_condition
+
         assert _evaluate_condition("invalid", 30.0, 25.0) is False
 
 
 class TestAlertMessageGeneration:
     def test_alert_message_gt(self):
         from src.services.alert_service import _build_alert_message
+
         rule = MagicMock()
         rule.name = "High Temperature"
         rule.metric_name = "temperature"
@@ -354,6 +367,7 @@ class TestAlertMessageGeneration:
 
     def test_alert_message_lt(self):
         from src.services.alert_service import _build_alert_message
+
         rule = MagicMock()
         rule.name = "Low Battery"
         rule.metric_name = "battery"

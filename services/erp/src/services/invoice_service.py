@@ -64,9 +64,7 @@ async def list_invoices(
     return items, total
 
 
-async def update_invoice(
-    db: AsyncSession, invoice: Invoice, data: dict
-) -> Invoice:
+async def update_invoice(db: AsyncSession, invoice: Invoice, data: dict) -> Invoice:
     for key, value in data.items():
         if value is not None:
             setattr(invoice, key, value)

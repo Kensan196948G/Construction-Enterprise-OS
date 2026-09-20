@@ -31,7 +31,9 @@ def _trigger_to_response(trigger) -> TriggerResponse:
     return TriggerResponse.model_validate(trigger)
 
 
-@router.post("", response_model=APIResponse[TriggerResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=APIResponse[TriggerResponse], status_code=status.HTTP_201_CREATED
+)
 async def create_trigger_endpoint(
     request: Request,
     body: TriggerCreateRequest,
@@ -88,7 +90,10 @@ async def get_trigger(
     if not trigger:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TRIGGER_NOT_FOUND", "message": "トリガーが見つかりません。"},
+            detail={
+                "code": "TRIGGER_NOT_FOUND",
+                "message": "トリガーが見つかりません。",
+            },
         )
     return APIResponse(data=_trigger_to_response(trigger))
 
@@ -105,7 +110,10 @@ async def update_trigger_endpoint(
     if not trigger:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TRIGGER_NOT_FOUND", "message": "トリガーが見つかりません。"},
+            detail={
+                "code": "TRIGGER_NOT_FOUND",
+                "message": "トリガーが見つかりません。",
+            },
         )
     return APIResponse(data=_trigger_to_response(trigger))
 
@@ -121,7 +129,10 @@ async def delete_trigger_endpoint(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TRIGGER_NOT_FOUND", "message": "トリガーが見つかりません。"},
+            detail={
+                "code": "TRIGGER_NOT_FOUND",
+                "message": "トリガーが見つかりません。",
+            },
         )
     return APIResponse(data={"message": "トリガーを削除しました。"})
 
@@ -137,7 +148,10 @@ async def enable_trigger_endpoint(
     if not trigger:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TRIGGER_NOT_FOUND", "message": "トリガーが見つかりません。"},
+            detail={
+                "code": "TRIGGER_NOT_FOUND",
+                "message": "トリガーが見つかりません。",
+            },
         )
     return APIResponse(data=_trigger_to_response(trigger))
 
@@ -153,6 +167,9 @@ async def disable_trigger_endpoint(
     if not trigger:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TRIGGER_NOT_FOUND", "message": "トリガーが見つかりません。"},
+            detail={
+                "code": "TRIGGER_NOT_FOUND",
+                "message": "トリガーが見つかりません。",
+            },
         )
     return APIResponse(data=_trigger_to_response(trigger))

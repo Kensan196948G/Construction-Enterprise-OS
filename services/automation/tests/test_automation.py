@@ -42,6 +42,7 @@ def _make_mock_user(sub="00000000-0000-0000-0000-000000000001"):
 
 def _make_mock_rule(rule_id=None):
     from datetime import datetime, timezone
+
     r = MagicMock()
     r.id = rule_id or uuid4()
     r.organization_id = uuid4()
@@ -60,6 +61,7 @@ def _make_mock_rule(rule_id=None):
 
 def _make_mock_task(task_id=None):
     from datetime import datetime, timezone
+
     t = MagicMock()
     t.id = task_id or uuid4()
     t.organization_id = uuid4()
@@ -80,6 +82,7 @@ def _make_mock_task(task_id=None):
 
 def _make_mock_task_run(run_id=None, task_id=None):
     from datetime import datetime, timezone
+
     r = MagicMock()
     r.id = run_id or uuid4()
     r.task_id = task_id or uuid4()
@@ -96,6 +99,7 @@ def _make_mock_task_run(run_id=None, task_id=None):
 
 def _make_mock_trigger(trigger_id=None):
     from datetime import datetime, timezone
+
     t = MagicMock()
     t.id = trigger_id or uuid4()
     t.organization_id = uuid4()
@@ -214,6 +218,7 @@ def test_create_rule(client, auth_headers):
     mock_rule = _make_mock_rule()
 
     import src.api.rules as rules_module
+
     rules_module.create_rule = AsyncMock(return_value=mock_rule)
 
     response = client.post(
@@ -244,6 +249,7 @@ def test_get_rule(client, auth_headers):
     mock_rule = _make_mock_rule(rule_id=rule_id)
 
     import src.api.rules as rules_module
+
     rules_module.get_rule_by_id = AsyncMock(return_value=mock_rule)
 
     response = client.get(
@@ -264,6 +270,7 @@ def test_update_rule(client, auth_headers):
     mock_rule = _make_mock_rule(rule_id=rule_id)
 
     import src.api.rules as rules_module
+
     rules_module.update_rule = AsyncMock(return_value=mock_rule)
 
     response = client.put(
@@ -283,6 +290,7 @@ def test_delete_rule(client, auth_headers):
     rule_id = uuid4()
 
     import src.api.rules as rules_module
+
     rules_module.delete_rule = AsyncMock(return_value=True)
 
     response = client.delete(
@@ -302,6 +310,7 @@ def test_create_task_and_trigger(client, auth_headers):
     mock_run = _make_mock_task_run(task_id=mock_task.id)
 
     import src.api.tasks as tasks_module
+
     tasks_module.create_task = AsyncMock(return_value=mock_task)
     tasks_module.trigger_task_now = AsyncMock(return_value=mock_run)
 
@@ -340,6 +349,7 @@ def test_get_task_run_history(client, auth_headers):
     mock_runs = [_make_mock_task_run(task_id=task_id) for _ in range(3)]
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_task_by_id = AsyncMock(return_value=mock_task)
     tasks_module.get_task_run_history = AsyncMock(return_value=mock_runs)
 
@@ -360,6 +370,7 @@ def test_create_trigger_enable_disable(client, auth_headers):
     mock_trigger = _make_mock_trigger()
 
     import src.api.triggers as triggers_module
+
     triggers_module.create_trigger = AsyncMock(return_value=mock_trigger)
     triggers_module.enable_trigger = AsyncMock(return_value=mock_trigger)
     triggers_module.disable_trigger = AsyncMock(return_value=mock_trigger)
@@ -404,6 +415,7 @@ def test_list_triggers(client, auth_headers):
     mock_trigger = _make_mock_trigger()
 
     import src.api.triggers as triggers_module
+
     triggers_module.get_triggers_paginated = AsyncMock(return_value=([mock_trigger], 1))
 
     response = client.get(
@@ -424,6 +436,7 @@ def test_rule_enable_disable(client, auth_headers):
     mock_rule = _make_mock_rule(rule_id=rule_id)
 
     import src.api.rules as rules_module
+
     rules_module.enable_rule = AsyncMock(return_value=mock_rule)
     rules_module.disable_rule = AsyncMock(return_value=mock_rule)
 
@@ -458,6 +471,7 @@ def test_rule_test_execution(client, auth_headers):
     }
 
     import src.api.rules as rules_module
+
     rules_module.test_rule_execution = AsyncMock(return_value=test_result)
 
     response = client.post(
@@ -478,6 +492,7 @@ def test_list_rules(client, auth_headers):
     mock_rule = _make_mock_rule()
 
     import src.api.rules as rules_module
+
     rules_module.get_rules_paginated = AsyncMock(return_value=([mock_rule], 1))
 
     response = client.get(
@@ -498,6 +513,7 @@ def test_list_rules_filter(client, auth_headers):
     mock_rule = _make_mock_rule()
 
     import src.api.rules as rules_module
+
     rules_module.get_rules_paginated = AsyncMock(return_value=([mock_rule], 1))
 
     response = client.get(
@@ -520,6 +536,7 @@ def test_get_rule_not_found(client, auth_headers):
     rule_id = uuid4()
 
     import src.api.rules as rules_module
+
     rules_module.get_rule_by_id = AsyncMock(return_value=None)
 
     response = client.get(
@@ -538,6 +555,7 @@ def test_update_rule_not_found(client, auth_headers):
     rule_id = uuid4()
 
     import src.api.rules as rules_module
+
     rules_module.update_rule = AsyncMock(return_value=None)
 
     response = client.put(
@@ -557,6 +575,7 @@ def test_delete_rule_not_found(client, auth_headers):
     rule_id = uuid4()
 
     import src.api.rules as rules_module
+
     rules_module.delete_rule = AsyncMock(return_value=False)
 
     response = client.delete(
@@ -575,6 +594,7 @@ def test_enable_rule_not_found(client, auth_headers):
     rule_id = uuid4()
 
     import src.api.rules as rules_module
+
     rules_module.enable_rule = AsyncMock(return_value=None)
 
     response = client.post(
@@ -593,6 +613,7 @@ def test_list_tasks(client, auth_headers):
     mock_task = _make_mock_task()
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_tasks_paginated = AsyncMock(return_value=([mock_task], 1))
 
     response = client.get(
@@ -614,6 +635,7 @@ def test_get_task(client, auth_headers):
     mock_task = _make_mock_task(task_id=task_id)
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_task_by_id = AsyncMock(return_value=mock_task)
 
     response = client.get(
@@ -634,6 +656,7 @@ def test_update_task(client, auth_headers):
     mock_task = _make_mock_task(task_id=task_id)
 
     import src.api.tasks as tasks_module
+
     tasks_module.update_task = AsyncMock(return_value=mock_task)
 
     response = client.put(
@@ -653,6 +676,7 @@ def test_delete_task(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.delete_task = AsyncMock(return_value=True)
 
     response = client.delete(
@@ -671,6 +695,7 @@ def test_get_task_not_found(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_task_by_id = AsyncMock(return_value=None)
 
     response = client.get(
@@ -689,6 +714,7 @@ def test_update_task_not_found(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.update_task = AsyncMock(return_value=None)
 
     response = client.put(
@@ -708,6 +734,7 @@ def test_delete_task_not_found(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.delete_task = AsyncMock(return_value=False)
 
     response = client.delete(
@@ -726,6 +753,7 @@ def test_trigger_task_not_found(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.trigger_task_now = AsyncMock(return_value=None)
 
     response = client.post(
@@ -744,6 +772,7 @@ def test_task_history_not_found(client, auth_headers):
     task_id = uuid4()
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_task_by_id = AsyncMock(return_value=None)
 
     response = client.get(
@@ -763,6 +792,7 @@ def test_get_trigger(client, auth_headers):
     mock_trigger = _make_mock_trigger(trigger_id=trigger_id)
 
     import src.api.triggers as triggers_module
+
     triggers_module.get_trigger_by_id = AsyncMock(return_value=mock_trigger)
 
     response = client.get(
@@ -783,6 +813,7 @@ def test_update_trigger(client, auth_headers):
     mock_trigger = _make_mock_trigger(trigger_id=trigger_id)
 
     import src.api.triggers as triggers_module
+
     triggers_module.update_trigger = AsyncMock(return_value=mock_trigger)
 
     response = client.put(
@@ -802,6 +833,7 @@ def test_delete_trigger(client, auth_headers):
     trigger_id = uuid4()
 
     import src.api.triggers as triggers_module
+
     triggers_module.delete_trigger = AsyncMock(return_value=True)
 
     response = client.delete(
@@ -820,6 +852,7 @@ def test_get_trigger_not_found(client, auth_headers):
     trigger_id = uuid4()
 
     import src.api.triggers as triggers_module
+
     triggers_module.get_trigger_by_id = AsyncMock(return_value=None)
 
     response = client.get(
@@ -838,6 +871,7 @@ def test_update_trigger_not_found(client, auth_headers):
     trigger_id = uuid4()
 
     import src.api.triggers as triggers_module
+
     triggers_module.update_trigger = AsyncMock(return_value=None)
 
     response = client.put(
@@ -857,6 +891,7 @@ def test_delete_trigger_not_found(client, auth_headers):
     trigger_id = uuid4()
 
     import src.api.triggers as triggers_module
+
     triggers_module.delete_trigger = AsyncMock(return_value=False)
 
     response = client.delete(

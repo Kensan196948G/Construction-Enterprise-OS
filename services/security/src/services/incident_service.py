@@ -118,8 +118,10 @@ async def add_incident_update(
 
 
 async def get_active_incident_count(db: AsyncSession) -> int:
-    stmt = select(func.count()).select_from(SecurityIncident).where(
-        SecurityIncident.status.notin_(["closed", "resolved"])
+    stmt = (
+        select(func.count())
+        .select_from(SecurityIncident)
+        .where(SecurityIncident.status.notin_(["closed", "resolved"]))
     )
     result = await db.execute(stmt)
     return result.scalar() or 0

@@ -75,7 +75,6 @@ async def list_machines(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str | None = Query(None),
-
     _user: TokenData = Depends(get_current_user),
 ):
     items = MOCK_MACHINES

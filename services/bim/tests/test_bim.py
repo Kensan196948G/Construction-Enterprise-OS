@@ -303,7 +303,10 @@ class TestBIMModelSchemaValidation:
             "unit": "m²",
             "level_name": "1F",
             "building_name": "Building A",
-            "bounding_box": {"min": {"x": 0, "y": 0, "z": 0}, "max": {"x": 10, "y": 3, "z": 3}},
+            "bounding_box": {
+                "min": {"x": 0, "y": 0, "z": 0},
+                "max": {"x": 10, "y": 3, "z": 3},
+            },
             "created_at": "2024-01-01T00:00:00Z",
         }
         el = BIMElementResponse(**data)
@@ -341,17 +344,29 @@ class TestBIMServiceUtility:
     def test_geojson_point_to_wkt(self):
         from src.services.bim_service import geojson_to_wkt_element
 
-        result = geojson_to_wkt_element({"type": "Point", "coordinates": [139.6917, 35.6895]})
+        result = geojson_to_wkt_element(
+            {"type": "Point", "coordinates": [139.6917, 35.6895]}
+        )
         assert result is not None
         assert "POINT" in str(result)
 
     def test_geojson_polygon_to_wkt(self):
         from src.services.bim_service import geojson_to_wkt_element
 
-        result = geojson_to_wkt_element({
-            "type": "Polygon",
-            "coordinates": [[[139.0, 35.0], [140.0, 35.0], [140.0, 36.0], [139.0, 36.0], [139.0, 35.0]]],
-        })
+        result = geojson_to_wkt_element(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [139.0, 35.0],
+                        [140.0, 35.0],
+                        [140.0, 36.0],
+                        [139.0, 36.0],
+                        [139.0, 35.0],
+                    ]
+                ],
+            }
+        )
         assert result is not None
         assert "POLYGON" in str(result)
 
@@ -364,6 +379,8 @@ class TestBIMServiceUtility:
     def test_geojson_pointz_to_wkt(self):
         from src.services.bim_service import geojson_to_wkt_element
 
-        result = geojson_to_wkt_element({"type": "PointZ", "coordinates": [139.6917, 35.6895, 45.0]})
+        result = geojson_to_wkt_element(
+            {"type": "PointZ", "coordinates": [139.6917, 35.6895, 45.0]}
+        )
         assert result is not None
         assert "POINT Z" in str(result)

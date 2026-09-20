@@ -20,7 +20,9 @@ from ..services import construction_service
 router = APIRouter()
 
 
-@router.post("/resources", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/resources", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_resource(
     body: ResourceCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -74,7 +76,9 @@ async def update_resource(
     resource = await construction_service.get_resource(db, resource_id)
     if not resource:
         raise HTTPException(status_code=404, detail="リソースが見つかりません")
-    return await construction_service.update_resource(db, resource, body.model_dump(exclude_none=True))
+    return await construction_service.update_resource(
+        db, resource, body.model_dump(exclude_none=True)
+    )
 
 
 @router.delete("/resources/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -99,10 +103,15 @@ async def update_resource_allocation(
     resource = await construction_service.get_resource(db, resource_id)
     if not resource:
         raise HTTPException(status_code=404, detail="リソースが見つかりません")
-    return await construction_service.update_resource_allocation(db, resource, body.status)
+    return await construction_service.update_resource_allocation(
+        db, resource, body.status
+    )
 
 
-@router.get("/projects/{project_id}/resource-cost-summary", response_model=list[ResourceCostSummary])
+@router.get(
+    "/projects/{project_id}/resource-cost-summary",
+    response_model=list[ResourceCostSummary],
+)
 async def get_resource_cost_summary(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),

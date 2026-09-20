@@ -48,6 +48,7 @@ def _make_mock_user(sub="00000000-0000-0000-0000-000000000001"):
 
 def _make_mock_agent(agent_id=None):
     from datetime import datetime, timezone
+
     a = MagicMock()
     a.id = agent_id or uuid4()
     a.organization_id = uuid4()
@@ -85,11 +86,13 @@ def _make_mock_twin(twin_id=None):
             self.metadata_ = {}
             self.created_at = datetime.now(timezone.utc)
             self.updated_at = datetime.now(timezone.utc)
+
     return MockTwin()
 
 
 def _make_mock_task(task_id=None):
     from datetime import datetime, timezone
+
     t = MagicMock()
     t.id = task_id or uuid4()
     t.organization_id = uuid4()
@@ -111,6 +114,7 @@ def _make_mock_task(task_id=None):
 
 def _make_mock_simulation(sim_id=None):
     from datetime import datetime, timezone
+
     s = MagicMock()
     s.id = sim_id or uuid4()
     s.organization_id = uuid4()
@@ -147,7 +151,9 @@ def _make_mock_operation(op_id=None):
         start_time=None,
         end_time=None,
         operator_id=None,
-        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+        created_at=__import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ),
     )
     return op
 
@@ -169,7 +175,9 @@ def _make_mock_robot(robot_id=None):
         last_contact=None,
         deployed_at=None,
         recovered_at=None,
-        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+        created_at=__import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ),
     )
     return robot
 
@@ -187,7 +195,9 @@ def _make_mock_control(ctrl_id=None):
         executed_at=None,
         result=None,
         error_message=None,
-        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+        created_at=__import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ),
     )
     return ctrl
 
@@ -294,6 +304,7 @@ def test_create_agent(client, auth_headers):
     mock_agent = _make_mock_agent()
 
     import src.api.agents as agents_module
+
     agents_module.create_agent = AsyncMock(return_value=mock_agent)
 
     response = client.post(
@@ -319,6 +330,7 @@ def test_get_agent(client, auth_headers):
     mock_agent = _make_mock_agent(agent_id=agent_id)
 
     import src.api.agents as agents_module
+
     agents_module.get_agent_by_id = AsyncMock(return_value=mock_agent)
 
     response = client.get(
@@ -338,6 +350,7 @@ def test_update_agent(client, auth_headers):
     mock_agent = _make_mock_agent(agent_id=agent_id)
 
     import src.api.agents as agents_module
+
     agents_module.update_agent = AsyncMock(return_value=mock_agent)
 
     response = client.put(
@@ -357,6 +370,7 @@ def test_delete_agent(client, auth_headers):
     agent_id = uuid4()
 
     import src.api.agents as agents_module
+
     agents_module.delete_agent = AsyncMock(return_value=True)
 
     response = client.delete(
@@ -376,6 +390,7 @@ def test_start_agent(client, auth_headers):
     mock_agent = _make_mock_agent(agent_id=agent_id)
 
     import src.api.agents as agents_module
+
     agents_module.start_agent = AsyncMock(return_value=mock_agent)
 
     response = client.post(
@@ -394,6 +409,7 @@ def test_create_twin(client, auth_headers):
     mock_twin = _make_mock_twin()
 
     import src.api.digital_twins as twin_module
+
     twin_module.create_twin = AsyncMock(return_value=mock_twin)
 
     response = client.post(
@@ -419,6 +435,7 @@ def test_get_twin(client, auth_headers):
     mock_twin = _make_mock_twin(twin_id=twin_id)
 
     import src.api.digital_twins as twin_module
+
     twin_module.get_twin_by_id = AsyncMock(return_value=mock_twin)
 
     response = client.get(
@@ -438,6 +455,7 @@ def test_sync_twin(client, auth_headers):
     mock_twin = _make_mock_twin(twin_id=twin_id)
 
     import src.api.digital_twins as twin_module
+
     twin_module.sync_twin = AsyncMock(return_value=mock_twin)
 
     response = client.post(
@@ -457,6 +475,7 @@ def test_create_task(client, auth_headers):
     mock_task = _make_mock_task()
 
     import src.api.tasks as tasks_module
+
     tasks_module.create_task = AsyncMock(return_value=mock_task)
 
     response = client.post(
@@ -482,6 +501,7 @@ def test_get_task(client, auth_headers):
     mock_task = _make_mock_task(task_id=task_id)
 
     import src.api.tasks as tasks_module
+
     tasks_module.get_task_by_id = AsyncMock(return_value=mock_task)
 
     response = client.get(
@@ -500,6 +520,7 @@ def test_create_simulation(client, auth_headers):
     mock_sim = _make_mock_simulation()
 
     import src.api.simulations as sim_module
+
     sim_module.create_simulation = AsyncMock(return_value=mock_sim)
 
     response = client.post(
@@ -525,6 +546,7 @@ def test_run_simulation(client, auth_headers):
     mock_sim = _make_mock_simulation(sim_id=sim_id)
 
     import src.api.simulations as sim_module
+
     sim_module.run_simulation = AsyncMock(return_value=mock_sim)
 
     response = client.post(
@@ -543,6 +565,7 @@ def test_list_agents(client, auth_headers):
     mock_agent = _make_mock_agent()
 
     import src.api.agents as agents_module
+
     agents_module.get_agents_paginated = AsyncMock(return_value=([mock_agent], 1))
 
     response = client.get(
@@ -562,6 +585,7 @@ def test_create_operation(client, auth_headers):
     mock_op = _make_mock_operation()
 
     import src.api.operations as ops_module
+
     ops_module.create_operation = AsyncMock(return_value=mock_op)
 
     response = client.post(
@@ -587,6 +611,7 @@ def test_get_operation(client, auth_headers):
     mock_op = _make_mock_operation(op_id=op_id)
 
     import src.api.operations as ops_module
+
     ops_module.get_operation_by_id = AsyncMock(return_value=mock_op)
 
     response = client.get(
@@ -606,6 +631,7 @@ def test_update_operation(client, auth_headers):
     mock_op = _make_mock_operation(op_id=op_id)
 
     import src.api.operations as ops_module
+
     ops_module.update_operation = AsyncMock(return_value=mock_op)
 
     response = client.put(
@@ -625,6 +651,7 @@ def test_delete_operation(client, auth_headers):
     op_id = uuid4()
 
     import src.api.operations as ops_module
+
     ops_module.delete_operation = AsyncMock(return_value=True)
 
     response = client.delete(
@@ -644,6 +671,7 @@ def test_start_operation(client, auth_headers):
     mock_op = _make_mock_operation(op_id=op_id)
 
     import src.api.operations as ops_module
+
     ops_module.start_operation = AsyncMock(return_value=mock_op)
 
     response = client.post(
@@ -663,6 +691,7 @@ def test_emergency_stop_operation(client, auth_headers):
     mock_op = _make_mock_operation(op_id=op_id)
 
     import src.api.operations as ops_module
+
     ops_module.emergency_stop_operation = AsyncMock(return_value=mock_op)
 
     response = client.post(
@@ -681,14 +710,17 @@ def test_get_operation_progress(client, auth_headers):
     op_id = uuid4()
 
     import src.api.operations as ops_module
-    ops_module.get_operation_progress = AsyncMock(return_value={
-        "operation_id": str(op_id),
-        "name": "Excavation Job",
-        "status": "in_progress",
-        "progress_percent": 45.5,
-        "safety_status": "normal",
-        "execution_log": [],
-    })
+
+    ops_module.get_operation_progress = AsyncMock(
+        return_value={
+            "operation_id": str(op_id),
+            "name": "Excavation Job",
+            "status": "in_progress",
+            "progress_percent": 45.5,
+            "safety_status": "normal",
+            "execution_log": [],
+        }
+    )
 
     response = client.get(
         f"/api/v1/autonomous/operations/{op_id}/progress",
@@ -707,6 +739,7 @@ def test_list_operations(client, auth_headers):
     mock_op = _make_mock_operation()
 
     import src.api.operations as ops_module
+
     ops_module.get_operations_paginated = AsyncMock(return_value=([mock_op], 1))
 
     response = client.get(
@@ -726,6 +759,7 @@ def test_create_marine_robot(client, auth_headers):
     mock_robot = _make_mock_robot()
 
     import src.api.marine_robots as robots_module
+
     robots_module.create_marine_robot = AsyncMock(return_value=mock_robot)
 
     response = client.post(
@@ -751,6 +785,7 @@ def test_get_marine_robot(client, auth_headers):
     mock_robot = _make_mock_robot(robot_id=robot_id)
 
     import src.api.marine_robots as robots_module
+
     robots_module.get_marine_robot_by_id = AsyncMock(return_value=mock_robot)
 
     response = client.get(
@@ -770,6 +805,7 @@ def test_deploy_marine_robot(client, auth_headers):
     mock_robot = _make_mock_robot(robot_id=robot_id)
 
     import src.api.marine_robots as robots_module
+
     robots_module.deploy_marine_robot = AsyncMock(return_value=mock_robot)
 
     response = client.post(
@@ -788,15 +824,18 @@ def test_get_marine_robot_telemetry(client, auth_headers):
     robot_id = uuid4()
 
     import src.api.marine_robots as robots_module
-    robots_module.get_marine_robot_telemetry = AsyncMock(return_value={
-        "robot_id": str(robot_id),
-        "robot_name": "Test AUV",
-        "status": "operating",
-        "telemetry": {"speed": 1.5, "heading": 270},
-        "battery_level": 78,
-        "location": {"type": "Point", "coordinates": [139.76, 35.68]},
-        "last_contact": None,
-    })
+
+    robots_module.get_marine_robot_telemetry = AsyncMock(
+        return_value={
+            "robot_id": str(robot_id),
+            "robot_name": "Test AUV",
+            "status": "operating",
+            "telemetry": {"speed": 1.5, "heading": 270},
+            "battery_level": 78,
+            "location": {"type": "Point", "coordinates": [139.76, 35.68]},
+            "last_contact": None,
+        }
+    )
 
     response = client.get(
         f"/api/v1/autonomous/marine-robots/{robot_id}/telemetry",
@@ -815,7 +854,10 @@ def test_list_marine_robots(client, auth_headers):
     mock_robot = _make_mock_robot()
 
     import src.api.marine_robots as robots_module
-    robots_module.get_marine_robots_paginated = AsyncMock(return_value=([mock_robot], 1))
+
+    robots_module.get_marine_robots_paginated = AsyncMock(
+        return_value=([mock_robot], 1)
+    )
 
     response = client.get(
         "/api/v1/autonomous/marine-robots?page=1&per_page=10",
@@ -834,6 +876,7 @@ def test_send_control_command(client, auth_headers):
     mock_ctrl = _make_mock_control()
 
     import src.api.controls as ctrl_module
+
     ctrl_module.send_control_command = AsyncMock(return_value=mock_ctrl)
 
     response = client.post(
@@ -860,6 +903,7 @@ def test_get_pending_commands(client, auth_headers):
     mock_ctrl = _make_mock_control()
 
     import src.api.controls as ctrl_module
+
     ctrl_module.get_pending_controls = AsyncMock(return_value=([mock_ctrl], 1))
 
     response = client.get(
@@ -880,6 +924,7 @@ def test_get_target_command_history(client, auth_headers):
     mock_ctrl = _make_mock_control()
 
     import src.api.controls as ctrl_module
+
     ctrl_module.get_controls_for_target = AsyncMock(return_value=([mock_ctrl], 1))
 
     response = client.get(
@@ -900,6 +945,7 @@ def test_get_control_command(client, auth_headers):
     mock_ctrl = _make_mock_control(ctrl_id=ctrl_id)
 
     import src.api.controls as ctrl_module
+
     ctrl_module.get_control_by_id = AsyncMock(return_value=mock_ctrl)
 
     response = client.get(
@@ -918,6 +964,7 @@ def test_list_twins(client, auth_headers):
     mock_twin = _make_mock_twin()
 
     import src.api.digital_twins as twin_module
+
     twin_module.get_twins_paginated = AsyncMock(return_value=([mock_twin], 1))
 
     response = client.get(
@@ -937,6 +984,7 @@ def test_list_simulations(client, auth_headers):
     mock_sim = _make_mock_simulation()
 
     import src.api.simulations as sim_module
+
     sim_module.get_simulations_paginated = AsyncMock(return_value=([mock_sim], 1))
 
     response = client.get(

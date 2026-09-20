@@ -34,12 +34,16 @@ def _make_auth_header() -> dict:
     import base64
     import json
 
-    payload_b64 = base64.urlsafe_b64encode(
-        json.dumps(VALID_TOKEN_PAYLOAD).encode()
-    ).decode().rstrip("=")
-    header_b64 = base64.urlsafe_b64encode(
-        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-    ).decode().rstrip("=")
+    payload_b64 = (
+        base64.urlsafe_b64encode(json.dumps(VALID_TOKEN_PAYLOAD).encode())
+        .decode()
+        .rstrip("=")
+    )
+    header_b64 = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+        .decode()
+        .rstrip("=")
+    )
     signature = "fake_signature"
     token = f"{header_b64}.{payload_b64}.{signature}"
     return {"Authorization": f"Bearer {token}"}
@@ -157,6 +161,7 @@ class MockIncident:
 # Test 1: Health check
 # ═══════════════════════════════════════════════
 
+
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -168,6 +173,7 @@ def test_health_check(client):
 # ═══════════════════════════════════════════════
 # Test 2-4: Auth required
 # ═══════════════════════════════════════════════
+
 
 def test_inspections_require_auth(client):
     response = client.get("/api/v1/safety/inspections")
@@ -187,6 +193,7 @@ def test_incidents_require_auth(client):
 # ═══════════════════════════════════════════════
 # Test 5-7: Inspection CRUD + complete flow
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_inspection_success(mock_jwt, app):
@@ -228,10 +235,16 @@ def test_list_inspections(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
     ins1 = MockInspection(
-        id=uuid.uuid4(), title="Inspection 1", inspection_type="daily", status="scheduled"
+        id=uuid.uuid4(),
+        title="Inspection 1",
+        inspection_type="daily",
+        status="scheduled",
     )
     ins2 = MockInspection(
-        id=uuid.uuid4(), title="Inspection 2", inspection_type="weekly", status="completed"
+        id=uuid.uuid4(),
+        title="Inspection 2",
+        inspection_type="weekly",
+        status="completed",
     )
 
     db_mock = AsyncMock()
@@ -370,6 +383,7 @@ def test_inspection_not_found(mock_jwt, app):
 # Test 10-12: Hazard report + status progression
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_create_hazard_success(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
@@ -471,6 +485,7 @@ def test_hazard_status_progression(mock_jwt, app):
 # ═══════════════════════════════════════════════
 # Test 13-14: Incident report flow
 # ═══════════════════════════════════════════════
+
 
 @patch("src.middleware.auth.jwt")
 def test_create_incident_success(mock_jwt, app):
@@ -597,12 +612,16 @@ def test_incident_investigation_flow(mock_jwt, app):
 # Test 15: Incident list with filters
 # ═══════════════════════════════════════════════
 
+
 @patch("src.middleware.auth.jwt")
 def test_list_incidents(mock_jwt, app):
     mock_jwt.decode.return_value = VALID_TOKEN_PAYLOAD
 
     inc1 = MockIncident(
-        id=uuid.uuid4(), title="Fall injury", incident_type="injury", severity="moderate"
+        id=uuid.uuid4(),
+        title="Fall injury",
+        incident_type="injury",
+        severity="moderate",
     )
     inc2 = MockIncident(
         id=uuid.uuid4(), title="Near miss", incident_type="near_miss", severity="minor"
