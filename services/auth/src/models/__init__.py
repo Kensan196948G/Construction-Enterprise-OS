@@ -264,3 +264,13 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class MfaSessionUse(Base):
+    __tablename__ = "mfa_session_uses"
+    __table_args__ = (Index("ix_mfa_session_uses_expires_at", "expires_at"),)
+
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
