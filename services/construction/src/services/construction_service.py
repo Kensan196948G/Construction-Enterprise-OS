@@ -20,8 +20,17 @@ async def create_wbs(db: AsyncSession, data: dict) -> WBSItem:
     return wbs
 
 
-async def get_wbs(db: AsyncSession, wbs_id: uuid.UUID) -> WBSItem | None:
-    return await db.get(WBSItem, wbs_id)
+async def get_wbs(
+    db: AsyncSession, wbs_id: uuid.UUID, organization_id: uuid.UUID | None = None
+) -> WBSItem | None:
+    wbs = await db.get(WBSItem, wbs_id)
+    if (
+        wbs is not None
+        and organization_id is not None
+        and wbs.organization_id != organization_id
+    ):
+        return None
+    return wbs
 
 
 async def list_wbs(
@@ -73,13 +82,23 @@ async def get_wbs_children(db: AsyncSession, parent_id: uuid.UUID) -> list[WBSIt
     return list(result.scalars().all())
 
 
-async def build_wbs_tree(db: AsyncSession, root_id: uuid.UUID | None = None, project_id: uuid.UUID | None = None) -> list[dict]:
+async def build_wbs_tree(
+    db: AsyncSession,
+    root_id: uuid.UUID | None = None,
+    project_id: uuid.UUID | None = None,
+    organization_id: uuid.UUID | None = None,
+) -> list[dict]:
     if root_id:
         query = select(WBSItem).where(WBSItem.id == root_id)
     elif project_id:
-        query = select(WBSItem).where(WBSItem.project_id == project_id, WBSItem.parent_id.is_(None))
+        query = select(WBSItem).where(
+            WBSItem.project_id == project_id, WBSItem.parent_id.is_(None)
+        )
     else:
         query = select(WBSItem).where(WBSItem.parent_id.is_(None))
+
+    if organization_id is not None:
+        query = query.where(WBSItem.organization_id == organization_id)
 
     result = await db.execute(query.order_by(WBSItem.wbs_code))
     roots = list(result.scalars().all())
@@ -174,7 +193,9 @@ async def update_resource(db: AsyncSession, resource: Resource, data: dict) -> R
     return resource
 
 
-async def update_resource_allocation(db: AsyncSession, resource: Resource, status: str) -> Resource:
+async def update_resource_allocation(
+    db: AsyncSession, resource: Resource, status: str
+) -> Resource:
     resource.status = status
     await db.flush()
     await db.refresh(resource)
@@ -188,8 +209,12 @@ async def get_resource_cost_summary(
         select(
             Resource.resource_type,
             func.count(Resource.id).label("count"),
-            func.coalesce(func.sum(Resource.planned_quantity * Resource.unit_cost), 0).label("total_planned"),
-            func.coalesce(func.sum(Resource.actual_quantity * Resource.unit_cost), 0).label("total_actual"),
+            func.coalesce(
+                func.sum(Resource.planned_quantity * Resource.unit_cost), 0
+            ).label("total_planned"),
+            func.coalesce(
+                func.sum(Resource.actual_quantity * Resource.unit_cost), 0
+            ).label("total_actual"),
         )
         .where(Resource.project_id == project_id)
         .group_by(Resource.resource_type)
@@ -334,7 +359,9 @@ async def list_methods(
 
     if organization_id:
         query = query.where(MethodStatement.organization_id == organization_id)
-        count_query = count_query.where(MethodStatement.organization_id == organization_id)
+        count_query = count_query.where(
+            MethodStatement.organization_id == organization_id
+        )
     if project_id:
         query = query.where(MethodStatement.project_id == project_id)
         count_query = count_query.where(MethodStatement.project_id == project_id)
@@ -356,7 +383,9 @@ async def list_methods(
     return items, total
 
 
-async def update_method(db: AsyncSession, method: MethodStatement, data: dict) -> MethodStatement:
+async def update_method(
+    db: AsyncSession, method: MethodStatement, data: dict
+) -> MethodStatement:
     for key, value in data.items():
         if value is not None:
             setattr(method, key, value)
@@ -366,7 +395,9 @@ async def update_method(db: AsyncSession, method: MethodStatement, data: dict) -
     return method
 
 
-async def submit_for_approval(db: AsyncSession, method: MethodStatement) -> MethodStatement:
+async def submit_for_approval(
+    db: AsyncSession, method: MethodStatement
+) -> MethodStatement:
     if method.status != "draft":
         raise ValueError("only draft documents can be submitted for approval")
     method.status = "review"
@@ -376,7 +407,9 @@ async def submit_for_approval(db: AsyncSession, method: MethodStatement) -> Meth
     return method
 
 
-async def approve_method(db: AsyncSession, method: MethodStatement, approved_by: uuid.UUID) -> MethodStatement:
+async def approve_method(
+    db: AsyncSession, method: MethodStatement, approved_by: uuid.UUID
+) -> MethodStatement:
     if method.status not in ("review",):
         raise ValueError("only documents in review can be approved")
     method.status = "approved"

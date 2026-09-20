@@ -20,13 +20,22 @@ from ..services import construction_service
 router = APIRouter()
 
 
+def _org_id(user: TokenData) -> UUID:
+    try:
+        return UUID(user.org) if user.org else UUID(int=0)
+    except (TypeError, ValueError):
+        return UUID(int=0)
+
+
 @router.post("/wbs", response_model=WBSResponse, status_code=status.HTTP_201_CREATED)
 async def create_wbs(
     body: WBSCreateRequest,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    return await construction_service.create_wbs(db, body.model_dump())
+    data = body.model_dump()
+    data["organization_id"] = _org_id(user)
+    return await construction_service.create_wbs(db, data)
 
 
 @router.get("/wbs", response_model=WBSListResponse)
@@ -37,11 +46,11 @@ async def list_wbs(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
     items, total = await construction_service.list_wbs(
         db,
-        organization_id=organization_id,
+        organization_id=_org_id(user),
         project_id=project_id,
         status=status,
         page=page,
@@ -55,18 +64,20 @@ async def list_wbs(
 async def get_wbs_tree(
     project_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    return await construction_service.build_wbs_tree(db, project_id=project_id)
+    return await construction_service.build_wbs_tree(
+        db, project_id=project_id, organization_id=_org_id(user)
+    )
 
 
 @router.get("/wbs/{wbs_id}", response_model=WBSResponse)
 async def get_wbs(
     wbs_id: UUID,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    wbs = await construction_service.get_wbs(db, wbs_id)
+    wbs = await construction_service.get_wbs(db, wbs_id, _org_id(user))
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
     return wbs
@@ -77,9 +88,9 @@ async def update_wbs(
     wbs_id: UUID,
     body: WBSUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    wbs = await construction_service.get_wbs(db, wbs_id)
+    wbs = await construction_service.get_wbs(db, wbs_id, _org_id(user))
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
     return await construction_service.update_wbs(
@@ -91,9 +102,9 @@ async def update_wbs(
 async def delete_wbs(
     wbs_id: UUID,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    wbs = await construction_service.get_wbs(db, wbs_id)
+    wbs = await construction_service.get_wbs(db, wbs_id, _org_id(user))
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
     await db.delete(wbs)
@@ -103,9 +114,9 @@ async def delete_wbs(
 async def get_wbs_children(
     wbs_id: UUID,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    wbs = await construction_service.get_wbs(db, wbs_id)
+    wbs = await construction_service.get_wbs(db, wbs_id, _org_id(user))
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
     return await construction_service.get_wbs_children(db, wbs_id)
@@ -116,9 +127,9 @@ async def update_wbs_progress(
     wbs_id: UUID,
     body: WBSProgressUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
 ):
-    wbs = await construction_service.get_wbs(db, wbs_id)
+    wbs = await construction_service.get_wbs(db, wbs_id, _org_id(user))
     if not wbs:
         raise HTTPException(status_code=404, detail="WBSアイテムが見つかりません")
     return await construction_service.update_wbs_progress(
