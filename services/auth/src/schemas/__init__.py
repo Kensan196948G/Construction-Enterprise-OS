@@ -79,11 +79,15 @@ class MFASetupResponse(BaseModel):
 
 class MFAVerifyRequest(BaseModel):
     session_token: str
-    code: str
+    code: str = Field(min_length=6, max_length=32)
 
 
 class MFAActivateRequest(BaseModel):
-    code: str
+    code: str = Field(min_length=6, max_length=32)
+
+
+class MFASetupRequest(BaseModel):
+    password: str
 
 
 class MFABackupCodesResponse(BaseModel):
@@ -92,12 +96,12 @@ class MFABackupCodesResponse(BaseModel):
 
 class MFARegenerateBackupCodesRequest(BaseModel):
     password: str
-    code: str
+    code: str = Field(min_length=6, max_length=32)
 
 
 class MFADisableRequest(BaseModel):
     password: str
-    code: str
+    code: str = Field(min_length=6, max_length=32)
 
 
 # ============================================
