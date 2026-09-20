@@ -524,18 +524,12 @@ async def mfa_verify(
             detail={"code": "ACCOUNT_DISABLED", "message": "アカウントが無効です。"},
         )
 
-    if not user.mfa_secret:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "MFA_NOT_SETUP", "message": "MFAが設定されていません。"},
-        )
-
-    if not user.mfa_enabled:
+    if not user.mfa_secret or not user.mfa_enabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "code": "MFA_NOT_ENABLED",
-                "message": "MFAが有効化されていません。",
+                "code": "MFA_UNAVAILABLE",
+                "message": "MFAを利用できません。管理者にお問い合わせください。",
             },
         )
 
