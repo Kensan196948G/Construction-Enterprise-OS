@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>みらい建設土木DX・AI統合基盤 全体構成 V3.5</title>
+<style>
+:root{
+  --navy:#0b2e59; --ink:#1f2a37; --muted:#4a5a70; --line:#c9d6e5; --bg:#f5f8fc; --card:#ffffff;
+  --blue:#1f5fa8; --blue-l:#e6f0fb; --green:#11895a; --green-l:#e6f5ee; --amber:#d76a11; --amber-l:#fff4e3;
+  --purple:#7650c8; --purple-l:#f2edff; --red:#b3261e; --red-l:#fdecea; --gray-l:#eef1f5;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo","Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;font-size:14px}
+main{max-width:1240px;margin:0 auto;padding:24px 20px 60px}
+header.top{border-bottom:3px solid var(--navy);padding-bottom:14px;margin-bottom:22px}
+header.top h1{margin:0;font-size:24px;color:var(--navy)}
+header.top .sub{color:var(--muted);margin-top:4px}
+header.top .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+h2{font-size:18px;color:var(--navy);border-left:6px solid var(--navy);padding-left:10px;margin:36px 0 12px}
+h3{font-size:15px;color:var(--navy);margin:18px 0 8px}
+p{margin:6px 0}
+.lead{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:middle}
+.pill.mvp{background:var(--green);color:#fff}
+.pill.next{background:var(--amber);color:#fff}
+.pill.new{background:var(--red);color:#fff}
+.pill.fix{background:var(--purple);color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);margin:8px 0 14px;align-items:center}
+.legend .pill{margin-left:0}
+.diagram{display:grid;grid-template-columns:150px 1fr 230px;gap:12px;align-items:stretch}
+.diagram .rail{display:flex;flex-direction:column;justify-content:center;align-items:center;border-radius:10px;color:#fff;font-weight:700;text-align:center;padding:10px 6px}
+.rail small{display:block;font-weight:400;font-size:10.5px;opacity:.9}
+.stack{display:flex;flex-direction:column;gap:12px}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+.box .t{font-weight:700;color:var(--navy);font-size:13.5px}
+.box .d{color:var(--muted);font-size:12px;margin-top:2px}
+.box.blue{border-color:var(--blue);background:var(--blue-l)}
+.box.green{border-color:var(--green);background:var(--green-l)}
+.box.amber{border-color:#e9c65a;background:#fff8e1}
+.box.purple{border-color:var(--purple);background:var(--purple-l)}
+.box.gray{background:var(--gray-l)}
+.row{display:grid;gap:10px}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.c4{grid-template-columns:repeat(4,1fr)}
+.row.c5{grid-template-columns:repeat(5,1fr)}
+.row.c6{grid-template-columns:repeat(6,1fr)}
+.row.c2{grid-template-columns:repeat(2,1fr)}
+.arrow{text-align:center;color:var(--muted);font-size:12px}
+.arrow b{color:var(--navy)}
+.side{display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--navy)}
+.chip.k{border-color:var(--purple);color:var(--purple);font-weight:700}
+.chip.ng{border-color:var(--red);color:var(--red);font-weight:700}
+.boundary{border-top:2px dashed var(--purple);position:relative;margin:6px 0 2px}
+.boundary span{position:absolute;left:50%;top:-11px;transform:translateX(-50%);background:var(--purple-l);color:#4a2a9a;border:1px solid var(--purple);border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 12px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:12.5px;margin-top:8px}
+th,td{border:1px solid var(--line);padding:7px 9px;vertical-align:top;text-align:left}
+th{background:var(--navy);color:#fff;font-weight:700;white-space:nowrap}
+tbody tr:nth-child(even){background:#fafcff}
+td.o{font-weight:700;color:var(--navy)}
+td.center{text-align:center}
+.tier{display:inline-block;min-width:34px;text-align:center;border-radius:6px;padding:2px 6px;font-weight:700;color:#fff}
+.r0{background:var(--green)} .r1{background:var(--blue)} .r2{background:var(--amber)} .r3{background:var(--red)} .r4{background:#444}
+.note{font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h4{margin:0 0 6px;color:var(--navy);font-size:13.5px}
+.card ul,.card ol{margin:4px 0 0 18px;padding:0}
+.card li{margin:2px 0}
+code{background:var(--gray-l);border-radius:4px;padding:0 4px;font-size:12px}
+pre{background:#0f1b2d;color:#e6edf5;border-radius:10px;padding:12px 14px;font-size:12px;overflow-x:auto;line-height:1.5}
+.formula{background:var(--purple-l);border:1px solid var(--purple);border-radius:10px;padding:10px 14px;text-align:center;font-weight:700;color:#4a2a9a;margin:8px 0}
+.phase{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.phase .card{border-top:5px solid var(--green)}
+.phase .card:nth-child(2){border-top-color:var(--blue)}
+.phase .card:nth-child(3){border-top-color:var(--amber)}
+.done{background:var(--green-l);border:1.5px solid var(--green);border-radius:10px;padding:10px 14px;margin-top:10px}
+.done ol{margin:4px 0 0 20px;padding:0}
+footer{margin-top:40px;border-top:1px solid var(--line);padding-top:12px;font-size:12px;color:var(--muted)}
+@media (max-width:900px){
+  .diagram{grid-template-columns:1fr}
+  .rail{flex-direction:row;gap:8px}
+  .row.c2,.row.c3,.row.c4,.row.c5,.row.c6,.grid2,.phase{grid-template-columns:1fr}
+  main{padding:16px 16px 40px}
+  .boundary span{white-space:normal;width:90%;text-align:center}
+}
+@media print{body{background:#fff}.box,.card,table{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+
+<header class="top">
+  <h1>みらい建設土木DX・AI統合基盤 全体構成 <span style="color:var(--blue)">V3.5</span></h1>
+  <div class="sub">MCIPを唯一の<strong>統合入口</strong>とし、正本はデータ種別ごとに分離する。6つのData &amp; Analysisは特定製品の下位機能ではなく、6つのDomain Productが共同利用する横断サービスとする。MCAHが利用権限と実行を統制し、重要判断はR0〜R4とHuman-in-the-Loopで管理する。</div>
+  <div class="meta">
+    <span>対象：みらい建設工業株式会社（社内提言版）</span>
+    <span>版：V3.5（V3.4＋Mirai-AI-Coding-Harness表記修正版）</span>
+    <span>作成日：2026年9月19日</span>
+    <span>関連：TCG連邦型AI開発ガバナンス v1.0 ／ 生成AI利用ガイドライン（2026年5月1日制定）</span>
+  </div>
+</header>
+
+<div class="lead">
+  <strong>V3.4からの主な変更点（開発ハーネス旧表記の完全廃止）</strong>
+  <ol style="margin:6px 0 0 20px;padding:0">
+    <li><strong>6つのData &amp; Analysisを横断共通サービスとして定義。</strong>Domain Productとの関係は1対1ではなく多対多とする。</li>
+    <li><strong>「解析エンジン」を「解析実行・ジョブ管理基盤」へ改称。</strong>解析の受付、Sandbox実行、状態、再試行、版、入出力ハッシュを管理し、計算本体とは分離する。</li>
+    <li><strong>工学計算本体を「工学解析・決定論的ソルバー」として独立。</strong>OpenSees／Code_Aster／GIS／水理等を置き、生成AIの文章生成と数値計算を混同しない。</li>
+    <li><strong>Domain Productごとの主利用・副利用を明示。</strong>ArcSphereは6要素すべてを空間統合し、CEOSは業務統合、MCIPは権限・承認・根拠・監査を統制する。</li>
+    <li><strong>データ流を統一。</strong>Domain Product → 解析実行・ジョブ管理 → 認識／工学解析／予測エンジン → データ基盤 → Domain Product、の循環とする。</li>
+    <li><strong>V3.3の11リポジトリ、最先端AI、スマホ3D、Digital Twin、R0〜R4、二重認可、無承認RSI禁止は維持する。</strong></li>
+    <li><strong>開発支援基盤をMirai-AI-Coding-Harnessとして正式化。</strong>OpenAI／Anthropic／DeepSeekを利用可能とし、MVP対象に変更。本番建設業務用MCAHとは認証情報・権限・Sandbox・Tool・ログを分離する。</li>
+  </ol>
+</div>
+
+<h2>1. 全体構成図</h2>
+<div class="legend">
+  <span class="pill mvp">MVP</span>MVP縦串
+  <span class="pill next">段階接続</span>MVP後に順次接続
+  <span class="pill new">追加</span>V3.4で追加
+  <span class="pill fix">整理</span>V3.4で責任・接続を明確化
+</div>
+
+<div class="diagram">
+  <div class="rail" style="background:#5b6b80">利用者<small>User</small></div>
+  <div class="stack">
+    <div class="row c6">
+      <div class="box gray"><div class="t">技術者・研究者</div></div>
+      <div class="box gray"><div class="t">現場管理者</div></div>
+      <div class="box gray"><div class="t">本社・支店</div></div>
+      <div class="box gray"><div class="t">経営企画・承認者</div></div>
+      <div class="box gray"><div class="t">IT／DX管理者</div></div>
+      <div class="box gray"><div class="t">現場モバイル</div><div class="d">MCIPクライアント＋撮影。オフライン時は閲覧キャッシュと撮影キューのみ、AI実行は同期後</div></div>
+    </div>
+    <div class="arrow">↓ Entra ID（IdP）→ Cloudflare Access／HENNGE ONE によるSSO・条件付きアクセス ↓</div>
+  </div>
+  <div class="side">
+    <div class="box purple"><div class="t">社内IT運用基盤</div><div class="d">Entra ID・HENNGE ONE・ITSM・PC Ops・ZeroTrust-ID-Governance</div><div class="chips"><span class="chip">Agentごとのサービスプリンシパル</span><span class="chip">短命トークン</span><span class="chip">最小権限</span></div></div>
+  </div>
+
+  <div class="rail" style="background:var(--navy)">統合入口<small>Entry / 限定的な正本</small></div>
+  <div class="stack">
+    <div class="box blue">
+      <div class="t">MCIP｜Mirai Construction Information Platform <span class="pill mvp">MVP</span></div>
+      <div class="d">AI Agent Panel ／ Project Workspace ／ Document Center ／ Approval ／ Evidence ／ AI Control Center ／ <strong>Tool API（最終認可・RLS）</strong> <span class="pill new">追加</span></div>
+      <div class="d" style="margin-top:6px"><strong>正本として持つもの：</strong>案件コンテキスト、承認記録、証跡、AI回答記録、NETIS案件適用・採否・根拠、PLATEAU利用履歴。<strong>図面・文書・成果物の正本は持たない</strong>（索引と参照のみ）。</div>
+    </div>
+    <div class="arrow">↕ <b>許可・実行結果・証跡</b>（承認階層R0〜R4） ↕</div>
+  </div>
+  <div class="side">
+    <div class="box purple"><div class="t">Mirai-Harness-Core <span class="pill fix">修正</span></div><div class="d">ポリシー定義・証跡スキーマ・承認階層表・モデルルーティング表・Tool契約。独立リポジトリ。MCAHとMirai-AI-Coding-Harnessはリリース版を読み込む</div></div>
+  </div>
+
+  <div class="rail" style="background:var(--blue)">AI実行・統制<small>Runtime Harness</small></div>
+  <div class="stack">
+    <div class="box blue">
+      <div class="t">MCAH｜Mirai Construction Agent Harness <span class="pill mvp">MVP</span></div>
+      <div class="row c3" style="margin-top:8px">
+        <div class="box"><div class="t">Agent（3つに固定） <span class="pill fix">修正</span></div><div class="d">Orchestrator／Construction Intelligence／Evidence Verifier</div></div>
+        <div class="box"><div class="t">Model Gateway <span class="pill fix">修正</span></div><div class="d">機密区分・難度・費用でモデルを選択。<strong>OpenAI／Anthropicのみ</strong>（APIキー利用含む）</div><div class="chips"><span class="chip k">配置：オンプレ／クラウド選択</span><span class="chip ng">ローカルモデルなし</span></div></div>
+        <div class="box"><div class="t">Policy Engine</div><div class="d">R0〜R4で事前判定。許可されない操作は呼び出さない</div></div>
+        <div class="box"><div class="t">Skill Registry <span class="pill fix">修正</span></div><div class="d">Skill＝手順＋許可ツール＋評価セット。Skill／MCP／モデルのSBOM</div></div>
+        <div class="box"><div class="t">Masking <span class="pill new">追加</span></div><div class="d">個人情報の検出とマスキング。社外秘はここを通してから送信</div></div>
+        <div class="box"><div class="t">Approval State <span class="pill new">追加</span></div><div class="d">R2・R3の承認待ちをPostgreSQLに保存し、数日後でも再開</div></div>
+        <div class="box"><div class="t">Multimodal／RAG <span class="pill new">追加</span></div><div class="d">文書・図面・写真・動画・音声・点群を案件ID、位置、時刻、版で検索。Hybrid／Graph／Spatial／Temporal RAG</div></div>
+        <div class="box"><div class="t">Evaluation &amp; Observability <span class="pill fix">強化</span></div><div class="d">ゴールデンセット、Tool成功率、根拠一致、誤検知、遅延、費用、権限拒否を継続評価</div></div>
+        <div class="box"><div class="t">Event &amp; Edge Gateway <span class="pill new">追加</span></div><div class="d">現場アップロード、IoT、気象、工程変更をイベント化。通信復旧後の安全な再開と重複排除</div></div>
+      </div>
+    </div>
+    <div class="arrow">↓ <b>Tool Gateway経由のみ</b>で専門処理を呼ぶ（AgentからDBへの直接接続は禁止） ↓</div>
+  </div>
+  <div class="side">
+    <div class="box purple"><div class="t">Mirai-AI-Coding-Harness <span class="pill new">新規</span> <span class="pill mvp">MVP</span></div><div class="d">開発支援、Coding Agent。モデルはOpenAI（Codex）／Anthropic（Claude Code）／DeepSeek。Harness Coreのリリース版を参照し、本番建設業務用MCAHのリポジトリと権限には依存しない</div><div class="chips"><span class="chip">Issue→実装→テスト→PR</span><span class="chip">Sandbox実行</span><span class="chip">GitHub連携</span></div></div>
+    <div class="box purple"><div class="t">共通開発基盤</div><div class="d">Linux／GitHub（Private・main保護・PR・CODEOWNERS・CI・Secret Scan）／Cloudflare／IaC・コンテナ</div></div>
+  </div>
+
+  <div class="rail" style="background:var(--green)">専門業務<small>Domain Products</small></div>
+  <div class="stack">
+    <div class="row c3">
+      <div class="box green"><div class="t">CEOS｜Construction Enterprise OS <span class="pill next">段階接続</span> <span class="pill fix">名称統一</span></div><div class="d"><strong>正本：</strong>工程・原価・契約データ</div><div class="chips"><span class="chip">MCPサーバー公開</span></div></div>
+      <div class="box green"><div class="t">ArcSphere Civil Twin <span class="pill next">段階接続</span></div><div class="d"><strong>正本：</strong>BIM/CIM・点群・空間モデル</div><div class="chips"><span class="chip">MCPサーバー公開</span></div></div>
+      <div class="box green"><div class="t">Mirai Web CAD <span class="pill next">段階接続</span></div><div class="d"><strong>正本：</strong>編集中の図面（確定版はCDEへ）</div><div class="chips"><span class="chip">MCPサーバー公開</span></div></div>
+      <div class="box green"><div class="t">CivilPDF-DX <span class="pill next">段階接続</span> <span class="pill new">追加</span></div><div class="d">PDF編集系。<strong>正本：</strong>編集中のPDF（確定版はCDEへ）</div><div class="chips"><span class="chip">MCPサーバー公開</span></div></div>
+      <div class="box green"><div class="t">Civil-Docs-Platform <span class="pill next">段階接続</span> <span class="pill new">追加</span></div><div class="d">オフィススイート系OSS。文書・表計算・プレゼンの作成・編集。<strong>正本：</strong>編集中の文書（確定版はCDEへ）</div><div class="chips"><span class="chip">MCPサーバー公開</span></div></div>
+      <div class="box green"><div class="t">Mirai Construction 3D Spatial Capture <span class="pill next">段階接続</span> <span class="pill new">追加</span></div><div class="d">スマホ動画・写真・GNSS・IMUの取得、品質検査、3D再構築ジョブ。生成した点群・メッシュはArcSphereへ、原動画はCDEへ</div><div class="chips"><span class="chip">ドローンなしで開始可能</span><span class="chip">MCPサーバー公開</span></div></div>
+    </div>
+    <div class="arrow">↓ 共通API・Tool Adapter（契約はHarness Coreで版管理） ↓</div>
+  </div>
+  <div class="side">
+    <div class="box amber"><div class="t">CDE（文書の正本）</div><div class="d">DirectCloud／Microsoft 365。図面・文書・写真・確定版図面の正本</div></div>
+  </div>
+
+  <div class="rail" style="background:var(--amber)">データ・解析<small>Data & Analysis</small></div>
+  <div class="stack">
+    <div class="row c2">
+      <div class="box amber"><div class="t">① Data Ingestion, Classification &amp; Lineage <span class="pill mvp">MVP</span></div><div class="d">CDE・M365・各製品からの取込み、OCR、機密区分、索引化、版・出典・系譜の記録</div><div class="chips"><span class="chip k">主：PDF／Docs／Spatial Capture</span><span class="chip">共通：全Domain Product</span></div></div>
+      <div class="box amber"><div class="t">② Analysis Execution &amp; Job Orchestration <span class="pill fix">整理</span></div><div class="d">Tool Gatewayから解析を受け付け、Sandbox実行、状態、再試行、取消、入力・出力ハッシュ、Tool版を管理。計算本体は持たない</div><div class="chips"><span class="chip k">主：ArcSphere／Spatial Capture</span><span class="chip">副：CEOS／Web CAD</span></div></div>
+      <div class="box amber"><div class="t">③ Public &amp; Licensed Data Intelligence（CODIP） <span class="pill next">段階接続</span></div><div class="d">NETIS、PLATEAU、地理・気象・海象・河川・法令等。公開とライセンス付きデータは区画・利用条件を分離</div><div class="chips"><span class="chip k">主：CEOS／ArcSphere</span><span class="chip">副：全Domain Product</span></div></div>
+      <div class="box amber"><div class="t">④ Multimodal Perception &amp; Spatial Reconstruction <span class="pill fix">整理</span></div><div class="d">Document／Vision／Video／Audio／3D認識、変状・PPE、点群分類、SfM／Visual SLAM／NeRF／Gaussian Splatting</div><div class="chips"><span class="chip k">主：Spatial Capture／ArcSphere</span><span class="chip">副：Web CAD／PDF／Docs／CEOS</span></div></div>
+      <div class="box amber"><div class="t">⑤ Engineering Simulation &amp; Deterministic Solvers <span class="pill fix">整理</span></div><div class="d">OpenSees／OpenSeesPy、Code_Aster、GIS、水理、地盤、統計。単位、境界条件、ソルバー版、出力ハッシュを保存</div><div class="chips"><span class="chip k">主：ArcSphere／Web CAD</span><span class="chip">副：CEOS／Spatial Capture</span></div></div>
+      <div class="box amber"><div class="t">⑥ Prediction, Optimization &amp; Surrogate Models <span class="pill fix">整理</span></div><div class="d">工程、原価、品質、変位、災害、多目的最適化、Physics-Informed ML／Neural Operator。適用範囲外を検知</div><div class="chips"><span class="chip k">主：CEOS／ArcSphere</span><span class="chip">副：Spatial Capture／Web CAD</span></div></div>
+    </div>
+    <div class="arrow">↓ 保存・索引・台帳・ジョブ結果 ↓</div>
+    <div class="box amber" style="border-width:2.5px;text-align:center"><div class="t">PostgreSQL 専用本番機＋CDE（横断サービスのデータ土台） <span class="pill mvp">MVP</span></div><div class="d">PostGIS・pgvector・RLS・PITR・レプリカ・追記専用監査ログ。原本はCDE／各Domain Product、索引・空間・ジョブ・予測・証跡・承認状態は責任別スキーマで分離</div></div>
+  </div>
+  <div class="side">
+    <div class="box purple"><div class="t">基盤BCP</div><div class="d">IT-BCP-ITSCM-Systemの対象。RTO/RPO定義、暗号化バックアップ、復旧演習</div></div>
+  </div>
+
+  <div class="rail" style="background:#8a6d3b">元データ<small>Sources</small></div>
+  <div class="stack">
+    <div class="arrow">↑ 取得・照会・解析結果（出典・取得日時・ライセンス付き） ↑</div>
+    <div class="row c5">
+      <div class="box gray"><div class="t">社内・案件データ</div><div class="d">図面・文書・写真・点群・BIM/CIM・業務情報（機密区分必須）</div><div class="chips"><span class="chip k">→ インジェスト</span></div></div>
+      <div class="box gray"><div class="t">NETIS／PLATEAU</div><div class="d">新技術情報・3D都市モデル（台帳はCODIP、社内適用はMCIP）</div><div class="chips"><span class="chip k">→ CODIP</span></div></div>
+      <div class="box gray"><div class="t">その他の公共データ</div><div class="d">地理・気象・海象・河川・道路・法令・入札</div><div class="chips"><span class="chip k">→ CODIP</span></div></div>
+      <div class="box gray"><div class="t">民間・契約データ</div><div class="d">有償API・市場情報・地図・技術情報（ライセンス管理）</div><div class="chips"><span class="chip k">→ 取得経路は未決</span></div></div>
+      <div class="box gray"><div class="t">現場ストリーム <span class="pill new">追加</span></div><div class="d">スマホ動画・360度画像・固定カメラ・GNSS・IMU・IoT・建機・気象・騒音・振動</div><div class="chips"><span class="chip k">→ Spatial Capture／インジェスト</span></div></div>
+    </div>
+  </div>
+  <div class="side"></div>
+</div>
+
+<h3>1.1 Domain ProductとData &amp; Analysisの対応</h3>
+<p class="note"><strong>結論：</strong>6つのData &amp; Analysisは、上位製品に1対1で所属しない。MCAHのTool Gatewayを経由して複数のDomain Productが共同利用する。◎＝主利用、○＝利用、△＝結果参照・限定利用。</p>
+<table>
+<thead><tr><th>Data &amp; Analysis</th><th>CEOS</th><th>ArcSphere</th><th>Web CAD</th><th>CivilPDF-DX</th><th>Civil-Docs</th><th>3D Spatial Capture</th></tr></thead>
+<tbody>
+<tr><td class="o">① Ingestion, Classification &amp; Lineage</td><td>○</td><td>○</td><td>○</td><td>◎</td><td>◎</td><td>◎</td></tr>
+<tr><td class="o">② Analysis Execution &amp; Job Orchestration</td><td>○</td><td>◎</td><td>○</td><td>△</td><td>△</td><td>◎</td></tr>
+<tr><td class="o">③ Public &amp; Licensed Data Intelligence</td><td>◎</td><td>◎</td><td>○</td><td>△</td><td>○</td><td>○</td></tr>
+<tr><td class="o">④ Multimodal Perception &amp; Spatial Reconstruction</td><td>○</td><td>◎</td><td>○</td><td>○</td><td>○</td><td>◎</td></tr>
+<tr><td class="o">⑤ Engineering Simulation &amp; Deterministic Solvers</td><td>○</td><td>◎</td><td>◎</td><td>△</td><td>△</td><td>○</td></tr>
+<tr><td class="o">⑥ Prediction, Optimization &amp; Surrogate Models</td><td>◎</td><td>◎</td><td>○</td><td>△</td><td>△</td><td>○</td></tr>
+</tbody>
+</table>
+
+<div class="grid2" style="margin-top:12px">
+  <div class="card"><h4>CEOS｜業務統合の中心</h4><p>工程・原価・契約を正本として、公開データ、進捗・原価予測、資源配置、多目的最適化を主利用する。</p></div>
+  <div class="card"><h4>ArcSphere Civil Twin｜空間統合の中心</h4><p>BIM/CIM・GIS・点群・4D・IoT・解析結果を統合するため、6つすべてを利用する最大の利用者となる。</p></div>
+  <div class="card"><h4>Mirai Web CAD｜設計連携</h4><p>図面取込み、図面理解、公開基準、構造・地盤解析、生成設計・施工性比較を利用する。</p></div>
+  <div class="card"><h4>CivilPDF-DX／Civil-Docs｜文書連携</h4><p>取込み、OCR、構造化、根拠照合、解析・予測結果の帳票化を担当し、工学解析結果は参照利用する。</p></div>
+  <div class="card"><h4>3D Spatial Capture｜現場空間取得</h4><p>動画・写真・GNSS・IMUを取り込み、認識・3D再構築ジョブを実行し、結果をArcSphere、原本をCDEへ渡す。</p></div>
+  <div class="card"><h4>MCIP／MCAH｜製品横断の統制</h4><p>MCIPは案件・権限・承認・根拠・監査、MCAHはSkill選択・Tool実行・状態・評価を担当する。解析データの正本を奪わない。</p></div>
+</div>
+
+<h3>1.2 標準データフロー</h3>
+<div class="formula">Domain Product → MCAH Tool Gateway → 解析実行・ジョブ管理 → 認識／工学解析／予測エンジン → PostgreSQL・CDE・公開データ → Domain Product → MCIP承認・証跡</div>
+<div class="card">
+  <ol>
+    <li>Domain Productが案件ID・利用者・Skill・入力データ参照を付けて解析を要求する。</li>
+    <li>MCAHがR0〜R4、案件権限、機密区分、データ品質、許可Toolを事前判定する。</li>
+    <li>Job OrchestrationがSandboxで処理し、入力・出力ハッシュ、Tool版、状態、費用、再試行を記録する。</li>
+    <li>各エンジンは結果と確信度・適用範囲・元データ位置を返す。決定論的ソルバーは計算条件と版を返す。</li>
+    <li>結果は正本責任に従って各製品、CDE、PostgreSQLへ保存し、MCIPに承認記録と証跡を残す。</li>
+  </ol>
+</div>
+
+<div class="boundary" style="margin-top:18px"><span>DEVELOPMENT BOUNDARY ― 開発時ハーネスに本番特権を常時付与しない／本番DBへのAgent直接更新は禁止</span></div>
+
+<h2 id="model">2. モデル利用方針と配置の選択</h2>
+<h3>2.1 本番建設業務用MCAHで使うモデルとサービス</h3>
+<table>
+<thead><tr><th>項目</th><th>方針</th></tr></thead>
+<tbody>
+<tr><td class="o">提供元</td><td><strong>本番建設業務用MCAHはOpenAIとAnthropicの2社に限定</strong>する。ローカルLLMは使わない。<strong>DeepSeekは開発支援用Mirai-AI-Coding-Harnessでのみ利用可能</strong>とし、MCAHの本番データ・本番権限・本番Toolへ直接接続しない。</td></tr>
+<tr><td class="o">利用形態</td><td>両社のサービス内であれば次のいずれも可とする。<br>・各社APIの直接利用（組織アカウントで発行したAPIキー）<br>・各社の法人向けサービス（ChatGPT Enterprise／Claude Enterprise／Claude Team。利用者向け画面）<br>・同じ提供元のモデルをクラウド事業者経由で使う形（Microsoft Foundry／Azure、Amazon Bedrock、Google Vertex AI など）。採用時に契約とデータ取扱条件を個別に確認する</td></tr>
+<tr><td class="o">契約・設定の必須条件</td><td>入力データを学習に使わない設定、データ保持期間、処理リージョンを確認し、Harness Coreのプロバイダー台帳に記録する</td></tr>
+<tr><td class="o">機密区分との対応</td><td>公開・社内：承認済み接続へ送信可／社外秘：Maskingを通してから送信／<strong>極秘：モデルに送信しない</strong>（オンプレミス配置でも同じ）</td></tr>
+<tr><td class="o">ルーティング表</td><td>Harness Coreで管理（機密区分・難度・費用 → 提供元・モデル・接続経路）。変更はPRとCODEOWNERSの承認でのみ行う</td></tr>
+</tbody>
+</table>
+
+<h3>2.2 配置の選択（オンプレミス／クラウド）</h3>
+<div class="done" style="margin:0 0 8px"><strong>現時点の方針：</strong>MVPは<strong>オンプレミス配置</strong>で構築し、本番は<strong>クラウド配置</strong>で検討中。MVPの段階から <code>deploy/cloud</code> プロファイルも用意し、同じゴールデンセットで両方の結果が一致することを確認してから移行を判断する。</div>
+<p class="note">選べるのは<strong>MCIP・MCAH・Model Gateway・PostgreSQLなど実行基盤を置く場所</strong>。OpenAI・Anthropicのモデル本体は各社（またはクラウド事業者）の環境で動くため、どちらを選んでもモデルへの入力は社外に送られる。</p>
+<table>
+<thead><tr><th>項目</th><th>A. オンプレミス配置</th><th>B. クラウド配置</th></tr></thead>
+<tbody>
+<tr><td class="o">置き場所</td><td>社内サーバー（VM・コンテナ）</td><td>Azure／AWSなどの自社テナント</td></tr>
+<tr><td class="o">モデルへの通信</td><td>FortiGateから許可リストのAPIエンドポイントへのみ外向き通信</td><td>テナントから各社APIへ（可能ならプライベート接続）</td></tr>
+<tr><td class="o">APIキーの保管</td><td>社内のシークレット管理（Vault等）</td><td>Azure Key Vault／AWS Secrets Manager</td></tr>
+<tr><td class="o">データの所在</td><td>DB・証跡・索引は社内に残る</td><td>DB・証跡・索引は自社テナントに置く</td></tr>
+<tr><td class="o">向いている場合</td><td>文書・証跡を社外に置きたくない、社内AD・CDEとの近さを優先</td><td>現場・支店からの利用、拡張性、別リージョンでのBCPを優先</td></tr>
+<tr><td class="o">運用負荷</td><td>ハードウェア・バックアップ・冗長化を自社で持つ</td><td>費用管理とテナントの権限設計が必要</td></tr>
+</tbody>
+</table>
+
+<div class="grid2" style="margin-top:12px">
+  <div class="card">
+    <h4>切り替えの仕組み</h4>
+    <ul>
+      <li>配置は<strong>環境ごとの配置プロファイル</strong>（<code>deploy/onprem</code>・<code>deploy/cloud</code>）で選ぶ。アプリのコードは共通</li>
+      <li>接続先・キーの参照先・ネットワーク設定はプロファイル側に置き、ルーティング表とポリシーは共通</li>
+      <li>同じゴールデンセットを両方の配置で実行し、結果が一致することを確認する</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>APIキーの管理</h4>
+    <ul>
+      <li>組織アカウントで発行し、個人アカウントのキーは使わない</li>
+      <li>環境（開発・検証・本番）とAgentごとに分け、Gitには置かない（Secret Scanで検知）</li>
+      <li>提供元側で利用上限・予算アラートを設定し、定期的にキーを更新する</li>
+      <li>キーを持つのはModel Gatewayだけ。Agent・利用者には渡さない</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="matrix">3. データ所有マトリクス</h2>
+<p class="note">「正本」は更新権限と最終責任を持つ場所。「索引・複製」は検索・表示のために同期するが、更新は正本側でのみ行う。V3.4ではData &amp; Analysisを横断サービスとして整理したが、正本の所在は各Domain Product・CDE・GitHubから変更しない。</p>
+<table>
+<thead><tr><th>データ種別</th><th>正本（更新責任）</th><th>索引・複製</th><th>参照のみ</th><th>備考</th></tr></thead>
+<tbody>
+<tr><td class="o">案件コンテキスト（案件ID・関係者・文書索引）</td><td>MCIP</td><td>—</td><td>CEOS／ArcSphere／Web CAD</td><td>全システム共通の案件IDをMCIPが発番</td></tr>
+<tr><td class="o">承認記録・監査証跡・AI回答記録</td><td>MCIP（追記専用）</td><td>—</td><td>GRC／監査</td><td>削除不可。J-SOX・ISO 27001の証跡</td></tr>
+<tr><td class="o">図面・文書・写真（確定版）／成果物</td><td>CDE（DirectCloud／M365）</td><td>MCIP（索引・抜粋・ベクトル）</td><td>MCAH／Web CAD</td><td>MCIPは原本を複製せず、文書ID・版・ハッシュで参照</td></tr>
+<tr><td class="o">編集中の2D図面</td><td>Mirai Web CAD</td><td>—</td><td>MCIP</td><td>確定時にCDEへ登録し版を確定</td></tr>
+<tr><td class="o">編集中のPDF</td><td>CivilPDF-DX</td><td>—</td><td>MCIP／MCAH</td><td>確定時にCDEへ登録し版を確定</td></tr>
+<tr><td class="o">編集中の文書（文書・表計算・プレゼン）</td><td>Civil-Docs-Platform</td><td>—</td><td>MCIP／MCAH</td><td>確定時にCDEへ登録し版を確定</td></tr>
+<tr><td class="o">工程・原価・契約</td><td>CEOS</td><td>MCIP（サマリ指標のみ）</td><td>MCAH</td><td>数量・出来高の確定はCEOS側で人が承認</td></tr>
+<tr><td class="o">BIM/CIM・点群・GIS空間モデル</td><td>ArcSphere Civil Twin</td><td>—</td><td>MCIP／CEOS</td><td>IFC 4.3・CityGML・3D Tiles</td></tr>
+<tr><td class="o">スマホ原動画・写真・360度画像・音声</td><td>CDE</td><td>Spatial Capture（処理用キャッシュ）／MCIP（索引）</td><td>ArcSphere／MCAH</td><td>案件ID、撮影者、時刻、位置、端末、同意・機密区分を付与</td></tr>
+<tr><td class="o">3D再構築物（点群・メッシュ・カメラ軌跡）</td><td>ArcSphere Civil Twin</td><td>Spatial Capture（ジョブ中間物）</td><td>MCIP／MCAH</td><td>元動画ID、処理手法、座標系、精度、生成版を保持</td></tr>
+<tr><td class="o">IoT・建機・環境センサー時系列</td><td>各設備システム／時系列保管領域</td><td>PostgreSQL（集約・特徴量・イベント）</td><td>ArcSphere／CEOS／MCAH</td><td>欠測、校正、単位、品質フラグを必須化</td></tr>
+<tr><td class="o">公開データ台帳・海象／気象・NETIS技術情報・PLATEAUデータセット</td><td>CODIP</td><td>MCIP（判定結果の記録）／ArcSphere（表示キャッシュ）</td><td>MCIP／CEOS／現場モバイル</td><td>公開データのみ。作業可否判定は参考情報</td></tr>
+<tr><td class="o">NETIS案件適用・採否・根拠、PLATEAU利用履歴</td><td>MCIP</td><td>—</td><td>CEOS</td><td>CODIPのIDを参照する社内記録</td></tr>
+<tr><td class="o">解析ジョブ状態・解析入力・解析結果</td><td>解析実行・ジョブ管理基盤（ジョブ台帳）／各Domain Product（業務結果）</td><td>MCIP（承認済み結果の証跡）</td><td>ArcSphere／CEOS／Web CAD</td><td>入力・出力ハッシュ、Tool・ソルバー版で再現性を担保</td></tr>
+<tr><td class="o">予測モデル・評価結果・モデルカード</td><td>GitHub／Model Registry</td><td>MCAH（承認済みリリース）</td><td>MCIP AI Control Center</td><td>適用範囲、データ版、精度、偏り、ドリフト、承認者を記録</td></tr>
+<tr><td class="o">ポリシー定義・証跡スキーマ・承認階層表・モデルルーティング表・Tool契約</td><td>Mirai-Harness-Core（Git）</td><td>MCAH／Mirai-AI-Coding-Harness（リリース版を取込み）</td><td>MCIP Tool API</td><td>変更はPR・CODEOWNERS承認</td></tr>
+<tr><td class="o">AI実行状態（R2・R3の承認待ち）</td><td>MCAH（PostgreSQL）</td><td>—</td><td>MCIP Approval</td><td>承認結果の正本はMCIP</td></tr>
+<tr><td class="o">ID・認証／ロール・権限割当</td><td>Entra ID／ZeroTrust-ID-Governance</td><td>MCIP（RLS用の案件権限）</td><td>全システム</td><td>Agentはサービスプリンシパルで識別</td></tr>
+<tr><td class="o">機密区分（社内データ）</td><td>インジェスト時に付与（MCIP管理）</td><td>—</td><td>Model Gateway</td><td>区分がモデル選択と送信可否を決める</td></tr>
+</tbody>
+</table>
+
+<h2 id="repos">4. リポジトリ構成（11件）</h2>
+<table>
+<thead><tr><th>#</th><th>リポジトリ</th><th>区分</th><th>役割・対応モデル・分離条件</th><th>導入段階</th></tr></thead>
+<tbody>
+<tr><td class="center">1</td><td class="o">Mirai-Construction-Information-Platform（MCIP）</td><td class="center">—</td><td>入口、案件コンテキスト、承認、証跡、Tool API</td><td><span class="pill mvp" style="margin:0">MVP</span></td></tr>
+<tr><td class="center">2</td><td class="o">Mirai-Construction-Agent-Harness（MCAH）</td><td class="center">—</td><td>本番の建設業務AIの実行と統制</td><td><span class="pill mvp" style="margin:0">MVP</span></td></tr>
+<tr><td class="center">3</td><td class="o">Mirai-Harness-Core</td><td class="center"><span class="pill new" style="margin:0">新規</span></td><td>ポリシー定義、証跡スキーマ、承認階層表、モデルルーティング表、Tool契約</td><td><span class="pill mvp" style="margin:0">MVP</span></td></tr>
+<tr style="background:var(--purple-l);border:2px solid var(--purple)"><td class="center">4</td><td class="o"><strong>Mirai-AI-Coding-Harness</strong></td><td class="center"><span class="pill new" style="margin:0">新規</span></td><td><strong>開発支援、Coding Agent</strong><br><strong>OpenAI／Anthropic／DeepSeek</strong><br>本番用MCAHとは認証情報、権限、Sandbox、Tool、ログを分離</td><td><span class="pill mvp" style="margin:0">MVP</span></td></tr>
+<tr><td class="center">5</td><td class="o">Construction-Enterprise-OS（CEOS）</td><td class="center">—</td><td>工程、原価、契約</td><td><span class="pill next" style="margin:0">第2段階</span></td></tr>
+<tr><td class="center">6</td><td class="o">ArcSphere-Civil-Twin</td><td class="center">—</td><td>BIM/CIM、GIS、点群</td><td><span class="pill next" style="margin:0">第3段階</span></td></tr>
+<tr><td class="center">7</td><td class="o">Mirai-Web-CAD</td><td class="center">—</td><td>図面</td><td><span class="pill next" style="margin:0">第3段階</span></td></tr>
+<tr><td class="center">8</td><td class="o">Civil-Open-Data-Intelligence-Platform（CODIP）</td><td class="center">—</td><td>公開データの台帳、海象・気象</td><td><span class="pill next" style="margin:0">第2段階</span></td></tr>
+<tr><td class="center">9</td><td class="o">CivilPDF-DX</td><td class="center"><span class="pill new" style="margin:0">新規</span></td><td>PDF編集</td><td><span class="pill next" style="margin:0">第3段階</span></td></tr>
+<tr><td class="center">10</td><td class="o">Civil-Docs-Platform</td><td class="center"><span class="pill new" style="margin:0">新規</span></td><td>オフィススイート系OSS（文書・表計算・プレゼン）</td><td><span class="pill next" style="margin:0">第3段階</span></td></tr>
+<tr><td class="center">11</td><td class="o">Mirai-Construction-3D-Spatial-Capture-System</td><td class="center"><span class="pill new" style="margin:0">新規</span></td><td>スマホ動画・写真・位置・IMUの取得品質管理、3D再構築ジョブ、ArcSphere／CDE連携</td><td><span class="pill next" style="margin:0">第2〜3段階</span></td></tr>
+</tbody>
+</table>
+<p class="note"><strong>表記上の注意：</strong>「開発ハーネス」という旧名称のリポジトリは存在しない。正式名称は <code>Mirai-AI-Coding-Harness</code> とする。</p>
+<p class="note">Harness Coreを独立させるのは、Mirai-AI-Coding-HarnessがMCAHのリポジトリと本番権限に依存しないようにするため。両HarnessはCoreの<strong>リリース版</strong>を読み込むが、モデルルーティング表、認証情報、Sandbox、Tool Allowlist、実行ログは用途別に分離する。Coreの変更はPRとCODEOWNERSの承認でのみ行う。</p>
+
+<h2 id="agents">5. MCAH設計方針</h2>
+
+<h3>5.1 Agentは3つに固定し、専門知識はSkillで足す</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>固定するAgent</h4>
+    <ul>
+      <li><strong>Orchestrator</strong>：質問理解、計画、Skill選択、承認待ちの管理</li>
+      <li><strong>Construction Intelligence</strong>：探索、関係分析、矛盾検出、回答・下書き生成</li>
+      <li><strong>Evidence Verifier</strong>：引用の実在・一致・機密区分を決定論的に検査</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Skill（手順＋許可ツール＋評価セット）</h4>
+    <ul>
+      <li>文書系：日報、写真台帳、議事録、NETIS採否、仕様・図面・数量表の照合</li>
+      <li>空間系：撮影ガイド、3D再構築、設計対現況差分、進捗・出来形候補抽出</li>
+      <li>工学系：OpenSees／Code_Aster入力案、単位・境界条件検査、結果説明、再現性確認</li>
+      <li>現場系：品質・安全・工程遅延・気象作業可否・維持管理・災害初動の判断支援</li>
+      <li>Skillごとに許可ツールと評価セットを持ち、Registryに登録する</li>
+      <li>理由：Agentを19種類並べると、評価・権限・証跡の管理対象がAgentの数だけ増える。7名体制で保守できる数に抑える</li>
+    </ul>
+  </div>
+</div>
+
+<h3 id="authz">5.2 認可は二重にかける</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>第1層：MCAH Policy Engine（事前判定）</h4>
+    <p>R0〜R4で判定し、許可されない操作はそもそも呼び出さない。</p>
+  </div>
+  <div class="card">
+    <h4>第2層：MCIP Tool API（最終判定）</h4>
+    <p>RLSで案件権限を確認し、許可されない呼出しを拒否する。</p>
+  </div>
+</div>
+<p class="note">両層とも同じHarness Coreのポリシー定義を読むので、判定がずれない。実効権限は次の積集合とし、モデルの制約も含める。</p>
+<div class="formula">実効権限 ＝ 利用者 ∩ Agent ∩ Skill ∩ Tool ∩ 案件Policy ∩ データ品質条件 ∩ 機密区分で許可されたモデル</div>
+
+<h3 id="build">5.3 自作する範囲と既存部品を使う範囲</h3>
+<table>
+<thead><tr><th>自作する（差別化の源泉）</th><th>既存の部品を使う</th></tr></thead>
+<tbody>
+<tr><td>Policy Engineの判定ロジック（R0〜R4）</td><td>実行ループ：Pydantic AI または LangGraph（特定モデルに依存しない）</td></tr>
+<tr><td>Evidence Verifier</td><td>モデル接続：LiteLLM</td></tr>
+<tr><td>建設業務Skillと評価セット</td><td>ツール接続：MCP公式SDK</td></tr>
+<tr><td>各システム用のTool Adapter</td><td>ポリシー記述：OPA／Cedar</td></tr>
+<tr><td>承認待ちの状態管理（R2・R3）</td><td>トレースと評価：Langfuse、promptfoo</td></tr>
+</tbody>
+</table>
+<p class="note">承認待ちは数日かかることがあるため、実行状態をPostgreSQLに保存して再開できる設計にする。Temporalは7名体制では運用が重いため採用しない。</p>
+
+<h3>5.4 自己改善はR4として扱う</h3>
+<div class="card">
+  <ul>
+    <li>「評価付きの改善」は、<strong>改善案をPRとして出す → ゴールデンセットの回帰試験に合格する → 人が承認する</strong>、の3つを満たした場合だけ反映する。</li>
+    <li>無承認の自己改善・再帰的自己改善（RSI）は、MVP後もPolicy Engineで<strong>恒久的に拒否</strong>する。</li>
+  </ul>
+</div>
+
+<h3>5.5 MCAHリポジトリ構造（設計案への追加分）</h3>
+<pre>Mirai-Construction-Agent-Harness/
+├── contracts/          # Harness Coreから取り込むスキーマ（直接編集しない）
+├── evals/
+│   ├── golden-set/     # 実際の質問約50問と期待される出典
+│   └── redteam/        # Prompt Injection・権限逸脱の試験
+├── deploy/
+│   ├── onprem/         # オンプレミス配置プロファイル（追加）
+│   └── cloud/          # クラウド配置プロファイル（追加）
+├── packages/
+│   ├── model-gateway/  # OpenAI／Anthropicのみ（ローカルモデル用の実装は置かない）
+│   ├── masking/        # 個人情報の検出とマスキング（追加）
+│   └── approval-state/ # R2・R3の承認待ちの永続化（追加）
+└── policies/           # 置かない。Harness Coreを参照する</pre>
+
+<h2 id="approval">6. 承認階層表（Policy Engineの判定基準）</h2>
+<p class="note">設計案の「Human Gate」「リスク別」はこの表を判定基準とする。上位階層は下位の条件をすべて含む。</p>
+<table>
+<thead><tr><th>階層</th><th>操作の種類</th><th>操作例</th><th>承認者</th><th>実行条件</th><th>証跡</th></tr></thead>
+<tbody>
+<tr><td class="center"><span class="tier r0">R0</span></td><td class="o">閲覧・根拠付き回答</td><td>案件資料の検索、根拠付きQ&amp;A、海象・気象の作業可否参考表示</td><td>自動（本人の閲覧権限内）</td><td>RLSで案件権限を確認／Evidence Verifier合格／機密区分に応じたモデルのみ使用</td><td>質問・回答・引用・提供元・モデル・配置・コスト</td></tr>
+<tr><td class="center"><span class="tier r1">R1</span></td><td class="o">下書き生成</td><td>日報・写真台帳・議事録・報告書の下書き、図面案、工程案</td><td>本人確認（起案者が採用を明示）</td><td>「AI下書き」表示／正本へは書き込まない</td><td>下書きと採用・修正の差分</td></tr>
+<tr><td class="center"><span class="tier r2">R2</span></td><td class="o">台帳・記録への書込み</td><td>NETIS採否記録、PLATEAU利用履歴、変更影響の登録、課題登録、文書索引の更新</td><td>上長承認</td><td>書込み先はMCIPの台帳のみ／差分プレビュー必須／承認待ちはApproval Stateに保存</td><td>承認者・時刻・承認前後の値</td></tr>
+<tr><td class="center"><span class="tier r3">R3</span></td><td class="o">社外・現場・設計・契約に影響する提案</td><td>発注者提出書類、施工計画変更、設計採用、数量・積算案、安全計画</td><td>技術責任者・部門長（二者承認）</td><td>決定論的検証必須／根拠の全引用を人が確認</td><td>検証結果・承認者2名・提出先・版</td></tr>
+<tr><td class="center"><span class="tier r4">R4</span></td><td class="o">禁止（AI単独では実行しない）</td><td>本番DBへの直接更新、出来形・数量・積算・契約・出来高の最終確定、根拠のない法令・基準判定、画像のみの最終品質判定、<strong>無承認の自己改善・RSI</strong>、<strong>極秘文書のモデル送信</strong></td><td>—（人の業務）</td><td>Policy Engineが常に拒否。Tool Allowlistに登録しない</td><td>拒否した要求も記録</td></tr>
+</tbody>
+</table>
+
+<h2 id="evidence">7. 証跡・運用の標準</h2>
+<div class="grid2">
+  <div class="card">
+    <h4>証跡（Evidence）の必須項目</h4>
+    <ul>
+      <li><code>source_system</code>／<code>document_id</code>／<code>version</code>／<code>locator</code></li>
+      <li><code>content_hash</code>／<code>fetched_at</code>／<code>license</code>／<code>classification</code></li>
+      <li><code>event_time</code>／<code>location</code>／<code>coordinate_system</code>／<code>sensor_quality</code></li>
+      <li><code>model_provider</code>／<code>model_version</code>／<code>prompt_skill_version</code>／<code>tool_version</code></li>
+    </ul>
+    <p class="note">不合格の回答は返さない。</p>
+  </div>
+  <div class="card">
+    <h4>評価・可観測性（AI Control Center）</h4>
+    <ul>
+      <li>ゴールデンセット（実際の質問約50問＋期待出典）で回帰試験</li>
+      <li>モデル・プロンプト・Skill変更ごとに実行し結果を記録（promptfoo）</li>
+      <li>Tool Call・コスト・失敗・拒否を全件追跡（Langfuse）</li>
+      <li>Prompt Injection・権限逸脱のレッドチーム試験を定期実施</li>
+      <li>画像・動画AIは誤検知／見逃し、3Dは位置・寸法精度、予測AIはドリフトと適用範囲外を監視</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>PostgreSQL 運用</h4>
+    <ul>
+      <li>専用本番機、PITR、レプリカ1台以上、システム別スキーマ</li>
+      <li>RLSで案件単位の制御、監査ログは追記専用</li>
+      <li>Agent用ロールは最小権限（読み取り＋台帳＋承認待ち状態のみ）</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>配備・ガバナンス</h4>
+    <ul>
+      <li>コンテナ・IaC・GitHub Actions、連邦型ガバナンス v1.0 のGateを共通化</li>
+      <li>Agentごとにサービスプリンシパル、短命トークン</li>
+      <li>モデル・Skill・MCP・依存関係のSBOMをRegistryで台帳化</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="frontier">8. 最先端AIと建設土木DXの配置</h2>
+<p class="note">新技術をすべて独立システムにはしない。基盤機能、解析Tool、Skill、業務製品のどこに置くかを固定し、成熟度に応じて利用範囲を制限する。A＝実運用可能、B＝限定実証、C＝研究・先行検証。</p>
+<table>
+<thead><tr><th>技術群</th><th>主な技術</th><th>建設土木での利用</th><th>配置</th><th>成熟度／統制</th></tr></thead>
+<tbody>
+<tr><td class="o">推論・検証AI</td><td>適応型推論、複数案比較、自己検証、不確実性推定</td><td>施工計画、設計レビュー、変更影響、規程照合</td><td>MCAH＋Evidence Verifier</td><td>A～B／根拠引用と人確認</td></tr>
+<tr><td class="o">Agentic AI</td><td>Tool利用、長時間Workflow、イベント駆動、承認再開</td><td>調査→案作成→解析→証跡→承認の連続処理</td><td>MCAH＋MCIP</td><td>A～B／R0～R4・二重認可</td></tr>
+<tr><td class="o">マルチモーダルAI</td><td>Document／Vision／Video／Audio／3D Language Model</td><td>図面理解、進捗、品質、安全、異常、現場検索</td><td>認識エンジン＋MCAH</td><td>A～B／元データ位置と確信度</td></tr>
+<tr><td class="o">3D空間生成</td><td>SfM、Visual SLAM、NeRF、Gaussian Splatting、深度推定</td><td>スマホ動画から現況3D化、設計との差分、施工記録</td><td>Spatial Capture→ArcSphere</td><td>B／既知寸法・基準点で精度検証</td></tr>
+<tr><td class="o">Digital Twin</td><td>BIM/CIM、GIS、点群、4D、IoT、時系列状態</td><td>工程・品質・変位・維持管理を構造物単位で統合</td><td>ArcSphere＋CEOS＋MCIP</td><td>A～B／正本・時刻・版を分離</td></tr>
+<tr><td class="o">工学AI</td><td>Physics-Informed ML、Neural Operator、代理モデル、逆解析</td><td>構造・地盤・水理解析の高速化、パラメータ推定</td><td>予測・最適化基盤＋工学解析ソルバー</td><td>B～C／決定論的解析で照合</td></tr>
+<tr><td class="o">生成設計・最適化</td><td>Generative Engineering、多目的最適化</td><td>施工性、工期、費用、CO₂、安全の複数案比較</td><td>解析Tool＋Web CAD＋CEOS</td><td>B／最終採用はR3</td></tr>
+<tr><td class="o">Physical AI</td><td>VLA、World Model、Sim-to-Real、自律建機・ロボット</td><td>掘削、締固め、搬送、巡回、遠隔施工</td><td>将来の外部建機Gateway</td><td>B～C／MVP対象外、危険操作は自動化しない</td></tr>
+<tr><td class="o">知識・メモリ</td><td>Hybrid／Graph／Spatial／Temporal RAG、来歴管理</td><td>案件・部材・場所・時刻・文書・承認の横断検索</td><td>PostgreSQL＋PostGIS＋pgvector＋MCIP</td><td>A～B／Access-Aware RAG</td></tr>
+<tr><td class="o">エッジAI</td><td>小型モデル、オンデバイス推論、同期キュー</td><td>通信不安定な現場で撮影品質確認・一次検知</td><td>現場モバイル</td><td>B／正式判定はサーバ同期後</td></tr>
+<tr><td class="o">予測・防災AI</td><td>時系列予測、異常検知、衛星SAR、気象・水位統合</td><td>斜面、洪水、港湾、橋梁、工程遅延、災害初動</td><td>CODIP＋予測・最適化基盤＋ArcSphere</td><td>A～B／警報元と観測品質を表示</td></tr>
+<tr><td class="o">自己改善</td><td>評価からSkill・Prompt・手順の改善案を生成</td><td>業務Skillと評価セットの継続改善</td><td>GitHub PR＋Harness Core</td><td>B／提案のみ。無承認RSIはR4拒否</td></tr>
+</tbody>
+</table>
+
+<h3>8.1 優先Skill群</h3>
+<div class="grid2">
+  <div class="card"><h4>早期実用化</h4><p>AI工事日報／写真分類・台帳／文書・図面RAG／図面差分／仕様・数量照合／気象作業可否／議事録／根拠付き検索</p></div>
+  <div class="card"><h4>現場3D・Digital Twin</h4><p>撮影品質ガイド／動画3D化／点群分類／進捗差分／出来形候補／4D工程／部材単位の施工・検査・材料履歴</p></div>
+  <div class="card"><h4>解析・設計支援</h4><p>OpenSees／Code_Aster入力案／単位・境界条件検査／解析結果説明／設計基準RAG／多目的設計比較／LCA・CO₂算定</p></div>
+  <div class="card"><h4>安全・維持管理・防災</h4><p>PPE・接近・立入候補／ひび割れ・腐食・漏水候補／斜面・河川・港湾監視／被害把握／復旧優先順位支援</p></div>
+</div>
+
+<h2>9. 段階計画とMVPの完了条件</h2>
+<div class="phase">
+  <div class="card">
+    <h4>第1段階（〜6か月）MVP縦串</h4>
+    <ul>
+      <li><strong>オンプレミス配置</strong>で構築（本番のクラウド配置はMVP結果をもとに判断）</li>
+      <li>MCIP Document Center・Tool API＋インジェスト＆機密区分</li>
+      <li>Mirai-Harness-Core v1（ポリシー・証跡スキーマ・承認階層表・ルーティング表）</li>
+      <li>MCAH：3 Agent・Model Gateway・Policy Engine（R0/R1）・Evidence Verifier・Masking</li>
+      <li>Hybrid RAGと文書・図面・写真のMultimodal RAG（読み取り限定）</li>
+      <li>PostgreSQL専用本番機</li>
+      <li>業務回答、権限、Prompt Injection、画像誤検知を含むゴールデンセットとレッドチーム試験</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>第2段階（6〜18か月）CODIP・CEOS接続</h4>
+    <ul>
+      <li>本番のクラウド配置を判断し、移行する場合は切替とBCPを整備</li>
+      <li>CODIP v1 APIをMCP化、海象・気象の作業可否シナリオ</li>
+      <li>NETISコネクタ、NETIS／PLATEAU台帳と社内記録の分離</li>
+      <li>CEOS工程・原価の接続、Approval StateでR2/R3運用開始</li>
+      <li>Spatial Captureの撮影アプリ、原動画CDE登録、3D再構築PoC</li>
+      <li>日報・写真台帳・進捗候補・安全候補の現場Skill実証</li>
+      <li>矛盾検出を具体的な照合対から開始</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>第3段階（18か月〜）空間・解析</h4>
+    <ul>
+      <li>ArcSphere Civil Twin・Mirai Web CADの接続</li>
+      <li>Spatial Capture→ArcSphere連携、スマホ動画3DとBIM/CIMの差分表示</li>
+      <li>CivilPDF-DX（PDF編集）・Civil-Docs-Platform（オフィススイート系OSS）の接続</li>
+      <li>解析実行・ジョブ管理基盤からOpenSees／Code_Aster等の決定論的ソルバーを呼ぶ標準ジョブ連携</li>
+      <li>点群・IFC 4.3・PLATEAU版固定参照、4D工程、IoT時系列のDigital Twin化</li>
+      <li>効果が確認できた柱をTCG Class B候補として審査へ</li>
+    </ul>
+  </div>
+</div>
+
+<div class="done">
+  <strong>MVPの完了条件（Policy EngineとMCIP Tool APIの両方の認可層で満たすこと）</strong>
+  <ol>
+    <li>ゴールデンセットで、根拠の一致率が目標値（例：90%以上）を満たす（選んだ配置で実行）。</li>
+    <li>社外秘文書は、マスキングを通してから承認済みのOpenAI／Anthropic接続に送られる。</li>
+    <li>極秘文書はモデルに送信されない。</li>
+    <li>AI回答・Tool実行・解析結果から元文書、元画像、撮影位置、入力ハッシュ、モデル／Skill／Tool版へ追跡できる。</li>
+    <li>画像・動画・3Dの結果には確信度と品質フラグがあり、AI単独で品質合否・出来形・安全違反を確定しない。</li>
+    <li>障害・通信断・承認待ちから冪等に再開でき、重複書込みを発生させない。</li>
+  </ol>
+</div>
+
+<h2>10. 未決事項（ワーキンググループで確定）</h2>
+<table>
+<thead><tr><th>項目</th><th>現状</th></tr></thead>
+<tbody>
+<tr><td class="o">民間・契約データの取得経路</td><td>CODIPは公開データのみを扱うため、有償API・市場情報などライセンス付きデータをどこで取得・保管するか（CODIPの別区画、またはインジェスト側）を決める</td></tr>
+<tr><td class="o">本番の配置</td><td>MVPはオンプレミスで構築。本番はクラウドで検討中。MVPの結果をもとに移行時期・テナント・接続経路を確定する</td></tr>
+<tr><td class="o">接続経路</td><td>各社APIの直接利用か、Azure／Bedrock等の経由か。契約・データ取扱条件の確認後に決める</td></tr>
+<tr><td class="o">実行ループの選定</td><td>Pydantic AI と LangGraph を比較し、MVP着手時に1つに決める</td></tr>
+<tr><td class="o">ポリシー記述言語</td><td>OPA（Rego）と Cedar を比較して決める</td></tr>
+<tr><td class="o">根拠一致率の目標値</td><td>例として90%以上。ゴールデンセット作成後に確定</td></tr>
+<tr><td class="o">承認階層の閾値</td><td>金額・工種・提出先の具体値。役職名称は組織規程確定時に置換</td></tr>
+<tr><td class="o">スマホ3Dの精度区分</td><td>記録・進捗・概略数量・出来形検査のどこまで利用するかを、基準点・既知寸法による検証結果で決める</td></tr>
+<tr><td class="o">IoT／時系列データの正本</td><td>設備ごとの既存システムを正本とする原則を維持しつつ、長期保管、欠測、校正、再送の標準を決める</td></tr>
+<tr><td class="o">Physical AIとの接続</td><td>自律建機・ロボットはMVP対象外。将来の読取り監視、シミュレーション、提案、実機制御の境界と緊急停止責任を定める</td></tr>
+</tbody>
+</table>
+
+<footer>
+  <p><strong>文書名：</strong>みらい建設土木DX・AI統合基盤 全体構成 V3.5　<strong>対象：</strong>みらい建設工業株式会社 社内提言　<strong>前版：</strong>V3.4</p>
+  <p>V3.5はV3.4の内容を維持し、リポジトリ構成表の旧称「開発ハーネス」を完全に廃止。正式名称をMirai-AI-Coding-Harness、区分を新規、対応モデルをOpenAI／Anthropic／DeepSeek、導入段階をMVPとして独立列に固定した。</p>
+</footer>
+</main>
+</body>
+</html>
