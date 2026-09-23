@@ -465,4 +465,4 @@ make test
 
 ---
 
-> 💚 **最終更新**: 2026-09-23 | 🟢 **ステータス**: STABLE | 🧪 **サービスPython 694 + Web 229 テスト CI 成功** | ⚙️ **23サービス** | 🏛️ **ADR-0001 で責任範囲を定義** | 🔌 **MCP: Harness-Core v0.6.0 契約整合（Issue #93、MCP テスト 66 passed / 2 skipped）**
+> 💚 **最終更新**: 2026-09-23 | 🟢 **ステータス**: STABLE | 🧪 **サービスPython 694 + Web 229 テスト CI 成功** | ⚙️ **23サービス** | 🏛️ **ADR-0001 で責任範囲を定義** | 🔌 **MCP: Harness-Core v0.6.0 契約整合（#93）** | 🔑 **ADR-0003 audience 分離・トークン交換（#95、Phase 0：既定無効／auth 103・MCP 81・gateway 27 passed）**

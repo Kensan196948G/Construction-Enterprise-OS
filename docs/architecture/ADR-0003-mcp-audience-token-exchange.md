@@ -47,7 +47,9 @@ Mirai-Harness-Core のシステム台帳は CEOS MCP の audience を `api://ceo
 - 発行トークンの有効期限は **subject_token の有効期限を超えない**（交換による延命を防ぐ）。
 - 成否を監査ログ（`auth.token.exchange`）に記録する。トークン本体・クライアント秘密は記録しない。
 - キルスイッチ `TOKEN_EXCHANGE_ENABLED`（既定 **false**）。無効時は `unsupported_grant_type` を返す。
-- gateway の公開パスには追加しない（内部ネットワークからの利用に限定。外部公開は別判断）。
+- **内部ネットワークからの利用に限定**する。gateway は `^/api/v1/auth` を auth へ転送するため、
+  公開パスに入れないだけでは有効な JWT を持つ外部呼び出し元が到達できる。そこで gateway の
+  `INTERNAL_ONLY_PATHS` で `/api/v1/auth/token` を認証の有無に関わらず 404 で遮断する。外部公開は別判断。
 
 ### 2. MCP は audience を検証し、上流呼び出しでトークンを交換する
 
