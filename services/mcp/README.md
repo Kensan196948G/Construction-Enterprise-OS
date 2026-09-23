@@ -60,8 +60,9 @@ CEOS が正本を持つ **工程・原価・契約** データを、Model Contex
   `StreamableHTTPSessionManager` による **MCP over Streamable HTTP**。
 - エンドポイント: `POST /mcp/`（`initialize` / `tools/list` / `tools/call`）。
 - 既定は `stateless`（各リクエスト独立、読み取り専用のため再開不要）。
-- ツール一覧は MCP の `Tool` として `name` / `description` / `inputSchema` と
-  読み取り専用注釈（`readOnlyHint=true`, `destructiveHint=false`）を返す。
+- ツール一覧は MCP の `Tool` として `name` / `title` / `description` / `inputSchema` と
+  注釈（`readOnlyHint=true`, `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`）を返す。
+  これらは `contracts/mcp-tools/ceos.json` と同一値である（`x-mirai` は契約側のみに持つ）。
 
 ## 4. 認証
 
