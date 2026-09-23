@@ -7,7 +7,8 @@ import json
 import logging
 
 from src.services.upstream import UpstreamResult
-from src.tools import RESULT_OK
+from src.tools import RESULT_OK, load_registry
+from src.tools.contract import contract_document
 from tests.helpers import (
     call_tool,
     initialize,
@@ -41,6 +42,17 @@ def test_tools_list_returns_exactly_the_five_read_only_tools(build_client, token
         assert tool["annotations"]["readOnlyHint"] is True
         assert tool["annotations"]["destructiveHint"] is False
         assert tool["inputSchema"]["type"] == "object"
+
+
+def test_tools_list_matches_core_contract_fields(build_client, token):
+    """tools/list の公開値が Core 形式の契約（ハッシュ対象）と一致する。"""
+    client = build_client()
+    initialize(client, token)
+    listed = {t["name"]: t for t in list_tools(client, token)["result"]["tools"]}
+    for contract_tool in contract_document(load_registry())["tools"]:
+        live = listed[contract_tool["name"]]
+        for key in ("title", "description", "inputSchema", "annotations"):
+            assert live[key] == contract_tool[key], (contract_tool["name"], key)
 
 
 def test_tools_call_unknown_tool_is_refused(build_client, token, fake_upstream):

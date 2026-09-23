@@ -1,12 +1,16 @@
 """ツールレジストリ — 定義の検証とハッシュ固定（hash-pinning）
 
 - 読み取り専用（effect="read", tier="R0", HTTP GET）以外を拒否する。
-- ``definition_sha256`` が欠落・不一致の定義があればロードを拒否する（fail-closed）。
+- ``definition_sha256``（Core 規約）/ ``binding_sha256``（上流バインディング）が
+  欠落・不一致の定義があればロードを拒否する（fail-closed）。
+- MCP 標準注釈（readOnlyHint）が x-mirai.effect と矛盾する定義を拒否する。
 """
 
 import hashlib
-import json
 from collections.abc import Iterable
+from typing import Any
+
+import rfc8785
 
 from .models import (
     ALLOWED_EFFECTS,
@@ -28,24 +32,38 @@ class ToolNotFoundError(ToolRegistryError):
     """未登録のツールが要求された。"""
 
 
-def canonical_json(payload: dict) -> str:
-    """決定的な正規化 JSON 文字列を返す。
+# Mirai-Harness-Core のツール定義ハッシュ規約（tools/tool_def_hash.py）の対象キー。
+# 実行時の値（_meta 等）は含めない。
+CORE_HASHED_KEYS: tuple[str, ...] = (
+    "name",
+    "title",
+    "description",
+    "inputSchema",
+    "outputSchema",
+    "annotations",
+    "x-mirai",
+)
 
-    sort_keys / 最小セパレータ / ensure_ascii=False を固定し、
-    同一の定義から常に同一のハッシュが得られるようにする。
-    """
-    return json.dumps(
-        payload,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    )
+
+def canonical_json(payload: dict[str, Any]) -> bytes:
+    """RFC 8785（JCS）で正規化した JSON バイト列を返す。"""
+    return rfc8785.dumps(payload)
+
+
+def tool_contract_sha256(tool: dict[str, Any]) -> str:
+    """Core 形式のツール契約 1 件に対する定義ハッシュ（Core 規約と同一）。"""
+    subset = {key: tool[key] for key in CORE_HASHED_KEYS if key in tool}
+    return hashlib.sha256(canonical_json(subset)).hexdigest()
 
 
 def compute_definition_sha256(definition: ToolDefinition) -> str:
-    """定義本体の正規化 JSON に対する SHA-256（hex）を返す。"""
-    canonical = canonical_json(definition.canonical_payload())
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """ツール定義の Core 規約ハッシュ（Allowlist 登録値）を返す。"""
+    return tool_contract_sha256(definition.contract_payload())
+
+
+def compute_binding_sha256(definition: ToolDefinition) -> str:
+    """上流バインディングのハッシュを返す。"""
+    return hashlib.sha256(canonical_json(definition.binding_payload())).hexdigest()
 
 
 class ToolRegistry:
@@ -105,17 +123,27 @@ class ToolRegistry:
                 f"input_schema は type=object の JSON Schema が必要です: {definition.name}"
             )
 
-        if not definition.definition_sha256:
+        if definition.annotations().get("readOnlyHint") is not (effect == "read"):
             raise RegistryIntegrityError(
-                f"definition_sha256 が欠落しています: {definition.name}"
+                f"readOnlyHint が x-mirai.effect と矛盾しています: {definition.name}"
             )
 
-        computed = compute_definition_sha256(definition)
-        if computed != definition.definition_sha256:
+        self._verify_hash(
+            definition, "definition_sha256", compute_definition_sha256(definition)
+        )
+        self._verify_hash(
+            definition, "binding_sha256", compute_binding_sha256(definition)
+        )
+
+    @staticmethod
+    def _verify_hash(definition: ToolDefinition, field: str, computed: str) -> None:
+        pinned = getattr(definition, field)
+        if not pinned:
+            raise RegistryIntegrityError(f"{field} が欠落しています: {definition.name}")
+        if computed != pinned:
             raise RegistryIntegrityError(
-                "definition_sha256 が一致しません（定義が変更されています）: "
-                f"{definition.name} expected={definition.definition_sha256} "
-                f"computed={computed}"
+                f"{field} が一致しません（定義が変更されています）: "
+                f"{definition.name} expected={pinned} computed={computed}"
             )
 
     def _ensure_loaded(self) -> None:

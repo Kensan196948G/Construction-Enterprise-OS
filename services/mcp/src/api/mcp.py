@@ -36,17 +36,18 @@ audit_logger = logging.getLogger("ceos_mcp.audit")
 
 
 def _to_mcp_tool(definition: Any) -> types.Tool:
-    """レジストリ定義を MCP の Tool（読み取り専用注釈付き）へ変換する。"""
+    """レジストリ定義を MCP の Tool へ変換する。
+
+    name / title / description / inputSchema / annotations は Core 形式のツール契約
+    （contracts/mcp-tools/ceos.json）と同一の値を返し、Tool Gateway 等が tools/list の応答と
+    契約を突き合わせて記述の差し替えを検知できるようにする（x-mirai は契約側のみに持つ）。
+    """
     return types.Tool(
         name=definition.name,
+        title=definition.title,
         description=definition.description,
         inputSchema=definition.input_schema,
-        annotations=types.ToolAnnotations(
-            readOnlyHint=True,
-            destructiveHint=False,
-            idempotentHint=True,
-            openWorldHint=False,
-        ),
+        annotations=types.ToolAnnotations(**definition.annotations()),
     )
 
 

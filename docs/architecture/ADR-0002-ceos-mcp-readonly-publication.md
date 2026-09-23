@@ -25,13 +25,13 @@ ADR-0001 は「CEOS は工程・原価・契約の正本を持ち、統合入口
 
 ### 2. 公開ツール（5 件）
 
-| ツール名 | 上流エンドポイント | definition_sha256 |
+| ツール名 | 上流エンドポイント | definition_sha256（Core 規約） |
 | --- | --- | --- |
-| `ceos.wbs.get_tree` | GET `/api/v1/construction/wbs/tree` | `33f9590213b625e02bafc0435737a374b550fdb4936fa5d81d7aae319d682e3f` |
-| `ceos.schedule.get_gantt` | GET `/api/v1/construction/projects/{project_id}/gantt` | `2bc365f79857295766b06fe68e11f21e44565c265f35ad3e758b2b2db5dc1a5f` |
-| `ceos.cost.list` | GET `/api/v1/erp/ledger/{ledger_id}/costs` | `819f6b59b49cceffdb609b102ed4164ff0fb6d87c6a740cc285371f7bbdf8135` |
-| `ceos.ledger.get_summary` | GET `/api/v1/erp/ledger/summary` | `407b36dfec84f59c1ea395e2b5df45ea2f145e90f9c31e79ade8fcf9bd5ee60b` |
-| `ceos.contract.list` | GET `/api/v1/erp/invoices` | `e5af172a544d09de7d26cfb13ee85cec92356a4012b0381f54d39e771ff9e066` |
+| `ceos.wbs.get_tree` | GET `/api/v1/construction/wbs/tree` | `6c252544ae59cb2663882bb3059a8849b567dde9a3323dd363fd0855caddab0a` |
+| `ceos.schedule.get_gantt` | GET `/api/v1/construction/projects/{project_id}/gantt` | `7fe9f7e72b24a8a301f81d8bbd94d6efe755a31266c82c53191fe50ab83bcbc2` |
+| `ceos.cost.list` | GET `/api/v1/erp/ledger/{ledger_id}/costs` | `f2604ab4de678cb321b5eab55b4296e9d9eb2bf4f745d6b147ed728d918bdf8a` |
+| `ceos.ledger.get_summary` | GET `/api/v1/erp/ledger/summary` | `277f1746714a954798202fb73befdb6cf4771ada365c94e688c1512da72af307` |
+| `ceos.contract.list` | GET `/api/v1/erp/invoices` | `43feb3d72c81522bfe3895130f98ef42ac0b82c76b779c83ec663a82996c70ad` |
 
 **上流パスの確認結果**: `ceos.cost.list` は当初 `GET /api/v1/erp/costs` と想定していたが、
 `services/erp/src/api/costs.py` に当該ルートは存在せず、原価明細の読み取りは
@@ -40,10 +40,31 @@ ADR-0001 は「CEOS は工程・原価・契約の正本を持ち、統合入口
 
 ### 3. ハッシュ固定（hash-pinning）
 
-- 各ツールは `definition_sha256`（name・description・inputSchema・effect・tier・upstream を
-  `sort_keys=True, separators=(",", ":"), ensure_ascii=False` で正規化した JSON の SHA-256）を持つ。
-- レジストリは **ハッシュ欠落・不一致・禁止 effect・非 GET・R0 以外を検知したらロードを拒否**し、
-  サーバーを起動しない（fail-closed）。定義変更時はハッシュ更新が必須となる。
+- 各ツールは 2 つのハッシュを固定保持する（RFC 8785 JCS で正規化した JSON の SHA-256）。
+  - `definition_sha256`: **Mirai-Harness-Core のツール定義ハッシュ規約**（対象キー
+    `name・title・description・inputSchema・outputSchema・annotations・x-mirai`）。
+    Core の Allowlist（`registries/mcp-allowlist.yaml`）に登録する値と同一。
+  - `binding_sha256`: `name` と上流（`service・method・path`）。Core 規約の対象外である
+    CEOS 内部の上流差し替えを検知する。
+- レジストリは **いずれかのハッシュの欠落・不一致、禁止 effect、非 GET、R0 以外、
+  readOnlyHint と effect の矛盾を検知したらロードを拒否**し、サーバーを起動しない（fail-closed）。
+- 改訂履歴: 第1増分の初版（PR #90/#91）は独自正規化（`json.dumps(sort_keys=True)`、
+  effect/tier/upstream をトップレベルに含む）で、Core の整合検査（VA-03-3）で必ず不一致となるため
+  Issue #93 で Core 規約へ移行した。ツールの名前・入力・上流・読み取り専用性は不変。
+
+### 3.1 Core 契約の固定参照（Issue #79 / #93）
+
+- Core 形式のツール契約を `contracts/mcp-tools/ceos.json`（`server_id: ceos`）として
+  レジストリから生成し、CI でドリフトを検査する。
+- Core v0.6.0（tag `v0.6.0` / commit `1fe396a`）の必要成果物を
+  `contracts/vendor/harness-core/v0.6.0/` へ無改変で vendoring し、
+  `contracts/harness-core.lock.json` にファイル SHA-256 を固定する。CI は
+  (1) 手編集検知、(2) CEOS ハッシュ実装と Core `tool_def_hash.py` の一致、
+  (3) Core 登録済み `mcip` ハッシュの再現（golden vector）、
+  (4) `registries/systems.yaml` の `ceos.mcp_server_id` とツール名接頭辞の一致（VA-04）、
+  (5) effect/tier の Core 制約（read ⇒ R0）を検査する。
+- Core の署名付き配布（O-03/O-04）公開後は `mhc pull` / `mhc verify` と
+  `contracts.lock.json` による正規方式へ置き換える。
 
 ### 4. 認証
 
@@ -80,7 +101,13 @@ ADR-0001 は「CEOS は工程・原価・契約の正本を持ち、統合入口
 - 書き込み・承認・確定ツール（**第2増分**。R2/R3 は人間承認と組で別 ADR を要する）
 - **OAuth 2.1 のフルフロー**（動的クライアント登録・スコープ・トークン交換）
 - **SBOM・成果物署名**（サプライチェーン統制）
-- **MCIP 側のツール登録 / Tool Gateway 連携**の実装と契約の版管理
+- **MCIP 側のツール登録 / Tool Gateway 連携**の実装
+- **`x-mirai.operation` の確定（BLOCKED・Core 判断）**: Core 承認階層表
+  （`approval-tiers/tiers.yaml` の `operations`）に CEOS の工程・原価・契約の読み取りに
+  対応するカテゴリが無い。推測で既存カテゴリ（`document.search` 等）を流用せず未設定とした。
+  Core がカテゴリを追加した後、`operation` を付与してハッシュを更新し、Core の
+  `contracts/mcp-tools/ceos.json` と `registries/mcp-allowlist.yaml`（trust / surfaces / scopes を含む）
+  への登録を Core リポジトリへ提案する。
 - ADR-0001 は引き続き **Proposed** であり、本増分はその境界判断を前提とする。
 
 ## 参照

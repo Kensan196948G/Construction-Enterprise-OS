@@ -1,0 +1,181 @@
+{
+  "server_id": "ceos",
+  "tools": [
+    {
+      "name": "ceos.contract.list",
+      "title": "契約・請求の一覧",
+      "description": "契約・請求（invoice）の一覧を取得する（読み取り専用）。支払・更新は行わない。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "組織 ID で絞り込む（任意）"
+          },
+          "ledger_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "工事台帳 ID で絞り込む（任意）"
+          },
+          "invoice_type": {
+            "type": "string",
+            "description": "請求種別で絞り込む（任意）"
+          },
+          "status": {
+            "type": "string",
+            "description": "ステータスで絞り込む（任意）"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "ページ番号（任意）"
+          },
+          "per_page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "1 ページあたりの件数（任意）"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "x-mirai": {
+        "effect": "read",
+        "tier": "R0"
+      }
+    },
+    {
+      "name": "ceos.cost.list",
+      "title": "原価明細の一覧",
+      "description": "工事台帳に紐づく原価明細の一覧を取得する（読み取り専用）。原価の参照のみを行い、承認・更新・削除は行わない。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ledger_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "対象の工事台帳 ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "原価明細ステータスで絞り込む（任意）"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "ページ番号（任意）"
+          },
+          "per_page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "1 ページあたりの件数（任意）"
+          }
+        },
+        "required": [
+          "ledger_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "x-mirai": {
+        "effect": "read",
+        "tier": "R0"
+      }
+    },
+    {
+      "name": "ceos.ledger.get_summary",
+      "title": "工事台帳 財務サマリーの取得",
+      "description": "全社の工事台帳 財務サマリー（売上・原価・利益）を取得する（読み取り専用）。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "x-mirai": {
+        "effect": "read",
+        "tier": "R0"
+      }
+    },
+    {
+      "name": "ceos.schedule.get_gantt",
+      "title": "工程ガントの取得",
+      "description": "案件の工程ガントデータを取得する（読み取り専用）。工程の期間・依存関係の参照に用いる。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "対象案件 ID"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "x-mirai": {
+        "effect": "read",
+        "tier": "R0"
+      }
+    },
+    {
+      "name": "ceos.wbs.get_tree",
+      "title": "WBSツリーの取得",
+      "description": "案件の WBS（Work Breakdown Structure）ツリーを取得する（読み取り専用）。工程の階層構造と進捗の参照に用いる。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "対象案件 ID（MCIP が発番）"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "x-mirai": {
+        "effect": "read",
+        "tier": "R0"
+      }
+    }
+  ]
+}

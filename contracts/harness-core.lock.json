@@ -1,0 +1,25 @@
+{
+  "lock_version": 1,
+  "kind": "vendored-git-tag",
+  "core_version": "0.6.0",
+  "consumer": {
+    "system_id": "ceos",
+    "mcp_server_id": "ceos"
+  },
+  "source": {
+    "repo": "mirai-construction-dx/Mirai-Harness-Core",
+    "tag": "v0.6.0",
+    "commit": "1fe396a8414a2bca6ffade879f837c69cccaf5cc"
+  },
+  "vendor_dir": "contracts/vendor/harness-core/v0.6.0",
+  "files": {
+    "VERSION": "97a5d6e540a6120d09c39ddb667e0e8e2bac7fcc2ffef813b82e08fd60365bce",
+    "approval-tiers/tiers.yaml": "e0c313fae5e9c11aa4c805c83efd388302391af605bc39c120992f08f4c6a11f",
+    "contracts/mcp-tools/mcip.json": "de92d09fb6a5707124a58428104568a47e599f6ff3e34245b17548e9386a4b59",
+    "registries/mcp-allowlist.yaml": "42b513df45d9eaeda57dcd5de2f8a596fb5d85314400b13e248ce67b4cdee7ff",
+    "registries/systems.yaml": "73adb51e21f6cca39428d64ad5736f9cf2e5270a9e33b2d030c7e72f6bb101b3",
+    "schemas/registry/mcp-allowlist.schema.json": "616bf5eebd8829a5f8e360c4b16de8d0706165c166d8a3ab05b4ba5708318efb",
+    "tools/tool_def_hash.py": "1f1ac49290454b01b34a9c4002411eaf8c275cfd7a427091c2e31349eded946c"
+  },
+  "note": "Core の Release/レジストリ配布（O-03/O-04）が未公開のため、タグ固定の vendoring で暫定固定する。署名付き配布の公開後は mhc pull / contracts.lock.json 方式へ置き換える。"
+}

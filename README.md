@@ -429,6 +429,8 @@ make test
 | --------------------------------------------------------------------- | --------------------------------------------- |
 | [🏛️ 全体アーキテクチャ設計](docs/architecture/00-overview.md)         | 5レイヤ構造、開発計画、ADR                    |
 | [🏛️ ADR-0001: CEOS の責任範囲](docs/architecture/ADR-0001-ceos-responsibility-boundary.md) | 工程・原価・契約の正本と MCIP/CDE/ArcSphere/MCAH の境界（V3.5準拠） |
+| [🔌 ADR-0002: MCP 読み取り専用公開](docs/architecture/ADR-0002-ceos-mcp-readonly-publication.md) | 5ツール/hash-pinning/キルスイッチ、Core 契約整合 |
+| [📜 Harness-Core 契約固定参照](contracts/vendor/harness-core/v0.6.0/VENDORED.md) | Core v0.6.0 固定（lock/sha256）と `contracts/mcp-tools/ceos.json` |
 | [🔐 統合認証基盤 詳細設計](docs/architecture/01-auth-platform.md)     | データモデル/API/トークン/セキュリティ        |
 | [🗄️ 統合データ基盤 詳細設計](docs/architecture/02-data-platform.md)   | PostgreSQL+PostGIS+TimescaleDB/マルチスキーマ |
 | [🌐 API Gateway & イベント基盤](docs/architecture/03-api-gateway.md)  | Gateway+EventBus+Webhook設計                  |
@@ -462,4 +464,4 @@ make test
 
 ---
 
-> 💚 **最終更新**: 2026-09-20 | 🟢 **ステータス**: STABLE | 🧪 **サービスPython 694 + Web 229 テスト CI 成功** | ⚙️ **23サービス** | 🏛️ **ADR-0001 で責任範囲を定義**
+> 💚 **最終更新**: 2026-09-23 | 🟢 **ステータス**: STABLE | 🧪 **サービスPython 694 + Web 229 テスト CI 成功** | ⚙️ **23サービス** | 🏛️ **ADR-0001 で責任範囲を定義** | 🔌 **MCP: Harness-Core v0.6.0 契約整合（Issue #93、MCP テスト 66 passed / 2 skipped）**

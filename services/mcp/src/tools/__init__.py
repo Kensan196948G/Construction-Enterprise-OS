@@ -38,7 +38,9 @@ from .registry import (
     ToolNotFoundError,
     ToolRegistry,
     canonical_json,
+    compute_binding_sha256,
     compute_definition_sha256,
+    tool_contract_sha256,
 )
 
 REGISTRY = ToolRegistry(TOOL_DEFINITIONS)
@@ -72,6 +74,7 @@ __all__ = [
     "UpstreamClientProtocol",
     "build_upstream_request",
     "canonical_json",
+    "compute_binding_sha256",
     "compute_definition_sha256",
     "describe_policy",
     "effective_allowlist",
@@ -79,5 +82,6 @@ __all__ = [
     "is_server_enabled",
     "is_tool_allowed",
     "load_registry",
+    "tool_contract_sha256",
     "validate_arguments",
 ]

@@ -1,0 +1,4 @@
+# Byte-pinned contract artifacts (SHA-256 verified in services/mcp tests).
+# Reformatting would break the pinned digests / drift checks.
+contracts/vendor/
+contracts/mcp-tools/
