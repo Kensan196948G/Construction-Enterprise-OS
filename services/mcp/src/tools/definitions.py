@@ -20,19 +20,37 @@
 
 from .models import ToolDefinition
 
-# 固定した definition_sha256。
-# 定義本体（name/description/inputSchema/effect/tier/upstream）を正規化 JSON にした
-# SHA-256 であり、変更時はハッシュも更新しなければレジストリのロードが失敗する。
-_WBS_GET_TREE_SHA256 = "33f9590213b625e02bafc0435737a374b550fdb4936fa5d81d7aae319d682e3f"
-_SCHEDULE_GET_GANTT_SHA256 = "2bc365f79857295766b06fe68e11f21e44565c265f35ad3e758b2b2db5dc1a5f"
-_COST_LIST_SHA256 = "819f6b59b49cceffdb609b102ed4164ff0fb6d87c6a740cc285371f7bbdf8135"
-_LEDGER_GET_SUMMARY_SHA256 = "407b36dfec84f59c1ea395e2b5df45ea2f145e90f9c31e79ade8fcf9bd5ee60b"
-_CONTRACT_LIST_SHA256 = "e5af172a544d09de7d26cfb13ee85cec92356a4012b0381f54d39e771ff9e066"
+# 固定したハッシュ（RFC 8785 JCS で正規化した JSON の SHA-256）。
+# - *_SHA256: Core のツール定義ハッシュ規約（name/title/description/inputSchema/
+#   outputSchema/annotations/x-mirai）。Core Allowlist へ登録する値と同一。
+# - *_BINDING_SHA256: 上流バインディング（name と upstream service/method/path）。
+# 定義を変更したらハッシュも更新しなければレジストリのロードが失敗する（fail-closed）。
+_WBS_GET_TREE_SHA256 = "6c252544ae59cb2663882bb3059a8849b567dde9a3323dd363fd0855caddab0a"
+_WBS_GET_TREE_BINDING_SHA256 = (
+    "1e919de993d668c8527d8c57bdfeac6661a2944ac8700e0ea2bc5c62371434be"
+)
+_SCHEDULE_GET_GANTT_SHA256 = "7fe9f7e72b24a8a301f81d8bbd94d6efe755a31266c82c53191fe50ab83bcbc2"
+_SCHEDULE_GET_GANTT_BINDING_SHA256 = (
+    "ab9ac41c85ed74fcddcaef357746a9a9a1b5593fa21d078d17233113cf271479"
+)
+_COST_LIST_SHA256 = "f2604ab4de678cb321b5eab55b4296e9d9eb2bf4f745d6b147ed728d918bdf8a"
+_COST_LIST_BINDING_SHA256 = (
+    "e7c46c28ff87e94dc784db7b0395d43a696007cf0b7f40d89a6a113991726356"
+)
+_LEDGER_GET_SUMMARY_SHA256 = "277f1746714a954798202fb73befdb6cf4771ada365c94e688c1512da72af307"
+_LEDGER_GET_SUMMARY_BINDING_SHA256 = (
+    "0635d260a65a65a259da3be2f2dc839323b5f1cca2c5f0fd8790218174eae8fe"
+)
+_CONTRACT_LIST_SHA256 = "43feb3d72c81522bfe3895130f98ef42ac0b82c76b779c83ec663a82996c70ad"
+_CONTRACT_LIST_BINDING_SHA256 = (
+    "8e0f4ab43bae9e60dfe27e3eab2961f84f7d1fad7f948f0dbd334d28990e393d"
+)
 
 
 TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
     ToolDefinition(
         name="ceos.wbs.get_tree",
+        title="WBSツリーの取得",
         description=(
             "案件の WBS（Work Breakdown Structure）ツリーを取得する（読み取り専用）。"
             "工程の階層構造と進捗の参照に用いる。"
@@ -55,9 +73,11 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
         upstream_method="GET",
         upstream_path="/api/v1/construction/wbs/tree",
         definition_sha256=_WBS_GET_TREE_SHA256,
+        binding_sha256=_WBS_GET_TREE_BINDING_SHA256,
     ),
     ToolDefinition(
         name="ceos.schedule.get_gantt",
+        title="工程ガントの取得",
         description=(
             "案件の工程ガントデータを取得する（読み取り専用）。"
             "工程の期間・依存関係の参照に用いる。"
@@ -80,9 +100,11 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
         upstream_method="GET",
         upstream_path="/api/v1/construction/projects/{project_id}/gantt",
         definition_sha256=_SCHEDULE_GET_GANTT_SHA256,
+        binding_sha256=_SCHEDULE_GET_GANTT_BINDING_SHA256,
     ),
     ToolDefinition(
         name="ceos.cost.list",
+        title="原価明細の一覧",
         description=(
             "工事台帳に紐づく原価明細の一覧を取得する（読み取り専用）。"
             "原価の参照のみを行い、承認・更新・削除は行わない。"
@@ -122,9 +144,11 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
         upstream_method="GET",
         upstream_path="/api/v1/erp/ledger/{ledger_id}/costs",
         definition_sha256=_COST_LIST_SHA256,
+        binding_sha256=_COST_LIST_BINDING_SHA256,
     ),
     ToolDefinition(
         name="ceos.ledger.get_summary",
+        title="工事台帳 財務サマリーの取得",
         description=(
             "全社の工事台帳 財務サマリー（売上・原価・利益）を取得する（読み取り専用）。"
         ),
@@ -139,9 +163,11 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
         upstream_method="GET",
         upstream_path="/api/v1/erp/ledger/summary",
         definition_sha256=_LEDGER_GET_SUMMARY_SHA256,
+        binding_sha256=_LEDGER_GET_SUMMARY_BINDING_SHA256,
     ),
     ToolDefinition(
         name="ceos.contract.list",
+        title="契約・請求の一覧",
         description=(
             "契約・請求（invoice）の一覧を取得する（読み取り専用）。"
             "支払・更新は行わない。"
@@ -189,5 +215,6 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
         upstream_method="GET",
         upstream_path="/api/v1/erp/invoices",
         definition_sha256=_CONTRACT_LIST_SHA256,
+        binding_sha256=_CONTRACT_LIST_BINDING_SHA256,
     ),
 )

@@ -24,12 +24,28 @@ CEOS が正本を持つ **工程・原価・契約** データを、Model Contex
 | `ceos.ledger.get_summary` | GET `/api/v1/erp/ledger/summary` | なし |
 | `ceos.contract.list` | GET `/api/v1/erp/invoices` | なし |
 
-各ツールは `name` / `description` / `inputSchema`（JSON Schema）/ `effect="read"` /
-`tier="R0"` / `definition_sha256` を持つ。`definition_sha256` は定義本体
-（name・description・inputSchema・effect・tier・upstream）を
-`json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=False)` で正規化した
-SHA-256 であり、**ハッシュ欠落・不一致の定義があるとレジストリはロードを拒否する**
-（サーバーは起動しない）。
+各ツールは `name` / `title` / `description` / `inputSchema`（JSON Schema）/
+`annotations`（`readOnlyHint=true` 等）/ `x-mirai`（`effect="read"`, `tier="R0"`）と、
+次の 2 つの固定ハッシュを持つ（いずれも RFC 8785 JCS 正規化 JSON の SHA-256）。
+
+| ハッシュ | 対象 | 用途 |
+| --- | --- | --- |
+| `definition_sha256` | Mirai-Harness-Core 規約の対象キー（name・title・description・inputSchema・outputSchema・annotations・x-mirai） | Core Allowlist 登録値と同一。説明文の書換え（記述汚染）を検知 |
+| `binding_sha256` | name と上流（service・method・path） | CEOS 内部の上流差替えを検知（Core 規約の対象外） |
+
+**いずれかのハッシュ欠落・不一致、禁止 effect、非 GET、R0 以外、readOnlyHint と effect の矛盾が
+あるとレジストリはロードを拒否する**（サーバーは起動しない）。
+
+### 2.1 Core 形式のツール契約と固定参照
+
+- Core 形式の契約 [`contracts/mcp-tools/ceos.json`](../../contracts/mcp-tools/ceos.json) は
+  レジストリから生成する（`python -m src.tools.contract --write ../../contracts/mcp-tools/ceos.json`）。
+  CI（`tests/test_contract_export.py`）がレジストリとの差分を検出する。
+- Core v0.6.0 は [`contracts/harness-core.lock.json`](../../contracts/harness-core.lock.json) で
+  タグ・commit・ファイル SHA-256 を固定し、`tests/test_core_conformance.py` が
+  「CEOS のハッシュ実装＝Core `tool_def_hash.py`」「Core 登録済み mcip ハッシュの再現」
+  「`registries/systems.yaml` の ceos 識別子一致」を検査する。
+- `x-mirai.operation` は Core 承認階層表に CEOS 用カテゴリが無いため未設定（ADR-0002 未決事項）。
 
 > **上流パスの確認結果（deviation）**
 > 指示上の `ceos.cost.list` は `GET /api/v1/erp/costs` とされていたが、
