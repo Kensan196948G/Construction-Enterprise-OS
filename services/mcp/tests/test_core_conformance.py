@@ -24,6 +24,11 @@ from src.tools.registry import tool_contract_sha256
 REPO_ROOT = Path(__file__).resolve().parents[3]
 LOCK_PATH = REPO_ROOT / "contracts" / "harness-core.lock.json"
 
+# 固定する Core の版。更新時は lock と本定数の両方を変更する（意図しない差し替えの二重確認）。
+EXPECTED_CORE_VERSION = "0.6.0"
+EXPECTED_CORE_TAG = "v0.6.0"
+EXPECTED_CORE_COMMIT = "1fe396a8414a2bca6ffade879f837c69cccaf5cc"
+
 
 def _lock() -> dict[str, Any]:
     return json.loads(LOCK_PATH.read_text(encoding="utf-8"))
@@ -59,10 +64,16 @@ def _ceos_tools() -> list[dict[str, Any]]:
 def test_lock_pins_core_version_and_source():
     lock = _lock()
     assert lock["consumer"] == {"system_id": "ceos", "mcp_server_id": SERVER_ID}
-    assert lock["source"]["tag"] == f"v{lock['core_version']}"
-    assert len(lock["source"]["commit"]) == 40
+    assert lock["core_version"] == EXPECTED_CORE_VERSION
+    assert lock["source"]["tag"] == EXPECTED_CORE_TAG
+    assert lock["source"]["commit"] == EXPECTED_CORE_COMMIT
+    assert lock["vendor_dir"] == f"contracts/vendor/harness-core/{EXPECTED_CORE_TAG}"
     version = (_vendor_dir() / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == lock["core_version"]
+    assert version == EXPECTED_CORE_VERSION
+    # 由来の記載（VENDORED.md）も同じタグ・commit を指す
+    vendored_md = (_vendor_dir() / "VENDORED.md").read_text(encoding="utf-8")
+    assert EXPECTED_CORE_TAG in vendored_md
+    assert EXPECTED_CORE_COMMIT in vendored_md
 
 
 def test_vendored_files_match_lock_digests():
