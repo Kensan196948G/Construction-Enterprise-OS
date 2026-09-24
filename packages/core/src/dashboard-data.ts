@@ -139,7 +139,7 @@ export const defaultQuickActions: QuickAction[] = [
   { label: 'API Docs', href: '/docs' },
   { label: 'Swagger UI', href: '/docs' },
   { label: 'Redoc', href: '/redoc' },
-  { label: 'GitHub', href: 'https://github.com/Kensan196948G/Construction-Enterprise-OS' },
+  { label: 'GitHub', href: 'https://github.com/mirai-construction-dx/Construction-Enterprise-OS' },
 ];
 
 export const defaultSystemStatus: SystemStatus[] = [

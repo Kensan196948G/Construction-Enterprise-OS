@@ -1,5 +1,5 @@
 # pip-audit で期限付き許容する既知の脆弱性 ID（1行1件）
-# 追跡: https://github.com/Kensan196948G/Construction-Enterprise-OS/issues/70
+# 追跡: https://github.com/mirai-construction-dx/Construction-Enterprise-OS/issues/70
 # 見直し期限: 2026-12-31
 # 状態: 現在は許容なし（0件）。
 #   - starlette は FastAPI 0.141.1 更新で解消
